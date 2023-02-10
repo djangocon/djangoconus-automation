@@ -26,8 +26,8 @@ SECRET_KEY = 'django-insecure-37x6xs*$^dve-e2cl2htt+c3iew7bwmrrow)_rvz_f*+u*o8f6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dcus-automation.fly.dev']
-CSRF_TRUSTED_ORIGINS = ['https://*.fly.dev']
+ALLOWED_HOSTS = ['dcus-automation.fly.dev', '9996-66-45-158-82.ngrok.io', 'localhost']
+CSRF_TRUSTED_ORIGINS = ['https://*.fly.dev', 'https://9996-66-45-158-82.ngrok.io', 'http://localhost/']
 
 # Application definition
 
@@ -85,7 +85,7 @@ DATABASES = {
 DATABASES['default'] = dj_database_url.config(
     conn_max_age=600,
     conn_health_checks=True,
-    default='',  # todo: connect as sqlite to be used if no DATABASE_URL present
+    default=f'sqlite:///{BASE_DIR}/db.sqlite3',
 )
 
 
