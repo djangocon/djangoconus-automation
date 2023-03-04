@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from titowebhooks.models import TitoWebhookEvent
 
-DUMMY_PAYLOAD_DATA = """
+TEST_PAYLOAD_DATA = """
 {
     "_type": "ticket",
     "id": 9463489,
@@ -58,7 +58,7 @@ DUMMY_PAYLOAD_DATA = """
         "payment_reference": "ch_3MZnaAD593dUjUPh0LHZos9A",
         "source": null,
         "name": "ngrok4",
-        "email": "adamfast+ngrok4@gmail.com",
+        "email": "dcus@example.com",
         "receipt": {
             "total": "100.0",
             "tax": 0,
@@ -92,7 +92,7 @@ class TitoWebhookCases(TestCase):
     def test_ticket_created(self):
         twe = TitoWebhookEvent.objects.create(
             trigger="ticket.created",
-            payload_text=DUMMY_PAYLOAD_DATA,
+            payload_text=TEST_PAYLOAD_DATA,
         )
         twe.payload = json.loads(twe.payload_text)
         twe.save()
