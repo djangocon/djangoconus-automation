@@ -16,5 +16,4 @@ exclude = [
 
 [isort]
 known-first-party = ["automation"]
-known-third-party=["Third Party Stuff"]
 split-on-trailing-comma=true
