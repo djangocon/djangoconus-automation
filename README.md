@@ -17,3 +17,5 @@ docker build -t djus-automation .
 ```
 docker run -p 8000:8000 djus-automation
 ```
+
+You should be able to access the server on [http://localhost:8000](http://localhost:8000).
