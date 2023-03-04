@@ -12,7 +12,7 @@ TEST_PAYLOAD_DATA = """
     "name": "ngrok4 Ngrokker",
     "first_name": "ngrok4",
     "last_name": "Ngrokker",
-    "email": "adamfast+ngrok4@gmail.com",
+    "email": "ngrokpurchaser@example.com",
     "phone_number": null,
     "company_name": "The company",
     "reference": "S6Q7-1",
