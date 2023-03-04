@@ -18,8 +18,7 @@ from django.urls import path
 
 from titowebhooks.views import tito_webhook
 
-
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('titowebhook/', tito_webhook),
+    path("admin/", admin.site.urls),
+    path("titowebhook/", tito_webhook),
 ]
