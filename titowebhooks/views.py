@@ -3,12 +3,12 @@ import json
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from titowebhooks.models import *
+from titowebhooks.models import TitoWebhookEvent
 
 
 @csrf_exempt
 def tito_webhook(request):
-    twe = TitoWebhookEvent.objects.create(
+    TitoWebhookEvent.objects.create(
         payload=json.loads(request.body.decode()),
         payload_text=request.body.decode(),
         trigger=request.META.get("HTTP_X_WEBHOOK_NAME"),
@@ -16,4 +16,4 @@ def tito_webhook(request):
         tito_signature=request.META.get("HTTP_TITO_SIGNATURE"),
     )
 
-    return HttpResponse("")
+    return HttpResponse("ok")

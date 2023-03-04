@@ -1,0 +1,20 @@
+# https://github.com/charliermarsh/ruff#ruff
+
+line-length = 120
+select = [
+    'B',  # flake8-bugbear
+    'E',  # pycodestyle errors
+    'F',  # pyflakes
+    'I',  # iSort
+    'W',  # pycodestyle warnings
+    'B9',
+]
+exclude = [
+    ".git",
+    "*/static/*",
+]
+
+[isort]
+known-first-party = ["automation"]
+known-third-party=["Third Party Stuff"]
+split-on-trailing-comma=true
