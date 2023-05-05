@@ -42,6 +42,16 @@ bootstrap:
 @console:
     {{ COMPOSE }} /bin/bash
 
+@deploy:
+    # https://dcus-automation.fly.dev/
+
+    flyctl deploy
+
+@deploy-production:
+    # https://dcus-automation-prod.fly.dev/
+
+    flyctl deploy --config fly.production.toml
+
 @lint:
     just pre-commit --all-files
 
