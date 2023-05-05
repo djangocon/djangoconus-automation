@@ -5,22 +5,20 @@ FROM python:${PYTHON_VERSION}
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN mkdir -p /code
-
-WORKDIR /code
+RUN --mount=type=cache,target=/root/.cache,id=pip \
+    set -ex && pip install --upgrade pip pip-tools
 
 COPY requirements.txt /tmp/requirements.txt
 
-RUN set -ex && \
-    pip install --upgrade pip && \
-    pip install -r /tmp/requirements.txt && \
-    rm -rf /root/.cache/
+RUN --mount=type=cache,target=/root/.cache,id=pip \
+    set -ex && pip install -r /tmp/requirements.txt
 
 COPY . /code/
+
+WORKDIR /code
 
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-# replace demo.wsgi with <project_name>.wsgi
 CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "automation.wsgi"]

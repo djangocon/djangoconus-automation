@@ -1,0 +1,32 @@
+services:
+
+  db:
+    env_file:
+      - ".env"
+    image: "postgres:13"
+    init: true
+    user: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - db
+    env_file:
+      - ".env"
+    init: true
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+      - django-media:/code/media
+      - django-static:/code/static
+
+volumes:
+  django-media:
+  django-static:
+  postgres-data:
