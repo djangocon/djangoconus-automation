@@ -1,7 +1,8 @@
-Django<5.0
-psycopg2-binary
 dj-database-url
+django-allauth
+Django<5.0
 gunicorn
+psycopg2-binary
 whitenoise
 # Development related requirements
 black

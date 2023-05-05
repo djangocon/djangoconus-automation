@@ -9,6 +9,11 @@ select = [
     'W',  # pycodestyle warnings
     'B9',
 ]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F", "I"]
+unfixable = []
+
 exclude = [
     ".git",
     "*/static/*",
