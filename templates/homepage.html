@@ -8,7 +8,7 @@
     <p>DjangoCon US Automation Server</p>
     <div>
       {% if user.is_authenticated %}
-        <div><a href="{% url 'account_logout' %}">Sign Out</a></div>
+        <span><a class="p-2 text-yellow-300" href="{% url 'account_logout' %}">Sign Out</a></span>
       {% else %}
         <span><a class="p-2 text-yellow-300" href="{% url 'account_login' %}">Sign In</a></span>
         <span><a class="p-2 text-yellow-300" href="{% url 'github_login' %}">Sign In with GitHub</a></span>
