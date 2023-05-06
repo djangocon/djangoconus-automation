@@ -1,0 +1,63 @@
+[tool.bumpver]
+commit = true
+commit_message = ":bookmark: bump version {old_version} -> {new_version}"
+current_version = "2023.5.1"
+push = false   # set to false for CI
+tag = true
+version_pattern = "YYYY.MM.INC1"
+
+[tool.bumpver.file_patterns]
+"automation/__init__.py" = [
+    '__version__ = "{version}"',
+]
+
+[tool.isort]
+honor_noqa = true
+known-first-party = ["automation"]
+profile = "black"
+split-on-trailing-comma=true
+
+# https://github.com/charliermarsh/ruff#ruff
+[tool.ruff]
+
+line-length = 120
+select = [
+    'B',  # flake8-bugbear
+    'E',  # pycodestyle errors
+    'F',  # pyflakes
+    'I',  # iSort
+    'W',  # pycodestyle warnings
+    'B9',
+]
+ignore = []
+per-file-ignores = {"*/migrations/*" = ["E501"]}
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F", "I"]
+unfixable = []
+
+exclude = [
+    "*/static/*",
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Assume Python 3.10.
+target-version = "py310"
