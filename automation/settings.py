@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.github",
+    "django_q",
     "titowebhooks",
 ]
 
@@ -162,6 +163,19 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 LOGIN_REDIRECT_URL = "/"
 
 # Send API settings
+
 SENDY_API_KEY = os.getenv("SENDY_API_KEY", "")
 SENDY_CAMPAIGN_ID = os.getenv("SENDY_CAMPAIGN_ID", "")
 SENDY_ENDPONT_URL = os.getenv("SENDY_ENDPONT_URL", "")
+
+# django-q settings
+
+Q_CLUSTER = {
+    "bulk": 10,
+    "name": "DjangORM",
+    "orm": "default",
+    "queue_limit": 50,
+    "retry": 120,
+    "timeout": 90,
+    "workers": 2,
+}
