@@ -56,7 +56,7 @@ jobs:
       #     cache-from: type=gha
       #     cache-to: type=gha,mode=max
       #     context: .
-      #     file: ./dockerfiles/Dockerfile
+      #     file: ./Dockerfile
       #     push: true
       #     tags: |
       #       ghcr.io/${{ github.repository }}:latest
