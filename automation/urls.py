@@ -11,7 +11,14 @@ admin.site.site_header = admin_header
 admin.site.site_title = admin_header
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="homepage.html")),
+    path(
+        "",
+        TemplateView.as_view(
+            template_name="homepage.html",
+            extra_context={"app_version": __version__},
+        ),
+        name="home",
+    ),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("titowebhook/", tito_webhook),
