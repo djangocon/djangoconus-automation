@@ -163,3 +163,4 @@ LOGIN_REDIRECT_URL = "/"
 
 # Send API settings
 SENDY_API_KEY = os.getenv("SENDY_API_KEY", "")
+SENDY_CAMPAIGN_ID = os.getenv("SENDY_CAMPAIGN_ID", "Pe7M5ioDDHeTMDcVU1A6ag")
