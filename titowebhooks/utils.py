@@ -4,16 +4,9 @@ from sendy.api import SendyAPI
 
 
 def send_to_sendy(*, email: str, name: str, campaign_id: str):
-    api = SendyAPI(
-        host="https://emails.djangocon.us/sendy/",
-        api_key=settings.SENDY_API_KEY,
-    )
+    api = SendyAPI(host=settings.SENDY_ENDPONT_URL, api_key=settings.SENDY_API_KEY)
 
-    response = api.subscribe(
-        list=campaign_id,
-        email=email,
-        name=name,
-    )
+    response = api.subscribe(list=campaign_id, email=email, name=name)
 
     match response:
         case "1":
