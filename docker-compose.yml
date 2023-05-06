@@ -13,7 +13,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python manage.py runserver 0.0.0.0:8000
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000", "--skip-checks"]
     depends_on:
       - db
     env_file:
@@ -21,6 +21,21 @@ services:
     init: true
     ports:
       - "8000:8000"
+    volumes:
+      - .:/code
+      - django-media:/code/media
+      - django-static:/code/static
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "manage.py", "qcluster"]
+    depends_on:
+      - db
+    env_file:
+      - ".env"
+    init: true
     volumes:
       - .:/code
       - django-media:/code/media

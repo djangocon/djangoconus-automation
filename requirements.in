@@ -1,5 +1,6 @@
 dj-database-url
 django-allauth
+django-q2
 Django<5.0
 gunicorn
 psycopg2-binary
