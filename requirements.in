@@ -3,6 +3,8 @@ django-allauth
 Django<5.0
 gunicorn
 psycopg2-binary
+rich
+sendypy
 whitenoise
 # Development related requirements
 black
