@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 import dj_database_url
@@ -154,3 +155,6 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_EMAIL_VERIFICATION = "none"
 LOGIN_REDIRECT_URL = "/"
+
+# Send API settings
+SENDY_API_KEY = os.getenv("SENDY_API_KEY", "")
