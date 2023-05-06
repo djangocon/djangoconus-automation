@@ -8,5 +8,7 @@ sendypy
 whitenoise
 # Development related requirements
 black
-ruff
+bumpver
 isort
+pre-commit
+ruff

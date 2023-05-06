@@ -29,8 +29,8 @@ bootstrap:
 @build:
     docker-compose build
 
-@bump:
-    bumpver update
+@bump *ARGS="--dry":
+    bumpver update {{ ARGS }}
 
 @check:
     {{ MANAGE }} check
