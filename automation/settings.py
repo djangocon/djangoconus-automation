@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.github",
     "django_q",
+    "sendy",
     "titowebhooks",
 ]
 

@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django_q.tasks import async_task
 from rich import print
 
+from sendy.models import List
 from titowebhooks.models import TitoWebhookEvent
 
 
@@ -22,12 +23,14 @@ def tito_webhook(request):
 
     try:
         if settings.SENDY_ENDPONT_URL and settings.SENDY_API_KEY:
-            async_task(
-                "titowebhooks.utils.send_to_sendy",
-                email=payload["email"],
-                name=f"{payload['first_name']} {payload['last_name']}",
-                campaign_id=settings.SENDY_CAMPAIGN_ID,
-            )
+            sendy_lists = List.objects.filter(default=True)
+            for sendy_list in sendy_lists:
+                async_task(
+                    "titowebhooks.utils.send_to_sendy",
+                    email=payload["email"],
+                    name=f"{payload['first_name']} {payload['last_name']}",
+                    campaign_id=sendy_list.sendy_id,
+                )
 
     except Exception as e:
         print(f"[red]{e}: {payload=}[/red]")
