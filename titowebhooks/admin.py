@@ -16,7 +16,7 @@ def send_to_sendy_action(modeladmin, request, queryset):
                     "titowebhooks.utils.send_to_sendy",
                     email=event.payload["email"],
                     name=f"{event.payload['first_name']} {event.payload['last_name']}",
-                    campaign_id=sendy_list.sendy_id,
+                    campaign_id=sendy_list.list_id,
                 )
 
             except Exception as e:

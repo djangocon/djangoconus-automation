@@ -1,8 +1,9 @@
 from apiron import Endpoint, JsonEndpoint, Service
+from django.conf import settings
 
 
 class Sendy(Service):
-    domain = "https://emails.djangocon.us/sendy"
+    domain = settings.SENDY_ENDPONT_URL
 
     brands = JsonEndpoint(
         path="/api/brands/get-brands.php",

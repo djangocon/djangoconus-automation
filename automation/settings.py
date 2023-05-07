@@ -166,7 +166,6 @@ LOGIN_REDIRECT_URL = "/"
 # Send API settings
 
 SENDY_API_KEY = os.getenv("SENDY_API_KEY", "")
-SENDY_CAMPAIGN_ID = os.getenv("SENDY_CAMPAIGN_ID", "")
 SENDY_ENDPONT_URL = os.getenv("SENDY_ENDPONT_URL", "")
 
 # django-q settings
@@ -180,3 +179,7 @@ Q_CLUSTER = {
     "timeout": 90,
     "workers": 2,
 }
+
+# Slack settings
+
+SLACK_OAUTH_TOKEN = os.getenv("SLACK_OAUTH_TOKEN", "")

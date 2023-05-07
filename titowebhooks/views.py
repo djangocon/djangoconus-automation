@@ -29,7 +29,7 @@ def tito_webhook(request):
                     "titowebhooks.utils.send_to_sendy",
                     email=payload["email"],
                     name=f"{payload['first_name']} {payload['last_name']}",
-                    campaign_id=sendy_list.sendy_id,
+                    campaign_id=sendy_list.list_id,
                 )
 
     except Exception as e:
