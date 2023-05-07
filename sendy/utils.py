@@ -1,6 +1,4 @@
-from apiron import Endpoint
-from apiron import JsonEndpoint
-from apiron import Service
+from apiron import Endpoint, JsonEndpoint, Service
 
 
 class Sendy(Service):

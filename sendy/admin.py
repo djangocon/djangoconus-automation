@@ -1,7 +1,6 @@
 from django.contrib import admin
 
-from sendy.models import Brand
-from sendy.models import List
+from sendy.models import Brand, List
 
 
 @admin.action(description="Set active to False")

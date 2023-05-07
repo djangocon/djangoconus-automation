@@ -1,7 +1,6 @@
 import djclick as click
-
-from rich import print
 from django.conf import settings
+from rich import print
 
 from sendy.models import Brand
 from sendy.utils import Sendy
@@ -20,7 +19,7 @@ def command():
             brand_id=response[item]["id"],
             defaults={
                 "name": response[item]["name"],
-            }
+            },
         )
         if created:
             print(f"creating {brand.name}")
