@@ -26,7 +26,7 @@ def tito_webhook(request):
             sendy_lists = List.objects.filter(default=True)
             for sendy_list in sendy_lists:
                 async_task(
-                    "titowebhooks.utils.send_to_sendy",
+                    "sendy.utils.send_to_sendy",
                     email=payload["email"],
                     name=f"{payload['first_name']} {payload['last_name']}",
                     campaign_id=sendy_list.list_id,
