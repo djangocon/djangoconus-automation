@@ -45,7 +45,7 @@ bootstrap:
 @deploy *ARGS:
     # https://dcus-automation.fly.dev/
 
-    flyctl deploy {{ARGS}}
+    flyctl deploy {{ ARGS }}
 
 @deploy-production:
     # https://dcus-automation-prod.fly.dev/
@@ -74,7 +74,7 @@ bootstrap:
     {{ MANAGE }} shell
 
 @ssh *ARGS:
-    flyctl ssh console {{ARGS}}
+    flyctl ssh console {{ ARGS }}
 
 @ssh-production:
     just ssh --config fly.production.toml
