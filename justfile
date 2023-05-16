@@ -42,15 +42,15 @@ bootstrap:
 @console:
     {{ COMPOSE }} /bin/bash
 
-@deploy:
+@deploy *ARGS:
     # https://dcus-automation.fly.dev/
 
-    flyctl deploy
+    flyctl deploy {{ARGS}}
 
 @deploy-production:
     # https://dcus-automation-prod.fly.dev/
 
-    flyctl deploy --config fly.production.toml
+    just deploy --config fly.production.toml
 
 @lint:
     just pre-commit --all-files
@@ -72,6 +72,12 @@ bootstrap:
 # opens a console
 @shell:
     {{ MANAGE }} shell
+
+@ssh *ARGS:
+    flyctl ssh console {{ARGS}}
+
+@ssh-production:
+    just ssh --config fly.production.toml
 
 # runs tests
 @test *ARGS:
