@@ -44,5 +44,5 @@ worker = "python /code/manage.py qcluster"
     timeout = "2s"
 
 [[statics]]
-  guest_path = "/app/public"
+  guest_path = "/code/staticfiles"
   url_prefix = "/static/"
