@@ -1,19 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="relative p-16 max-w-full text-center text-green-200 rounded-xl shadow-inner bg-green-950 prose prose-2xl lg:content-auto">
+    <div class="flex relative flex-col gap-4 p-8 max-w-full text-center text-green-200 rounded-xl shadow-inner bg-green-950 prose prose-2xl lg:content-auto">
         <h1 class="sm:tracking-tight">
             <span class="text-yellow-200">DjangoCon US</span> <span class="text-green-300">Automations</span>
         </h1>
-        <p>DjangoCon US Automation Server</p>
-        <p>version {{ app_version }}</p>
-        <div>
-            {% if user.is_authenticated %}
-                <span><a class="p-2 text-yellow-300" href="{% url 'account_logout' %}">Sign Out</a></span>
-            {% else %}
-                <span><a class="p-2 text-yellow-300" href="{% url 'account_login' %}">Sign In</a></span>
-                <span><a class="p-2 text-yellow-300" href="{% url 'github_login' %}">Sign In with GitHub</a></span>
-            {% endif %}
-        </div>
+        <div>DjangoCon US Automation Server</div>
+        <div>version {{ app_version }}</div>
+        {% if user.is_authenticated %}
+            <div><a class="p-2 text-yellow-300" href="{% url 'account_logout' %}">Sign Out</a></div>
+        {% else %}
+            <div><a class="p-2 text-yellow-300" href="{% url 'account_login' %}">Sign In</a></div>
+            <div><a class="p-2 text-yellow-300" href="{% url 'github_login' %}">Sign In with GitHub</a></div>
+        {% endif %}
     </div>
 {% endblock content %}
