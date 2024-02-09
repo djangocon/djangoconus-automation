@@ -260,8 +260,8 @@ django==4.2.10 \
     #   django-allauth
     #   django-picklefield
     #   django-q2
-django-allauth==0.61.0 \
-    --hash=sha256:e449d2378e1f33803bcf6f1ecc28439ce383de9b5c128a66aa301c4a0e71806f
+django-allauth==0.61.1 \
+    --hash=sha256:5b4ae515ea74f54f0041210692eee10c309ad15ddbbd03d3620693c75e3f7945
     # via -r ./requirements.in
 django-click==2.3.0 \
     --hash=sha256:b862d6b2424edba564968834c8570e39db8142babaa843fa791a4958a2dabb54 \
