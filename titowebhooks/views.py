@@ -16,9 +16,9 @@ def tito_webhook(request):
     TitoWebhookEvent.objects.create(
         payload=payload,
         payload_text=request.body.decode(),
-        trigger=request.META.get("HTTP_X_WEBHOOK_NAME"),
-        tito_webhook_endpoint_id=request.META.get("HTTP_X_WEBHOOK_ENDPOINT_ID"),
-        tito_signature=request.META.get("HTTP_TITO_SIGNATURE"),
+        trigger=request.headers.get("x-webhook-name"),
+        tito_webhook_endpoint_id=request.headers.get("x-webhook-endpoint-id"),
+        tito_signature=request.headers.get("tito-signature"),
     )
 
     try:
