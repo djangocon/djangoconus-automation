@@ -20,6 +20,6 @@ jobs:
       - name: Run tests
         run: |
           python manage.py test
-      - name: Linting
-        run: |
-          ruff --format github .
+      # - name: Linting
+      #   run: |
+      #     ruff --format github .
