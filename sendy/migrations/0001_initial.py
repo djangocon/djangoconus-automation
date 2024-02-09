@@ -44,9 +44,7 @@ class Migration(migrations.Migration):
                 ("default", models.BooleanField(default=False)),
                 (
                     "brand",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="sendy.brand"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="sendy.brand"),
                 ),
             ],
         ),

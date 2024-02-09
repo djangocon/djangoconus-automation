@@ -52,6 +52,12 @@ bootstrap:
 
     just deploy --config fly.production.toml
 
+@open:
+    open https://dcus-automation.fly.dev/
+
+@open-production:
+    open https://dcus-automation-prod.fly.dev/
+
 @lint:
     just pre-commit --all-files
 

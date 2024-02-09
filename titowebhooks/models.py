@@ -5,9 +5,7 @@ class TitoWebhookEvent(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     trigger = models.CharField(max_length=256, blank=True)
     tito_webhook_endpoint_id = models.PositiveIntegerField(null=True, blank=True)
-    tito_signature = models.CharField(
-        max_length=512, null=False, blank=True, default=""
-    )
+    tito_signature = models.CharField(max_length=512, null=False, blank=True, default="")
     payload = models.JSONField(null=True, blank=True)
     payload_text = models.TextField(null=False, blank=True, default="")
     processed = models.BooleanField(default=False)
