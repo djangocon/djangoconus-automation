@@ -7,9 +7,9 @@ x-common-settings: &common-settings
   environment:
     - "USE_TAILWINDCSS_CDN=true"
   volumes:
-    - .:/src:cache
-    - django-media:/src/media
-    - django-static:/src/static
+    - .:/code
+    - django-media:/code/media
+    - django-static:/code/static
 
 services:
 
@@ -27,7 +27,7 @@ services:
   web:
     <<: *common-settings
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000", "--skip-checks"]
-    entrypoint: /src/docker-entrypoint.sh
+    entrypoint: /code/docker-entrypoint.sh
     env_file:
       - ".env"
     init: true
