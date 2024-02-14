@@ -26,10 +26,16 @@ To deploy to the dev server:
 
 ```shell
 flyctl deploy
+
+# open our dev server
+open https://dcus-automation.fly.dev
 ```
 
 To deploy to the production server:
 
 ```shell
 flyctl deploy --config fly.production.toml
+
+# open our production server
+open https://dcus-automation-prod.fly.dev
 ```
