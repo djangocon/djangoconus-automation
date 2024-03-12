@@ -26,7 +26,7 @@ services:
 
   web:
     <<: *common-settings
-    command: ["python", "-m", manage", "runserver", "0.0.0.0:8000", "--skip-checks"]
+    command: ["python", "-m", "manage", "runserver", "0.0.0.0:8000", "--skip-checks"]
     entrypoint: /code/docker-entrypoint.sh
     env_file:
       - ".env"
@@ -41,10 +41,6 @@ services:
     env_file:
       - ".env"
     init: true
-    volumes:
-      - .:/code
-      - django-media:/code/media
-      - django-static:/code/static
 
 volumes:
   django-media:
