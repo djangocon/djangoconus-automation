@@ -42,15 +42,16 @@ bootstrap:
 @console:
     {{ COMPOSE }} /bin/bash
 
-@deploy *ARGS:
-    # https://dcus-automation.fly.dev/
-
+@_deploy *ARGS:
     flyctl deploy {{ ARGS }}
 
-@deploy-production:
-    # https://dcus-automation-prod.fly.dev/
+@deploy-to-staging *ARGS:
+    # https://dcus-automation.fly.dev/
+    just _deploy {{ ARGS }}
 
-    just deploy --config fly.production.toml
+@deploy-to-production *ARGS:
+    # https://dcus-automation-prod.fly.dev/
+    just _deploy --config fly.production.toml {{ ARGS }}
 
 @open:
     open https://dcus-automation.fly.dev/
