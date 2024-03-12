@@ -26,7 +26,7 @@ services:
 
   web:
     <<: *common-settings
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000", "--skip-checks"]
+    command: ["python", "-m", manage", "runserver", "0.0.0.0:8000", "--skip-checks"]
     entrypoint: /code/docker-entrypoint.sh
     env_file:
       - ".env"
@@ -37,7 +37,7 @@ services:
 
   worker:
     <<: *common-settings
-    command: ["python", "manage.py", "qcluster", "--skip-checks"]
+    command: ["python", "-m", "manage", "qcluster", "--skip-checks"]
     env_file:
       - ".env"
     init: true

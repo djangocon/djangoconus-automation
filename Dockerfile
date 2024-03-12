@@ -17,8 +17,8 @@ COPY . /code/
 
 WORKDIR /code
 
-RUN python manage.py collectstatic --noinput
+RUN python -m manage collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "automation.wsgi"]
+CMD ["python", "-m", "manage", "gunicorn", "--bind", ":8000", "--workers", "2", "automation.wsgi"]
