@@ -6,10 +6,10 @@ kill_timeout = 5
 
 [processes]
 app = "gunicorn --bind :8000 --workers 2 automation.wsgi"
-worker = "python -m manage qcluster"
+worker = "python -m manage qcluster --skip-checks"
 
 [deploy]
-  release_command = "python -m manage migrate"
+  release_command = "python -m manage migrate --noinput --skip-checks"
 
 [http_service]
   auto_start_machines = true
