@@ -1,7 +1,7 @@
 set dotenv-load := false
 
-COMPOSE := "docker-compose run --rm --no-deps web"
-MANAGE := COMPOSE + " python manage.py"
+COMPOSE := "docker compose run --rm --no-deps web"
+MANAGE := COMPOSE + " python -m manage"
 
 @_default:
     just --list
@@ -19,15 +19,15 @@ bootstrap:
         echo ".env created"
     fi
 
-    # if [ ! -f "docker-compose.override.yml" ]; then
-    #     cp docker-compose.override.yml-dist docker-compose.override.yml
-    #     echo "docker-compose.override.yml created"
+    # if [ ! -f "compose.override.yml" ]; then
+    #     cp compose.override.yml-dist docker compose.override.yml
+    #     echo "compose.override.yml created"
     # fi
 
     {{ COMPOSE }} build --force-rm
 
 @build:
-    docker-compose build
+    docker compose build
 
 @bump *ARGS="--dry":
     bumpver update {{ ARGS }}
@@ -36,7 +36,7 @@ bootstrap:
     {{ MANAGE }} check
 
 @clean:
-    docker-compose down -v --rmi local
+    docker compose down -v --rmi local
 
 # opens a console
 @console:
@@ -62,7 +62,7 @@ bootstrap:
     just pre-commit --all-files
 
 @logs *ARGS:
-    docker-compose logs {{ ARGS }}
+    docker compose logs {{ ARGS }}
 
 # Python linting
 @pre-commit *ARGS:
@@ -87,19 +87,19 @@ bootstrap:
 
 # runs tests
 @test *ARGS:
-    docker-compose run --rm --no-deps web pytest {{ ARGS }}
+    docker compose run --rm --no-deps web pytest {{ ARGS }}
 
 # updates a project to run at its current version
 @update:
     -pip install -U pip
-    -docker-compose pull
-    -docker-compose build
+    -docker compose pull
+    -docker compose build
 
 @createsuperuser:
     {{ MANAGE }} createsuperuser
 
 @down:
-    docker-compose down
+    docker compose down
 
 @loaddata:
     {{ MANAGE }} loaddata \
@@ -114,7 +114,7 @@ bootstrap:
 
 # Compile new python dependencies
 @pip-compile *ARGS:
-    docker-compose run \
+    docker compose run \
         --entrypoint= \
         --rm web \
             bash -c "pip-compile {{ ARGS }} ./requirements.in \
@@ -136,7 +136,7 @@ bootstrap:
     {{ MANAGE }} collectstatic --no-input
 
 @restart *ARGS:
-    docker-compose restart {{ ARGS }}
+    docker compose restart {{ ARGS }}
 
 @runserver:
     {{ MANAGE }} runserver
@@ -145,10 +145,10 @@ bootstrap:
     just server {{ ARGS }}
 
 @stop:
-    docker-compose down
+    docker compose down
 
 @tail:
     just logs --follow --tail 100
 
 @up *ARGS:
-    docker-compose up {{ ARGS }}
+    docker compose up {{ ARGS }}
