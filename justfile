@@ -14,6 +14,8 @@ bootstrap:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    python -m pip install --upgrade pip uv
+
     if [ ! -f ".env" ]; then
         cp .env-dist .env
         echo ".env created"
@@ -24,7 +26,7 @@ bootstrap:
     #     echo "compose.override.yml created"
     # fi
 
-    {{ COMPOSE }} build --force-rm
+    docker compose build --force-rm
 
 @build:
     docker compose build
@@ -85,11 +87,11 @@ bootstrap:
 
 # runs tests
 @test *ARGS:
-    docker compose run --rm --no-deps web pytest {{ ARGS }}
+    {{ COMPOSE }} pytest {{ ARGS }}
 
 # updates a project to run at its current version
 @update:
-    -pip install -U pip
+    -pip install --upgrade pip uv
     -docker compose pull
     -docker compose build
 
@@ -99,39 +101,29 @@ bootstrap:
 @down:
     docker compose down
 
-@loaddata:
-    {{ MANAGE }} loaddata \
-        ./newsletters/fixtures/newsletters.json \
-        ./news/fixtures/news-fixtures.json
+# Compile new python dependencies
+@lock *ARGS:
+    docker compose run \
+        --entrypoint= \
+        --rm web \
+            bash -c "uv pip compile \
+                --generate-hashes \
+                --output-file ./requirements.txt \
+                --resolver=backtracking \
+                {{ ARGS }} ./requirements.in"
 
-@makemigrations:
-    {{ MANAGE }} makemigrations --noinput
+# Upgrade existing Python dependencies to their latest versions
+@lock-with-upgrade:
+    just lock --upgrade
+
+@makemigrations *ARGS:
+    {{ MANAGE }} makemigrations --noinput {{ ARGS }}
 
 @migrate *ARGS:
     {{ MANAGE }} migrate --noinput {{ ARGS }}
 
-# Compile new python dependencies
-@pip-compile *ARGS:
-    docker compose run \
-        --entrypoint= \
-        --rm web \
-            bash -c "pip-compile {{ ARGS }} ./requirements.in \
-                --generate-hashes \
-                --resolver=backtracking \
-                --output-file ./requirements.txt"
-
-# Upgrade existing Python dependencies to their latest versions
-@pip-compile-upgrade:
-    just pip-compile --upgrade
-
-@poll_feeds:
-    {{ MANAGE }} poll_feeds
-
 @run +ARGS="--help":
     {{ MANAGE }} {{ ARGS }}
-
-@collectstatic:
-    {{ MANAGE }} collectstatic --no-input
 
 @restart *ARGS:
     docker compose restart {{ ARGS }}
