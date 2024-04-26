@@ -8,6 +8,7 @@
         <div>DjangoCon US Automation Server</div>
         <div>version {{ app_version }}</div>
         {% if user.is_authenticated %}
+            <div><a class="p-2 text-yellow-300" href="/admin/">Django Admin</a></div>
             <div><a class="p-2 text-yellow-300" href="{% url 'account_logout' %}">Sign Out</a></div>
         {% else %}
             <div><a class="p-2 text-yellow-300" href="{% url 'account_login' %}">Sign In</a></div>
