@@ -85,6 +85,12 @@ bootstrap:
 @ssh-to-staging *ARGS:
     flyctl ssh console {{ ARGS }}
 
+@status-from-production *ARGS:
+    flyctl status --config fly.production.toml {{ ARGS }}
+
+@status-from-staging *ARGS:
+    flyctl status {{ ARGS }}
+
 # runs tests
 @test *ARGS:
     {{ COMPOSE }} pytest {{ ARGS }}
