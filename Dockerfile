@@ -2,22 +2,18 @@ ARG PYTHON_VERSION=3.10-slim-buster
 
 FROM python:${PYTHON_VERSION}
 
-ENV PATH /venv/bin:$PATH
 ENV PIP_DISABLE_PIP_VERSION_CHECK 1
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONPATH /code
 ENV PYTHONUNBUFFERED 1
-ENV VIRTUAL_ENV /venv
 
 RUN --mount=type=cache,target=/root/.cache,id=pip \
     python -m pip install --upgrade pip uv
 
-RUN python -m uv venv $VIRTUAL_ENV
-
 COPY requirements.txt /tmp/requirements.txt
 
 RUN --mount=type=cache,target=/root/.cache,id=pip \
-    uv pip install --requirement /tmp/requirements.txt
+    uv pip install --system --requirement /tmp/requirements.txt
 
 COPY . /code/
 

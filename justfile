@@ -107,9 +107,7 @@ bootstrap:
         --entrypoint= \
         --rm web \
             bash -c "uv pip compile \
-                --generate-hashes \
                 --output-file ./requirements.txt \
-                --resolver=backtracking \
                 {{ ARGS }} ./requirements.in"
 
 # Upgrade existing Python dependencies to their latest versions
