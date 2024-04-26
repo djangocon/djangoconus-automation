@@ -110,10 +110,6 @@ bootstrap:
                 --output-file ./requirements.txt \
                 {{ ARGS }} ./requirements.in"
 
-# Upgrade existing Python dependencies to their latest versions
-@lock-with-upgrade:
-    just lock --upgrade
-
 @makemigrations *ARGS:
     {{ MANAGE }} makemigrations --noinput {{ ARGS }}
 
@@ -140,3 +136,7 @@ bootstrap:
 
 @up *ARGS:
     docker compose up {{ ARGS }}
+
+# Upgrade existing Python dependencies to their latest versions
+@upgrade:
+    just lock --upgrade
