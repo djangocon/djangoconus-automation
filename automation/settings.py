@@ -14,7 +14,6 @@ import environs
 
 env = environs.Env()
 
-import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = environs.Path(__file__).parent.parent
@@ -29,18 +28,24 @@ SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-37x6xs*$^dve-e2cl2ht
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[
-    "dcus-automation.fly.dev",
-    "dcus-automation-prod.fly.dev",
-    "9996-66-45-158-82.ngrok.io",
-    "localhost",
-])
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=[
+        "dcus-automation.fly.dev",
+        "dcus-automation-prod.fly.dev",
+        "9996-66-45-158-82.ngrok.io",
+        "localhost",
+    ],
+)
 
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
-    "https://*.fly.dev",
-    "https://9996-66-45-158-82.ngrok.io",
-    "http://localhost/",
-])
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "https://*.fly.dev",
+        "https://9996-66-45-158-82.ngrok.io",
+        "http://localhost/",
+    ],
+)
 
 # Application definition
 
