@@ -31,6 +31,7 @@ DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list(
     "ALLOWED_HOSTS",
     default=[
+        "attend.djangocon.us",
         "dcus-automation.fly.dev",
         "dcus-automation-prod.fly.dev",
         "9996-66-45-158-82.ngrok.io",
