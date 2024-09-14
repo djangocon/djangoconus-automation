@@ -23,5 +23,5 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("titowebhook/", tito_webhook),
-    path("tickets/", venueless_view),
+    path("tickets/", venueless_view, name="venueless_view"),
 ]
