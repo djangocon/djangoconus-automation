@@ -10,35 +10,37 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
-import os
-from pathlib import Path
+import environs
+
+env = environs.Env()
 
 import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = environs.Path(__file__).parent.parent
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-37x6xs*$^dve-e2cl2htt+c3iew7bwmrrow)_rvz_f*+u*o8f6"
+SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-37x6xs*$^dve-e2cl2htt+c3iew7bwmrrow)_rvz_f*+u*o8f6")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
-ALLOWED_HOSTS = [
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[
     "dcus-automation.fly.dev",
     "dcus-automation-prod.fly.dev",
     "9996-66-45-158-82.ngrok.io",
     "localhost",
-]
-CSRF_TRUSTED_ORIGINS = [
+])
+
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[
     "https://*.fly.dev",
     "https://9996-66-45-158-82.ngrok.io",
     "http://localhost/",
-]
+])
 
 # Application definition
 
@@ -100,16 +102,11 @@ WSGI_APPLICATION = "automation.wsgi.application"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": env.dj_db_url(
+        "DATABASE_URL",
+        default="postgres://postgres@postgres/postgres",
+    )
 }
-DATABASES["default"] = dj_database_url.config(
-    conn_max_age=600,
-    conn_health_checks=True,
-    default=f"sqlite:///{BASE_DIR}/db.sqlite3",
-)
 
 
 # Password validation
@@ -177,8 +174,8 @@ LOGIN_REDIRECT_URL = "/"
 
 # Send API settings
 
-SENDY_API_KEY = os.getenv("SENDY_API_KEY", "")
-SENDY_ENDPONT_URL = os.getenv("SENDY_ENDPONT_URL", "")
+SENDY_API_KEY = env("SENDY_API_KEY", default="")
+SENDY_ENDPONT_URL = env("SENDY_ENDPONT_URL", default="")
 
 # django-q settings
 
@@ -194,4 +191,4 @@ Q_CLUSTER = {
 
 # Slack settings
 
-SLACK_OAUTH_TOKEN = os.getenv("SLACK_OAUTH_TOKEN", "")
+SLACK_OAUTH_TOKEN = env("SLACK_OAUTH_TOKEN", default="")

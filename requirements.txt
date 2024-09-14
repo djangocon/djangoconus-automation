@@ -21,7 +21,9 @@ colorama==0.4.6
 distlib==0.3.8
     # via virtualenv
 dj-database-url==2.1.0
-    # via -r ./requirements.in
+    # via environs
+dj-email-url==1.0.6
+    # via environs
 django==4.2.11
     # via
     #   -r ./requirements.in
@@ -31,6 +33,8 @@ django==4.2.11
     #   django-q2
 django-allauth==0.62.1
     # via -r ./requirements.in
+django-cache-url==3.4.5
+    # via environs
 django-click==2.4.0
     # via -r ./requirements.in
 django-picklefield==3.2
@@ -38,6 +42,8 @@ django-picklefield==3.2
 django-q2==1.6.2
     # via -r ./requirements.in
 django-test-plus==2.2.4
+    # via -r ./requirements.in
+environs==11.0.0
     # via -r ./requirements.in
 filelock==3.13.4
     # via virtualenv
@@ -55,6 +61,8 @@ looseversion==1.3.0
     # via bumpver
 markdown-it-py==3.0.0
     # via rich
+marshmallow==3.22.0
+    # via environs
 mdurl==0.1.2
     # via markdown-it-py
 nodeenv==1.8.0
@@ -62,6 +70,7 @@ nodeenv==1.8.0
 packaging==24.0
     # via
     #   gunicorn
+    #   marshmallow
     #   pytest
 platformdirs==4.2.1
     # via virtualenv
@@ -81,6 +90,8 @@ pytest==8.3.3
     #   pytest-django
 pytest-django==4.9.0
     # via -r ./requirements.in
+python-dotenv==1.0.1
+    # via environs
 pyyaml==6.0.1
     # via pre-commit
 requests==2.31.0
