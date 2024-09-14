@@ -21,11 +21,6 @@ bootstrap:
         echo ".env created"
     fi
 
-    # if [ ! -f "compose.override.yml" ]; then
-    #     cp compose.override.yml-dist docker compose.override.yml
-    #     echo "compose.override.yml created"
-    # fi
-
     docker compose build --force-rm
 
 @build:
