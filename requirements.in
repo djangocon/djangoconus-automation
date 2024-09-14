@@ -3,14 +3,14 @@ dj-database-url
 django-allauth
 django-click
 django-q2
-Django<5.0
+Django<5.2
 gunicorn
-psycopg2-binary
+psycopg[binary]
 rich
 whitenoise
 # Development related requirements
-black
 bumpver
-isort
+django-test-plus
 pre-commit
-ruff
+pytest
+pytest-django

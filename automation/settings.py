@@ -55,7 +55,11 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.github",
     "django_q",
+]
+
+INSTALLED_APPS += [
     "sendy",
+    "tickets",
     "titowebhooks",
 ]
 

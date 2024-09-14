@@ -17,6 +17,12 @@ known-first-party = ["automation"]
 profile = "black"
 split-on-trailing-comma=true
 
+[tool.pytest.ini_options]
+addopts = "-p no:warnings --no-migrations --reuse-db"
+DJANGO_SETTINGS_MODULE = "automation.settings"
+norecursedirs = ".git .ruff_cache automation fixtures media node_modules static templates"
+python_files = "test_*.py"
+
 # https://github.com/charliermarsh/ruff#ruff
 [tool.ruff]
 
