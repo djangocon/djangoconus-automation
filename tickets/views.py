@@ -1,10 +1,16 @@
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import redirect
+from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from .models import TicketLink
+
+
+def tickets_info(request):
+    tickets_available = TicketLink.objects.filter(date_link_accessed__isnull=True).exists()
+    return render(request, 'tickets/info.html', {'tickets_available': tickets_available})
 
 
 @require_GET
