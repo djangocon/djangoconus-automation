@@ -11,7 +11,7 @@ from tickets.views import venueless_view
 
 @pytest.mark.django_db
 def test_venueless_view_redirects_to_ticket_link(tp, ticket_links):
-    response = tp.client.get(reverse("venueless_view"))
+    response = tp.get("venueless_view")
     assert response.status_code == 302
     redirected_url = response["Location"]
     assert redirected_url in [tl.link for tl in ticket_links]
@@ -23,7 +23,7 @@ def test_venueless_view_redirects_to_ticket_link(tp, ticket_links):
 @pytest.mark.django_db
 def test_venueless_view_no_tickets_left(tp):
     TicketLink.objects.all().update(date_link_accessed=timezone.now())
-    response = tp.client.get(reverse("venueless_view"))
+    response = tp.get("venueless_view")
     assert response.status_code == 404
     assert b"No available tickets." in response.content
 
@@ -53,6 +53,49 @@ def test_venueless_view_error_handling(tp, monkeypatch):
         raise Exception("Forced exception")
 
     monkeypatch.setattr(TicketLink.objects, "select_for_update", mock_get)
-    response = tp.client.get(reverse("venueless_view"))
+    response = tp.get("venueless_view")
     assert response.status_code == 500
     assert b"An error occurred." in response.content
+
+
+# New tests for tickets_info view
+
+
+@pytest.mark.django_db
+def test_tickets_info_view_with_available_tickets(tp, ticket_links):
+    response = tp.get("tickets_info")
+    assert response.status_code == 200
+    assert "tickets_available" in response.context
+    assert response.context["tickets_available"] is True
+    assert b"Access Venueless" in response.content
+
+
+@pytest.mark.django_db
+def test_tickets_info_view_with_no_available_tickets(tp):
+    TicketLink.objects.all().update(date_link_accessed=timezone.now())
+    response = tp.get("tickets_info")
+    assert response.status_code == 200
+    assert "tickets_available" in response.context
+    assert response.context["tickets_available"] is False
+    assert b"no available tickets" in response.content
+
+
+@pytest.mark.django_db
+def test_tickets_info_view_template_used(tp):
+    response = tp.get("tickets_info")
+    assert response.status_code == 200
+    tp.assertTemplateUsed(response, "tickets/info.html")
+
+
+@pytest.mark.django_db
+def test_tickets_info_view_context_data(tp, ticket_links):
+    response = tp.get("tickets_info")
+    assert response.status_code == 200
+    assert "tickets_available" in response.context
+    assert response.context["tickets_available"] is True
+
+    TicketLink.objects.all().update(date_link_accessed=timezone.now())
+    response = tp.get("tickets_info")
+    assert response.status_code == 200
+    assert "tickets_available" in response.context
+    assert response.context["tickets_available"] is False

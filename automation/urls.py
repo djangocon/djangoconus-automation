@@ -3,7 +3,7 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 
 from automation import __version__
-from tickets.views import venueless_view
+from tickets.views import tickets_info, venueless_view
 from titowebhooks.views import tito_webhook
 
 admin_header = f"DjangoCon US Automation v{__version__}"
@@ -23,5 +23,6 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("titowebhook/", tito_webhook),
-    path("tickets/", venueless_view, name="venueless_view"),
+    path("tickets/", tickets_info, name="tickets_info"),
+    path("tickets/go/", venueless_view, name="venueless_view"),
 ]
