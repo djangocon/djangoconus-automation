@@ -1,29 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto p-6 bg-green-800 rounded-lg shadow-lg">
-    <h1 class="text-3xl font-bold mb-4 text-yellow-200">DjangoCon US Tickets</h1>
+    <div class="p-6 mx-auto max-w-2xl bg-green-800 rounded-lg shadow-lg">
+        <h1 class="mb-4 text-3xl font-bold text-yellow-200">DjangoCon US Tickets</h1>
 
-    {% if tickets_available %}
-        <p class="text-green-100 mb-6">
-            Welcome to the DjangoCon US ticket portal! You can access Venueless, our virtual conference platform, by clicking the button below.
-        </p>
-        <a href="{% url 'venueless_view' %}" class="inline-block px-6 py-3 bg-yellow-500 text-green-900 font-semibold rounded-lg hover:bg-yellow-400 transition-colors duration-300">
-            Access Venueless
-        </a>
-        <p class="text-green-200 mt-4 text-sm">
-            Note: Each link can only be used once. If you need to re-enter Venueless, please return to this page and click the button again.
-        </p>
-    {% else %}
-        <p class="text-green-100 mb-6">
-            We're sorry, but there are currently no available tickets for accessing Venueless.
-        </p>
-        <p class="text-green-100 mb-6">
-            If you believe this is an error or need assistance, please reach out to us at:
-        </p>
-        <a href="mailto:hello@djangocon.us" class="inline-block px-6 py-3 bg-yellow-500 text-green-900 font-semibold rounded-lg hover:bg-yellow-400 transition-colors duration-300">
-            hello@djangocon.us
-        </a>
-    {% endif %}
-</div>
+        {% if tickets_available %}
+            <p class="mb-6 text-green-100">
+                Welcome to the DjangoCon US ticket portal! You can access Venueless, our virtual conference platform, by clicking the button below.
+            </p>
+            <a href="{% url 'venueless_view' %}" class="inline-block py-3 px-6 font-semibold text-green-900 bg-yellow-500 rounded-lg transition-colors duration-300 hover:bg-yellow-400">
+                Access Venueless
+            </a>
+            <p class="mt-4 text-sm text-green-200">
+                Note: Each link can only be used once. If you need to re-enter Venueless, please return to this page and click the button again.
+            </p>
+        {% else %}
+            <p class="mb-6 text-green-100">
+                We're sorry, but there are currently no available tickets for accessing Venueless.
+            </p>
+            <p class="mb-6 text-green-100">
+                If you believe this is an error or need assistance, please reach out to us at:
+            </p>
+            <a href="mailto:hello@djangocon.us" class="inline-block py-3 px-6 font-semibold text-green-900 bg-yellow-500 rounded-lg transition-colors duration-300 hover:bg-yellow-400">
+                hello@djangocon.us
+            </a>
+        {% endif %}
+    </div>
 {% endblock content %}
