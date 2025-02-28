@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}DjangoCon US - Tickets{% endblock title %}
+
 {% block content %}
     <div class="p-6 mx-auto max-w-2xl bg-green-800 rounded-lg shadow-lg">
         <h1 class="mb-4 text-3xl font-bold text-yellow-200">DjangoCon US Tickets</h1>
@@ -17,7 +19,7 @@
             <p class="mt-4 text-sm text-green-200">
                 If you have already registered and accessed Venueless before, you can go directly to:
             </p>
-            <a href="https://dcus24.venueless.events" class="mt-2 inline-block py-2 px-4 font-semibold text-green-900 bg-yellow-500 rounded-lg transition-colors duration-300 hover:bg-yellow-400 text-sm">
+            <a href="{{ venueless_url|default:'https://dcus24.venueless.events' }}" class="mt-2 inline-block py-2 px-4 font-semibold text-green-900 bg-yellow-500 rounded-lg transition-colors duration-300 hover:bg-yellow-400 text-sm">
                 dcus24.venueless.events
             </a>
         {% else %}
