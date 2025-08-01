@@ -1,6 +1,6 @@
 # fly.toml file generated for dcus-automation on 2023-02-09T17:33:21-06:00
 
-app = "dcus-automation"
+app = "dcus-automation-prod"
 kill_signal = "SIGINT"
 kill_timeout = 5
 

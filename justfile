@@ -47,22 +47,14 @@ bootstrap:
     {{ COMPOSE }} /bin/bash
 
 # Deploy the application to production environment
-@deploy-to-production *ARGS:
+@deploy *ARGS:
     # https://dcus-automation-prod.fly.dev/
-    flyctl deploy --config fly.production.toml {{ ARGS }}
-
-# Deploy the application to staging environment
-@deploy-to-staging *ARGS:
-    # https://dcus-automation.fly.dev/
-    flyctl deploy {{ ARGS }}
+    flyctl deploy --config fly.toml {{ ARGS }}
 
 # Open the production site in default browser
-@open-production:
+@open:
     open https://dcus-automation-prod.fly.dev/
 
-# Open the staging site in default browser
-@open-staging:
-    open https://dcus-automation.fly.dev/
 
 # Run linting on all files using pre-commit hooks
 @lint:
@@ -88,20 +80,12 @@ bootstrap:
     {{ MANAGE }} shell
 
 # SSH into the production server for debugging
-@ssh-to-production *ARGS:
-    flyctl ssh console --config fly.production.toml {{ ARGS }}
-
-# SSH into the staging server for debugging
-@ssh-to-staging *ARGS:
-    flyctl ssh console {{ ARGS }}
+@ssh *ARGS:
+    flyctl ssh console --config fly.toml {{ ARGS }}
 
 # Check status of the production deployment
-@status-from-production *ARGS:
-    flyctl status --config fly.production.toml {{ ARGS }}
-
-# Check status of the staging deployment
-@status-from-staging *ARGS:
-    flyctl status {{ ARGS }}
+@status *ARGS:
+    flyctl status --config fly.toml {{ ARGS }}
 
 # Run tests with pytest (can specify path to test file/module/function as args)
 @test *ARGS:

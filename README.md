@@ -52,7 +52,7 @@ open https://dcus-automation.fly.dev
 To deploy to the production server:
 
 ```shell
-flyctl deploy --config fly.production.toml
+flyctl deploy --config fly.toml
 
 # open our production server
 open https://dcus-automation-prod.fly.dev
@@ -145,32 +145,6 @@ docker compose up
 ```
 
 You should be able to access the server on [http://localhost:8000](http://localhost:8000).
-
-## Deploying
-
-### Deploying to our dev server
-
-To install the `flyctl` command-line utility, check out the [Install flyctl](https://fly.io/docs/hands-on/install-flyctl/) on Fly.io's website.
-
-To deploy to the dev server:
-
-```shell
-flyctl deploy
-
-# open our dev server
-open https://dcus-automation.fly.dev
-```
-
-### Deploying to our production server
-
-To deploy to the production server:
-
-```shell
-flyctl deploy --config fly.production.toml
-
-# open our production server
-open https://dcus-automation-prod.fly.dev
-```
 
 ### Automatic Deployments
 
@@ -181,7 +155,7 @@ Deployments happen automatically when branches are merged to the `main` branch o
 To deploy to the production server:
 
 ```shell
-flyctl deploy --config fly.production.toml
+flyctl deploy --config fly.toml
 
 # open our production server
 open https://dcus-automation-prod.fly.dev
