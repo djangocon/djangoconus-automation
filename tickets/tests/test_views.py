@@ -1,61 +1,48 @@
 # tests/test_views.py
 
 import pytest
-from django.test import RequestFactory
-from django.urls import reverse
 from django.utils import timezone
 
 from tickets.models import TicketLink
-from tickets.views import venueless_view
+
+# Old venueless_view tests removed - functionality now integrated into tickets_info view
 
 
 @pytest.mark.django_db
-def test_venueless_view_redirects_to_ticket_link(tp, ticket_links):
-    response = tp.get("venueless_view")
-    assert response.status_code == 302
-    redirected_url = response["Location"]
-    assert redirected_url in [tl.link for tl in ticket_links]
-    accessed_links = TicketLink.objects.filter(date_link_accessed__isnull=False)
-    assert accessed_links.count() == 1
-    assert accessed_links.first().link == redirected_url
+def test_tickets_info_view_get_form(tp):
+    """Test that tickets info view shows the claim form when no POST data"""
+    response = tp.get("tickets_info")
+    assert response.status_code == 200
+    assert "form" in response.context
+    assert response.context["ticket_link"] is None
 
 
 @pytest.mark.django_db
-def test_venueless_view_no_tickets_left(tp):
-    TicketLink.objects.all().update(date_link_accessed=timezone.now())
-    response = tp.get("venueless_view")
-    assert response.status_code == 404
-    assert b"No available tickets." in response.content
+def test_tickets_info_view_claim_ticket(tp, ticket_links):
+    """Test claiming a ticket through tickets info view"""
+    response = tp.post("tickets_info", {"email": "test@example.com"})
+    assert response.status_code == 200
+    assert "ticket_link" in response.context
+    assert response.context["ticket_link"] is not None
+    assert response.context["is_existing"] is False
+
+    # Verify ticket was assigned
+    assigned_ticket = TicketLink.objects.filter(attendee_email="test@example.com").first()
+    assert assigned_ticket is not None
 
 
 @pytest.mark.django_db
-def test_venueless_view_concurrent_access(tp, ticket_links):
-    factory = RequestFactory()
-    request = factory.get(reverse("venueless_view"))
+def test_tickets_info_view_retrieve_existing_ticket(tp, ticket_links):
+    """Test retrieving an existing ticket"""
+    # Assign a ticket first
+    ticket = ticket_links[0]
+    ticket.attendee_email = "existing@example.com"
+    ticket.save()
 
-    response1 = venueless_view(request)
-    assert response1.status_code == 302
-    first_link = response1["Location"]
-
-    response2 = venueless_view(request)
-    assert response2.status_code == 302
-    second_link = response2["Location"]
-
-    assert first_link != second_link
-
-    accessed_links = TicketLink.objects.filter(date_link_accessed__isnull=False)
-    assert accessed_links.count() == 2
-
-
-@pytest.mark.django_db
-def test_venueless_view_error_handling(tp, monkeypatch):
-    def mock_get(*args, **kwargs):
-        raise Exception("Forced exception")
-
-    monkeypatch.setattr(TicketLink.objects, "select_for_update", mock_get)
-    response = tp.get("venueless_view")
-    assert response.status_code == 500
-    assert b"An unexpected error occurred" in response.content
+    response = tp.post("tickets_info", {"email": "existing@example.com"})
+    assert response.status_code == 200
+    assert response.context["ticket_link"] == ticket
+    assert response.context["is_existing"] is True
 
 
 # New tests for tickets_info view

@@ -8,7 +8,7 @@ class BulkTicketCreationForm(forms.Form):
                 "rows": 10,
                 "cols": 80,
                 "placeholder": "Enter one URL per line\nhttps://example.com/ticket1\nhttps://example.com/ticket2",
-                "class": "w-full p-2 border border-gray-300 rounded-md "
+                "class": "w-full p-2 border border-gray-300 rounded-md text-gray-900 "
                 "focus:outline-none focus:ring-2 focus:ring-blue-500",
             }
         ),
@@ -30,3 +30,18 @@ class BulkTicketCreationForm(forms.Form):
                 raise forms.ValidationError(f"Invalid URL: {url}. URLs must start with http:// or https://")
 
         return urls
+
+
+class ClaimTicketForm(forms.Form):
+    email = forms.EmailField(
+        label="Your Email Address",
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder": "attendee@example.com",
+                "class": "w-full p-3 border border-gray-300 rounded-md text-gray-900 "
+                "focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg",
+                "autofocus": True,
+            }
+        ),
+        help_text="Enter your email to claim a ticket or retrieve your existing ticket.",
+    )

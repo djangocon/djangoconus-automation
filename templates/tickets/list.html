@@ -48,6 +48,9 @@
                                 Ticket URL
                             </th>
                             <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Assigned To
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
                                 Created
                             </th>
                             <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
@@ -62,12 +65,17 @@
                         {% for ticket in tickets %}
                             <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-30">
                                 <td class="py-4 px-6 whitespace-nowrap">
-                                    <a href="{{ ticket.link }}"
-                                       target="_blank"
-                                       class="block max-w-md text-blue-400 hover:text-blue-300 hover:underline truncate"
-                                       title="{{ ticket.link }}">
+                                    <span class="block max-w-md text-gray-300 truncate"
+                                          title="{{ ticket.link }}">
                                         {{ ticket.link|truncatechars:60 }}
-                                    </a>
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 text-sm whitespace-nowrap">
+                                    {% if ticket.attendee_email %}
+                                        <span class="text-blue-300">{{ ticket.attendee_email }}</span>
+                                    {% else %}
+                                        <span class="text-gray-500">Unassigned</span>
+                                    {% endif %}
                                 </td>
                                 <td class="py-4 px-6 text-sm whitespace-nowrap">
                                     {{ ticket.date_link_created|date:"M d, Y g:i A" }}

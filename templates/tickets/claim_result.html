@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Your Ticket - DjangoCon US{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-3xl">
+        <div class="mb-8 text-center">
+            {% if is_existing %}
+                <h1 class="mb-4 text-4xl font-bold text-green-400">Welcome Back!</h1>
+                <p class="text-lg text-gray-300">Here's your previously claimed ticket.</p>
+            {% else %}
+                <h1 class="mb-4 text-4xl font-bold text-green-400">Success!</h1>
+                <p class="text-lg text-gray-300">Your ticket has been claimed.</p>
+            {% endif %}
+        </div>
+
+        <div class="p-8 bg-green-800 bg-opacity-50 rounded-lg shadow-lg">
+            <div class="space-y-6">
+                <div class="pb-6 border-b border-green-600">
+                    <h2 class="mb-4 text-2xl font-semibold">Your Ticket Information</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <p class="mb-1 text-sm text-gray-400">Email Address</p>
+                            <p class="text-lg font-medium">{{ email }}</p>
+                        </div>
+
+                        <div>
+                            <p class="mb-1 text-sm text-gray-400">Ticket URL</p>
+                            <div class="p-3 bg-green-900 bg-opacity-50 rounded-md">
+                                <p class="font-mono text-lg break-all">{{ ticket_link.link }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="mb-1 text-sm text-gray-400">Claimed On</p>
+                                <p class="text-md">
+                                    {% if ticket_link.date_link_assigned %}
+                                        {{ ticket_link.date_link_assigned|date:"M d, Y g:i A" }}
+                                    {% else %}
+                                        Just now
+                                    {% endif %}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p class="mb-1 text-sm text-gray-400">Status</p>
+                                <p class="text-md">
+                                    {% if ticket_link.date_link_accessed %}
+                                        <span class="inline-flex py-1 px-3 text-sm font-semibold text-yellow-200 bg-yellow-800 rounded-full">
+                                            Already Accessed
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex py-1 px-3 text-sm font-semibold text-green-200 bg-green-800 rounded-full">
+                                            Ready to Use
+                                        </span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <a href="{{ ticket_link.link }}"
+                       target="_blank"
+                       class="block py-3 px-6 w-full text-lg font-semibold text-center text-white bg-blue-600 rounded-lg transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                        Access Your Ticket →
+                    </a>
+
+                    <div class="text-center">
+                        <a href="{% url 'claim_ticket' %}"
+                           class="text-gray-400 underline hover:text-gray-300">
+                            Look up another ticket
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 mt-8 bg-yellow-800 bg-opacity-30 rounded-lg">
+            <p class="text-sm text-yellow-200">
+                <strong>Important:</strong> Save this page or bookmark your ticket URL.
+                You can always retrieve it again using your email address.
+            </p>
+        </div>
+    </div>
+{% endblock %}
