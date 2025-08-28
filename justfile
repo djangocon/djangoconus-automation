@@ -1,6 +1,7 @@
 set dotenv-load := false
 
 # Define common command prefixes for docker operations
+
 COMPOSE := "docker compose run --rm --no-deps web"
 MANAGE := COMPOSE + " python -m manage"
 
@@ -55,18 +56,13 @@ bootstrap:
 @open:
     open https://dcus-automation-prod.fly.dev/
 
-
-# Run linting on all files using pre-commit hooks
-@lint:
-    just pre-commit --all-files
+# Run pre-commit hooks on all files
+@lint *ARGS:
+    uv --quiet tool run --with pre-commit-uv pre-commit run {{ ARGS }} --all-files
 
 # View docker logs with optional arguments
 @logs *ARGS:
     docker compose logs {{ ARGS }}
-
-# Run pre-commit hooks on specified files (or all files with --all-files)
-@pre-commit *ARGS:
-    pre-commit run {{ ARGS }}
 
 # Start the application using docker compose up
 @server *ARGS:
