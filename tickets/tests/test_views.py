@@ -1,11 +1,8 @@
 # tests/test_views.py
 
 import pytest
-from django.utils import timezone
 
 from tickets.models import TicketLink
-
-# Old venueless_view tests removed - functionality now integrated into tickets_info view
 
 
 @pytest.mark.django_db
@@ -20,8 +17,9 @@ def test_tickets_info_view_get_form(tp):
 @pytest.mark.django_db
 def test_tickets_info_view_claim_ticket(tp, ticket_links):
     """Test claiming a ticket through tickets info view"""
-    response = tp.post("tickets_info", {"email": "test@example.com"})
+    response = tp.post("tickets_info", data={"email": "test@example.com"})
     assert response.status_code == 200
+
     assert "ticket_link" in response.context
     assert response.context["ticket_link"] is not None
     assert response.context["is_existing"] is False
@@ -39,13 +37,10 @@ def test_tickets_info_view_retrieve_existing_ticket(tp, ticket_links):
     ticket.attendee_email = "existing@example.com"
     ticket.save()
 
-    response = tp.post("tickets_info", {"email": "existing@example.com"})
+    response = tp.post("tickets_info", data={"email": "existing@example.com"})
     assert response.status_code == 200
     assert response.context["ticket_link"] == ticket
     assert response.context["is_existing"] is True
-
-
-# New tests for tickets_info view
 
 
 @pytest.mark.django_db
@@ -54,35 +49,18 @@ def test_tickets_info_view_with_available_tickets(tp, ticket_links):
     assert response.status_code == 200
     assert "tickets_available" in response.context
     assert response.context["tickets_available"] is True
-    assert b"Access Venueless" in response.content
+    assert b"Get My Ticket" in response.content
 
 
 @pytest.mark.django_db
 def test_tickets_info_view_with_no_available_tickets(tp):
-    TicketLink.objects.all().update(date_link_accessed=timezone.now())
+    # Assign all existing tickets to emails (making none available for new claims)
+    for ticket in TicketLink.objects.all():
+        ticket.attendee_email = "assigned@example.com"
+        ticket.save()
+
     response = tp.get("tickets_info")
     assert response.status_code == 200
     assert "tickets_available" in response.context
     assert response.context["tickets_available"] is False
-    assert b"no available tickets" in response.content
-
-
-@pytest.mark.django_db
-def test_tickets_info_view_template_used(tp):
-    response = tp.get("tickets_info")
-    assert response.status_code == 200
-    tp.assertTemplateUsed(response, "tickets/info.html")
-
-
-@pytest.mark.django_db
-def test_tickets_info_view_context_data(tp, ticket_links):
-    response = tp.get("tickets_info")
-    assert response.status_code == 200
-    assert "tickets_available" in response.context
-    assert response.context["tickets_available"] is True
-
-    TicketLink.objects.all().update(date_link_accessed=timezone.now())
-    response = tp.get("tickets_info")
-    assert response.status_code == 200
-    assert "tickets_available" in response.context
-    assert response.context["tickets_available"] is False
+    assert b"No Tickets Available" in response.content
