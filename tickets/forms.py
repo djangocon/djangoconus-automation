@@ -8,7 +8,8 @@ class BulkTicketCreationForm(forms.Form):
                 "rows": 10,
                 "cols": 80,
                 "placeholder": "Enter one URL per line\nhttps://example.com/ticket1\nhttps://example.com/ticket2",
-                "class": "w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500",
+                "class": "w-full p-2 border border-gray-300 rounded-md "
+                "focus:outline-none focus:ring-2 focus:ring-blue-500",
             }
         ),
         label="Ticket URLs",
