@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Create Tickets - DjangoCon US Automation{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-4xl">
+        <h1 class="mb-6 text-3xl font-bold">Create Ticket Links</h1>
+
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 mb-3 rounded-lg {% if message.tags == 'success' %}bg-green-800{% elif message.tags == 'warning' %}bg-yellow-800{% else %}bg-blue-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <label for="{{ form.urls.id_for_label }}" class="block mb-2 text-lg font-medium">
+                    {{ form.urls.label }}
+                </label>
+
+                {{ form.urls }}
+
+                {% if form.urls.help_text %}
+                    <p class="mt-2 text-sm text-gray-300">{{ form.urls.help_text }}</p>
+                {% endif %}
+
+                {% if form.urls.errors %}
+                    <div class="mt-2 text-red-400">
+                        {% for error in form.urls.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="flex gap-4">
+                <button type="submit"
+                        class="py-3 px-6 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                    Create Tickets
+                </button>
+
+                <a href="{% url 'tickets_list' %}"
+                   class="py-3 px-6 font-semibold text-white bg-gray-600 rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                    View All Tickets
+                </a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

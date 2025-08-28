@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}All Tickets - DjangoCon US Automation{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-6xl">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">All Ticket Links</h1>
+            <a href="{% url 'create_tickets' %}"
+               class="py-2 px-4 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                Create New Tickets
+            </a>
+        </div>
+
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 mb-3 rounded-lg {% if message.tags == 'success' %}bg-green-800{% elif message.tags == 'warning' %}bg-yellow-800{% else %}bg-blue-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-2xl font-bold">{{ total_count }}</p>
+                    <p class="text-sm text-gray-300">Total Tickets</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-green-400">{{ available_count }}</p>
+                    <p class="text-sm text-gray-300">Available</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-red-400">{{ used_count }}</p>
+                    <p class="text-sm text-gray-300">Used</p>
+                </div>
+            </div>
+        </div>
+
+        {% if tickets %}
+            <div class="overflow-x-auto">
+                <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
+                    <thead class="bg-green-700 bg-opacity-50">
+                        <tr>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Ticket URL
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Created
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Accessed
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-center uppercase">
+                                Status
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-green-700">
+                        {% for ticket in tickets %}
+                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-30">
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <a href="{{ ticket.link }}"
+                                       target="_blank"
+                                       class="block max-w-md text-blue-400 hover:text-blue-300 hover:underline truncate"
+                                       title="{{ ticket.link }}">
+                                        {{ ticket.link|truncatechars:60 }}
+                                    </a>
+                                </td>
+                                <td class="py-4 px-6 text-sm whitespace-nowrap">
+                                    {{ ticket.date_link_created|date:"M d, Y g:i A" }}
+                                </td>
+                                <td class="py-4 px-6 text-sm whitespace-nowrap">
+                                    {% if ticket.date_link_accessed %}
+                                        {{ ticket.date_link_accessed|date:"M d, Y g:i A" }}
+                                    {% else %}
+                                        <span class="text-gray-400">Not accessed</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-4 px-6 text-center whitespace-nowrap">
+                                    {% if ticket.date_link_accessed %}
+                                        <span class="inline-flex py-1 px-3 text-xs font-semibold leading-5 text-red-200 bg-red-800 rounded-full">
+                                            Used
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex py-1 px-3 text-xs font-semibold leading-5 text-green-200 bg-green-800 rounded-full">
+                                            Available
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="py-12 text-center bg-green-800 bg-opacity-30 rounded-lg">
+                <p class="mb-4 text-xl text-gray-300">No tickets have been created yet.</p>
+                <a href="{% url 'create_tickets' %}"
+                   class="inline-block py-3 px-6 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                    Create Your First Tickets
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

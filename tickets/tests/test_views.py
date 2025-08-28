@@ -55,7 +55,7 @@ def test_venueless_view_error_handling(tp, monkeypatch):
     monkeypatch.setattr(TicketLink.objects, "select_for_update", mock_get)
     response = tp.get("venueless_view")
     assert response.status_code == 500
-    assert b"An error occurred." in response.content
+    assert b"An unexpected error occurred" in response.content
 
 
 # New tests for tickets_info view

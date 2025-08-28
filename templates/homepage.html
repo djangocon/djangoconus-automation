@@ -9,8 +9,17 @@
             <div class="text-green-300">Automations</div>
         </div>
         {% if user.is_authenticated %}
-            <div class="text-2xl"><a class="p-2 text-yellow-300 underline" href="{% url 'admin:index' %}">Django Admin</a></div>
-            <div class="text-2xl"><a class="p-2 text-yellow-300 underline" href="{% url 'account_logout' %}">Sign Out</a></div>
+            <div class="space-y-2 text-2xl">
+                <h3 class="mb-4 text-3xl font-semibold text-green-100">Ticket Management</h3>
+                <div><a class="p-2 text-yellow-300 underline hover:text-yellow-200" href="{% url 'create_tickets' %}">📝 Create Tickets</a></div>
+                <div><a class="p-2 text-yellow-300 underline hover:text-yellow-200" href="{% url 'tickets_list' %}">📋 View All Tickets</a></div>
+                <div><a class="p-2 text-yellow-300 underline hover:text-yellow-200" href="{% url 'tickets_info' %}">ℹ️ Ticket Info</a></div>
+            </div>
+            <div class="pt-4 space-y-2 text-2xl border-t border-green-700">
+                <h3 class="mb-4 text-3xl font-semibold text-green-100">Administration</h3>
+                <div><a class="p-2 text-yellow-300 underline hover:text-yellow-200" href="{% url 'admin:index' %}">⚙️ Django Admin</a></div>
+                <div><a class="p-2 text-yellow-300 underline hover:text-yellow-200" href="{% url 'account_logout' %}">🚪 Sign Out</a></div>
+            </div>
         {% else %}
             <div class="text-2xl"><a class="p-2 text-yellow-300 underline" href="{% url 'account_login' %}">Sign In</a></div>
             <div class="text-2xl"><a class="p-2 text-yellow-300 underline" href="{% url 'github_login' %}">Sign In with GitHub</a></div>
