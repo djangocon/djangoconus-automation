@@ -24,13 +24,10 @@
             </div>
         </div>
 
-        <form method="post" action="{% url 'github_login' %}">
-            {% csrf_token %}
-            <button type="submit"
-                    class="py-4 px-6 w-full text-lg font-semibold text-white bg-gray-800 rounded-lg transition-colors transform hover:bg-gray-700 hover:scale-105 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
-                🐙 Continue to GitHub
-            </button>
-        </form>
+        <a href="{% url 'github_login' %}"
+           class="block py-4 px-6 w-full text-lg font-semibold text-white bg-gray-800 rounded-lg transition-colors transform hover:bg-gray-700 hover:scale-105 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none text-center">
+            🐙 Continue to GitHub
+        </a>
 
         <div class="pt-4 border-t border-green-700">
             <a href="{% url 'account_login' %}"
