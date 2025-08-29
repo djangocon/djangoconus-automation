@@ -1,0 +1,66 @@
+{% extends "account/base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <div class="flex flex-col gap-6 p-8 mx-auto max-w-md text-center text-green-200 bg-green-900 bg-opacity-80 rounded-xl shadow-inner">
+        <div class="mb-4 text-4xl font-bold text-yellow-200">
+            Complete Sign Up
+        </div>
+
+        <div class="mb-6 text-lg text-gray-300">
+            You are about to sign up using your GitHub account.
+        </div>
+
+        {% if form.errors %}
+            <div class="p-4 text-red-200 bg-red-800 bg-opacity-50 rounded-lg">
+                <div class="mb-2 text-sm font-medium">Please correct the following errors:</div>
+                {{ form.errors }}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'socialaccount_signup' %}" class="space-y-4">
+            {% csrf_token %}
+
+            {% if form.username %}
+                <div class="text-left">
+                    <label for="{{ form.username.id_for_label }}" class="block mb-1 text-sm font-medium text-gray-300">
+                        {{ form.username.label }}
+                    </label>
+                    <input type="text"
+                           name="{{ form.username.name }}"
+                           id="{{ form.username.id_for_label }}"
+                           class="p-3 w-full text-gray-900 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                           {% if form.username.value %}value="{{ form.username.value }}"{% endif %}
+                           placeholder="Choose a username">
+                </div>
+            {% endif %}
+
+            {% if form.email %}
+                <div class="text-left">
+                    <label for="{{ form.email.id_for_label }}" class="block mb-1 text-sm font-medium text-gray-300">
+                        {{ form.email.label }}
+                    </label>
+                    <input type="email"
+                           name="{{ form.email.name }}"
+                           id="{{ form.email.id_for_label }}"
+                           class="p-3 w-full text-gray-900 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                           {% if form.email.value %}value="{{ form.email.value }}"{% endif %}
+                           readonly>
+                </div>
+            {% endif %}
+
+            <button type="submit"
+                    class="py-3 px-4 w-full text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                🐙 Complete GitHub Sign Up
+            </button>
+        </form>
+
+        <div class="pt-4">
+            <a href="{% url 'account_login' %}"
+               class="text-sm text-yellow-300 underline hover:text-yellow-200">
+                ← Back to Sign In
+            </a>
+        </div>
+    </div>
+{% endblock %}

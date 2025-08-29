@@ -1,0 +1,75 @@
+{% extends "account/base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <div class="flex flex-col gap-6 p-8 mx-auto max-w-md text-center text-green-200 bg-green-900 bg-opacity-80 rounded-xl shadow-inner">
+        <div class="mb-4 text-4xl font-bold text-yellow-200">
+            Sign In
+        </div>
+
+        {% if form.errors %}
+            <div class="p-4 text-red-200 bg-red-800 bg-opacity-50 rounded-lg">
+                <div class="mb-2 text-sm font-medium">Please correct the following errors:</div>
+                {{ form.errors }}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'account_login' %}" class="space-y-4">
+            {% csrf_token %}
+
+            <div class="text-left">
+                <label for="{{ form.login.id_for_label }}" class="block mb-1 text-sm font-medium text-gray-300">
+                    {{ form.login.label }}
+                </label>
+                <input type="{{ form.login.field.widget.input_type }}"
+                       name="{{ form.login.name }}"
+                       id="{{ form.login.id_for_label }}"
+                       class="p-3 w-full text-gray-900 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                       {% if form.login.value %}value="{{ form.login.value }}"{% endif %}
+                       placeholder="Username or email">
+            </div>
+
+            <div class="text-left">
+                <label for="{{ form.password.id_for_label }}" class="block mb-1 text-sm font-medium text-gray-300">
+                    {{ form.password.label }}
+                </label>
+                <input type="password"
+                       name="{{ form.password.name }}"
+                       id="{{ form.password.id_for_label }}"
+                       class="p-3 w-full text-gray-900 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                       placeholder="Password">
+            </div>
+
+            {% if form.remember %}
+                <div class="flex items-center">
+                    <input type="checkbox"
+                           name="{{ form.remember.name }}"
+                           id="{{ form.remember.id_for_label }}"
+                           class="mr-2">
+                    <label for="{{ form.remember.id_for_label }}" class="text-sm text-gray-300">
+                        {{ form.remember.label }}
+                    </label>
+                </div>
+            {% endif %}
+
+            <button type="submit"
+                    class="py-3 px-4 w-full text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                Sign In
+            </button>
+        </form>
+
+        <div class="pt-4 space-y-3 border-t border-green-700">
+            <a href="{% url 'github_login' %}"
+               class="block py-3 px-4 w-full text-lg font-semibold text-white bg-gray-800 rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                🐙 Sign In with GitHub
+            </a>
+
+            <div class="text-sm text-gray-400">
+                <a href="{% url 'account_signup' %}" class="text-yellow-300 underline hover:text-yellow-200">
+                    Don't have an account? Sign up
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "account/base.html" %}
+
+{% load i18n %}
+
+{% block content %}
+    <div class="flex flex-col gap-6 p-8 mx-auto max-w-md text-center text-green-200 bg-green-900 bg-opacity-80 rounded-xl shadow-inner">
+        <div class="mb-4 text-4xl font-bold text-yellow-200">
+            Sign Out
+        </div>
+
+        <div class="mb-6 text-lg text-gray-300">
+            Are you sure you want to sign out?
+        </div>
+
+        <form method="POST" action="{% url 'account_logout' %}" class="space-y-4">
+            {% csrf_token %}
+
+            <button type="submit"
+                    class="py-3 px-4 w-full text-lg font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                Yes, Sign Out
+            </button>
+        </form>
+
+        <div class="pt-4">
+            <a href="{% url 'home' %}"
+               class="text-sm text-yellow-300 underline hover:text-yellow-200">
+                ← Back to Home
+            </a>
+        </div>
+    </div>
+{% endblock %}
