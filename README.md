@@ -2,161 +2,116 @@
 
 Django Project to automate tasks for the DjangoCon US.
 
-## Getting started
+## Getting Started
 
-### Using Docker
+### Prerequisites
 
-To run this project locally, we recommend installing [Docker Compose](https://docs.docker.com/compose/install/).
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+- [Just](https://just.systems/) command runner (optional but recommended)
 
-### First steps
+### Quick Setup
 
-The project expects a few variables to be set in our `.env` file. To get started, copy the `.env-dist` file to `.env` so that Docker Compose may read it.
+1. **Clone and setup environment**:
+   ```shell
+   just setup
+   ```
+   This will:
+   - Install/upgrade pip and uv
+   - Copy `.env-dist` to `.env` if it doesn't exist
+   - Build the Docker image
+   - Run database migrations
 
-```shell
-cp .env-dist .env
-```
+2. **Start the development server**:
+   ```shell
+   just up
+   ```
+   Access the application at [http://localhost:8000](http://localhost:8000)
 
-Now edit `.env` in your favorite text editor if you want to test against our Sendy email service or Slack.
+### Manual Setup (without Just)
 
-### Build the docker image:
+If you don't have Just installed:
 
-```shell
-docker compose build
-```
+1. **Create environment file**:
+   ```shell
+   cp .env-dist .env
+   ```
 
-### Run the container:
+2. **Build and start**:
+   ```shell
+   docker compose build
+   docker compose up
+   ```
 
-```shell
-docker compose up
-```
+## Development Commands
 
-You should be able to access the server on [http://localhost:8000](http://localhost:8000).
+### Common Tasks
+- `just up` - Start all services
+- `just down` - Stop all services  
+- `just test` - Run all tests
+- `just lint` - Run linting and formatting checks
+- `just shell` - Open Django shell
+- `just console` - Open bash shell in web container
 
-## Deploying
+### Database Operations
+- `just migrate` - Apply database migrations
+- `just makemigrations` - Create new migrations
+- `just createsuperuser` - Create Django admin user
 
-### Deploying to our dev server
+### Testing and Quality
+- `just test path/to/test.py::TestClass::test_method` - Run specific test
+- `just check` - Run Django system checks
+- `just lint` - Run pre-commit hooks on all files
 
-To install the `flyctl` command-line utility, check out the [Install flyctl](https://fly.io/docs/hands-on/install-flyctl/) on Fly.io's website.
+### Dependency Management
+- `just lock` - Compile requirements.in to requirements.txt
+- `just upgrade` - Upgrade dependencies to latest versions
+- `just update` - Update project (pull images, build)
 
-To deploy to the dev server:
+## Project Structure
 
-```shell
-flyctl deploy
+### Django Applications
 
-# open our dev server
-open https://dcus-automation.fly.dev
-```
+- **tickets/** - Ticket link distribution system for event access
+- **sendy/** - Email marketing integration with Sendy API
+- **titowebhooks/** - Webhook receiver for Tito event platform
 
-### Deploying to our production server
+### Key Features
 
-To deploy to the production server:
+- **Email-based ticket claiming** - Attendees can claim unique ticket links
+- **Admin ticket management** - Bulk creation and monitoring of tickets
+- **GitHub OAuth authentication** - Staff login via GitHub
+- **Email subscription management** - Integration with Sendy for marketing
+- **Webhook processing** - Handle Tito purchase events
 
-```shell
-flyctl deploy --config fly.toml
-
-# open our production server
-open https://dcus-automation-prod.fly.dev
-```
-You can add a section explaining the automatic deployment process when branches are merged to the main branch. Here's an updated version of the README:
-
-```markdown
-# DjangoCon US Automation
-
-Django Project to automate tasks for the DjangoCon US.
-
-## Getting started
-
-### Using Docker
-
-To run this project locally, we recommend installing [Docker Compose](https://docs.docker.com/compose/install/).
-
-### First steps
-
-The project expects a few variables to be set in our `.env` file. To get started, copy the `.env-dist` file to `.env` so that Docker Compose may read it.
-
-```shell
-cp .env-dist .env
-```
-
-Now edit `.env` in your favorite text editor if you want to test against our Sendy email service or Slack.
-
-### Build the docker image:
-
-```shell
-docker compose build
-```
-
-### Run the container:
-
-```shell
-docker compose up
-```
-
-You should be able to access the server on [http://localhost:8000](http://localhost:8000).
-
-## Deploying
-
-### Deploying to our dev server
-
-To install the `flyctl` command-line utility, check out the [Install flyctl](https://fly.io/docs/hands-on/install-flyctl/) on Fly.io's website.
-
-To deploy to the dev server:
-
-```shell
-flyctl deploy
-
-# open our dev server
-open https://dcus-automation.fly.dev
-```
-
-You can add a section explaining the automatic deployment process when branches are merged to the main branch. Here's an updated version of the README:
-
-```markdown
-# DjangoCon US Automation
-
-Django Project to automate tasks for the DjangoCon US.
-
-## Getting started
-
-### Using Docker
-
-To run this project locally, we recommend installing [Docker Compose](https://docs.docker.com/compose/install/).
-
-### First steps
-
-The project expects a few variables to be set in our `.env` file. To get started, copy the `.env-dist` file to `.env` so that Docker Compose may read it.
-
-```shell
-cp .env-dist .env
-```
-
-Now edit `.env` in your favorite text editor if you want to test against our Sendy email service or Slack.
-
-### Build the docker image:
-
-```shell
-docker compose build
-```
-
-### Run the container:
-
-```shell
-docker compose up
-```
-
-You should be able to access the server on [http://localhost:8000](http://localhost:8000).
+## Deployment
 
 ### Automatic Deployments
 
-Deployments happen automatically when branches are merged to the `main` branch on GitHub. This ensures that the latest changes are always deployed without manual intervention.
+Deployments happen automatically when changes are pushed to the `main` branch via GitHub Actions.
 
-### Deploying to our production server Manually
+### Manual Deployment
 
-To deploy to the production server:
+- `just deploy` - Deploy to production (Fly.io)
+- `just ssh` - SSH into production server
+- `just status` - Check production deployment status
+- `just open` - Open production site in browser
 
-```shell
-flyctl deploy --config fly.toml
+Production URL: https://dcus-automation-prod.fly.dev
 
-# open our production server
-open https://dcus-automation-prod.fly.dev
-```
+## Configuration
+
+Edit `.env` file to configure:
+
+- **Database**: `DATABASE_URL` (defaults to local PostgreSQL)
+- **Email**: `SENDY_API_KEY`, `SENDY_ENDPOINT_URL` for Sendy integration
+- **Slack**: `SLACK_OAUTH_TOKEN` for notifications
+- **Debug**: `DJANGO_DEBUG=True` for development
+
+## Architecture
+
+- **Backend**: Django 4.2.11 LTS with Python 3.11
+- **Database**: PostgreSQL with atomic transactions
+- **Task Queue**: django-q2 for background processing
+- **Frontend**: Tailwind CSS with minimal JavaScript
+- **Authentication**: django-allauth with GitHub OAuth
+- **Deployment**: Fly.io with Gunicorn WSGI server
