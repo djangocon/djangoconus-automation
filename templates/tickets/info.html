@@ -46,13 +46,6 @@
                         <p class="font-mono text-sm text-gray-300 break-all">{{ ticket_link.link }}</p>
                     </div>
 
-                    {% if ticket_link.date_link_accessed %}
-                        <div class="p-4 bg-yellow-800 bg-opacity-30 rounded-md">
-                            <p class="text-yellow-200">
-                                <strong>Note:</strong> This ticket was already accessed on {{ ticket_link.date_link_accessed|date:"M d, Y g:i A" }}
-                            </p>
-                        </div>
-                    {% endif %}
                 </div>
 
                 <div class="mt-8 text-center">

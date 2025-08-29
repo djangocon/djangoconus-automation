@@ -51,10 +51,7 @@
                                 Assigned To
                             </th>
                             <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
-                                Created
-                            </th>
-                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
-                                Accessed
+                                Assigned On
                             </th>
                             <th class="py-3 px-6 text-xs font-medium tracking-wider text-center uppercase">
                                 Status
@@ -78,13 +75,10 @@
                                     {% endif %}
                                 </td>
                                 <td class="py-4 px-6 text-sm whitespace-nowrap">
-                                    {{ ticket.date_link_created|date:"M d, Y g:i A" }}
-                                </td>
-                                <td class="py-4 px-6 text-sm whitespace-nowrap">
-                                    {% if ticket.date_link_accessed %}
-                                        {{ ticket.date_link_accessed|date:"M d, Y g:i A" }}
+                                    {% if ticket.date_link_assigned %}
+                                        {{ ticket.date_link_assigned|date:"M d, Y g:i A" }}
                                     {% else %}
-                                        <span class="text-gray-400">Not accessed</span>
+                                        <span class="text-gray-400">Not assigned</span>
                                     {% endif %}
                                 </td>
                                 <td class="py-4 px-6 text-center whitespace-nowrap">

@@ -10,20 +10,19 @@ class TicketLinkAdmin(admin.ModelAdmin):
         "attendee_email",
         "date_link_created",
         "date_link_assigned",
-        "date_link_accessed",
-        "is_accessed",
+        "is_assigned",
     )
-    list_filter = ("date_link_created", "date_link_assigned", "date_link_accessed")
+    list_filter = ("date_link_created", "date_link_assigned")
     search_fields = ("link", "attendee_email")
-    readonly_fields = ("date_link_created", "date_link_accessed", "date_link_assigned")
+    readonly_fields = ("date_link_created", "date_link_assigned")
     ordering = ("-date_link_created",)
 
     @admin.display(
-        description="Accessed",
+        description="Assigned",
         boolean=True,
     )
-    def is_accessed(self, obj):
-        return obj.date_link_accessed is not None
+    def is_assigned(self, obj):
+        return obj.attendee_email is not None
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # When editing an existing object
