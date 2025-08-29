@@ -34,7 +34,7 @@
                 </div>
                 <div>
                     <p class="text-2xl font-bold text-red-400">{{ used_count }}</p>
-                    <p class="text-sm text-gray-300">Used</p>
+                    <p class="text-sm text-gray-300">Assigned</p>
                 </div>
             </div>
         </div>
@@ -88,9 +88,9 @@
                                     {% endif %}
                                 </td>
                                 <td class="py-4 px-6 text-center whitespace-nowrap">
-                                    {% if ticket.date_link_accessed %}
+                                    {% if ticket.attendee_email %}
                                         <span class="inline-flex py-1 px-3 text-xs font-semibold leading-5 text-red-200 bg-red-800 rounded-full">
-                                            Used
+                                            Assigned
                                         </span>
                                     {% else %}
                                         <span class="inline-flex py-1 px-3 text-xs font-semibold leading-5 text-green-200 bg-green-800 rounded-full">
