@@ -9,13 +9,6 @@
             <div class="text-green-300">Automations</div>
         </div>
 
-        <div class="my-8">
-            <a href="{% url 'claim_ticket' %}"
-               class="inline-block py-4 px-8 text-xl font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg transition-all transform hover:from-blue-700 hover:to-blue-800 hover:scale-105 focus:ring-4 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
-                🎫 Claim Your Ticket
-            </a>
-            <p class="mt-3 text-sm text-gray-400">Attendees: Enter your email to get your ticket</p>
-        </div>
 
         {% if user.is_authenticated %}
             <div class="space-y-2 text-2xl">
