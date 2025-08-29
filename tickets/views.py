@@ -135,8 +135,8 @@ def tickets_list_view(request: HttpRequest) -> HttpResponse:
     context = {
         "tickets": tickets,
         "total_count": tickets.count(),
-        "available_count": tickets.filter(date_link_accessed__isnull=True).count(),
-        "used_count": tickets.filter(date_link_accessed__isnull=False).count(),
+        "available_count": tickets.filter(attendee_email__isnull=True).count(),
+        "used_count": tickets.filter(attendee_email__isnull=False).count(),
     }
     return render(request, "tickets/list.html", context)
 
