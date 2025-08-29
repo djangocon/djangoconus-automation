@@ -1,7 +1,7 @@
 import logging
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.db import DatabaseError, transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
@@ -81,7 +81,7 @@ def tickets_info(request: HttpRequest) -> HttpResponse:
     return render(request, "tickets/info.html", context)
 
 
-@login_required
+@staff_member_required
 @require_http_methods(["GET", "POST"])
 def create_tickets_view(request: HttpRequest) -> HttpResponse:
     """
@@ -123,7 +123,7 @@ def create_tickets_view(request: HttpRequest) -> HttpResponse:
     return render(request, "tickets/create.html", context)
 
 
-@login_required
+@staff_member_required
 def tickets_list_view(request: HttpRequest) -> HttpResponse:
     """
     Display all tickets with their status.
