@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tickets', '0002_ticketlink_attendee_email_and_more'),
+        ("tickets", "0002_ticketlink_attendee_email_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='ticketlink',
-            name='date_link_accessed',
+            model_name="ticketlink",
+            name="date_link_accessed",
         ),
     ]
