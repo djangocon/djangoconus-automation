@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block content %}
+<div class="flex flex-col gap-6 p-8 max-w-4xl text-green-200 bg-green-900 rounded-xl shadow-inner">
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-yellow-200 mb-6">DjangoCon US 2025 Travel Safety Registration</h1>
+    </div>
+
+    <!-- Introduction Text -->
+    <div class="bg-gray-100 border border-blue-600 p-6 rounded-lg mb-8">
+        <div class="text-green-900 space-y-4 text-sm leading-relaxed">
+            <p>
+                We recognize that international travel to the United States has become more concerning this year, and we want to acknowledge those valid worries. The organizers of DjangoCon US 2025 are committed to ensuring all our international attendees have the support they need for a safe experience entering and leaving the United States.
+            </p>
+            <p>
+                To help us stay connected and provide support when needed, we've created this travel safety check-in system. Simply provide your travel details, contact information, and an emergency contact below. Our organizers will reach out to confirm your safe arrival around your expected arrival time. If we don't hear back within two hours, we'll make a second attempt to contact you. Should we still be unable to reach you after four hours total, we'll notify your designated emergency contact to ensure your wellbeing.
+            </p>
+            <p>
+                This system helps us look out for each other as a community while respecting your privacy. All travel information will be securely deleted 30 days after the conference concludes.
+            </p>
+            <p class="font-medium">
+                Ready to register your travel plans? Fill out the form below:
+            </p>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="p-4 mb-4 rounded-md {% if message.tags == 'success' %}bg-green-700 border border-green-600 text-green-100{% elif message.tags == 'error' %}bg-red-700 border border-red-600 text-red-100{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Personal Information Section -->
+        <div class="bg-green-800 p-6 rounded-lg border border-green-700">
+            <h2 class="text-2xl font-semibold text-yellow-300 mb-4 flex items-center">
+                👤 Personal Information
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.name.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        {% for error in form.name.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.email.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.phone.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                        {% for error in form.phone.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.preferred_contact.label }}
+                    </label>
+                    {{ form.preferred_contact }}
+                    {% if form.preferred_contact.errors %}
+                        {% for error in form.preferred_contact.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Arrival Flight Information Section -->
+        <div class="bg-green-800 p-6 rounded-lg border border-green-700">
+            <h2 class="text-2xl font-semibold text-yellow-300 mb-4 flex items-center">
+                ✈️ Arrival Flight Information
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.arrival_airline.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.arrival_airline }}
+                    {% if form.arrival_airline.errors %}
+                        {% for error in form.arrival_airline.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.arrival_flight_number.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.arrival_flight_number }}
+                    {% if form.arrival_flight_number.errors %}
+                        {% for error in form.arrival_flight_number.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.arrival_time.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.arrival_time }}
+                    {% if form.arrival_time.errors %}
+                        {% for error in form.arrival_time.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="text-xs text-green-300 mt-1">Time zone: US/Chicago (Central Time)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.arrival_airport.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.arrival_airport }}
+                    {% if form.arrival_airport.errors %}
+                        {% for error in form.arrival_airport.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Departure Flight Information Section (Optional) -->
+        <div class="bg-green-800 p-6 rounded-lg border border-green-700">
+            <h2 class="text-2xl font-semibold text-yellow-300 mb-4 flex items-center">
+                🛫 Departure Flight Information <span class="text-sm text-green-300 ml-2">(Optional)</span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.departure_airline.label }}
+                    </label>
+                    {{ form.departure_airline }}
+                    {% if form.departure_airline.errors %}
+                        {% for error in form.departure_airline.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.departure_flight_number.label }}
+                    </label>
+                    {{ form.departure_flight_number }}
+                    {% if form.departure_flight_number.errors %}
+                        {% for error in form.departure_flight_number.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.departure_time.label }}
+                    </label>
+                    {{ form.departure_time }}
+                    {% if form.departure_time.errors %}
+                        {% for error in form.departure_time.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <p class="text-xs text-green-300 mt-1">Time zone: US/Chicago (Central Time)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.departure_airport.label }}
+                    </label>
+                    {{ form.departure_airport }}
+                    {% if form.departure_airport.errors %}
+                        {% for error in form.departure_airport.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.departure_destination.label }}
+                    </label>
+                    {{ form.departure_destination }}
+                    {% if form.departure_destination.errors %}
+                        {% for error in form.departure_destination.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Contact Section -->
+        <div class="bg-green-800 p-6 rounded-lg border border-green-700">
+            <h2 class="text-2xl font-semibold text-yellow-300 mb-4 flex items-center">
+                🚨 Emergency Contact Information
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.emergency_contact_name.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.emergency_contact_name }}
+                    {% if form.emergency_contact_name.errors %}
+                        {% for error in form.emergency_contact_name.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.emergency_contact_phone.label }}
+                        <span class="text-red-400">*</span>
+                    </label>
+                    {{ form.emergency_contact_phone }}
+                    {% if form.emergency_contact_phone.errors %}
+                        {% for error in form.emergency_contact_phone.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-green-200 mb-1">
+                        {{ form.emergency_contact_relationship.label }}
+                    </label>
+                    {{ form.emergency_contact_relationship }}
+                    {% if form.emergency_contact_relationship.errors %}
+                        {% for error in form.emergency_contact_relationship.errors %}
+                            <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Retention Policy Notice -->
+        <div class="bg-yellow-900 border border-yellow-600 p-4 rounded-lg">
+            <h3 class="text-lg font-semibold text-yellow-200 mb-2">📋 Data Retention Policy</h3>
+            <p class="text-yellow-100 text-sm">
+                Your travel safety information will be securely stored for monitoring purposes during DjangoCon US. 
+                All data will be deleted 30 days after the conference ends. We only use this
+                information for safety check-ins and emergency contact purposes.
+            </p>
+        </div>
+
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+            <div class="bg-red-700 border border-red-600 p-4 rounded-md">
+                {% for error in form.non_field_errors %}
+                    <p class="text-red-100">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Submit Button -->
+        <div class="text-center">
+            <button type="submit" class="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 text-yellow-900 font-semibold rounded-lg transition duration-200 shadow-lg">
+                Register Travel Information
+            </button>
+        </div>
+    </form>
+
+    <!-- Back to Home -->
+    <div class="text-center pt-4 border-t border-green-700">
+        <a href="{% url 'home' %}" class="text-yellow-300 underline hover:text-yellow-200">
+            ← Back to Home
+        </a>
+    </div>
+</div>
+
+<!-- Add custom styling for form controls -->
+<style>
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        margin-top: 0.25rem;
+        border: 1px solid #374151;
+        border-radius: 0.375rem;
+        background-color: #1f2937;
+        color: #f3f4f6;
+    }
+    .form-control:focus, .form-select:focus {
+        outline: 2px solid #fbbf24;
+        outline-offset: 2px;
+        border-color: #fbbf24;
+    }
+    .form-control::placeholder {
+        color: #9ca3af;
+    }
+    
+    /* Enhanced datetime input styling */
+    input[type="datetime-local"] {
+        color-scheme: dark;
+        cursor: pointer;
+        position: relative;
+    }
+    
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        background-color: #fbbf24;
+        border-radius: 3px;
+        cursor: pointer;
+        filter: invert(1);
+        padding: 2px;
+    }
+    
+    input[type="datetime-local"]::-webkit-datetime-edit {
+        padding: 2px;
+    }
+    
+    input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper {
+        background: transparent;
+    }
+    
+    input[type="datetime-local"]::-webkit-datetime-edit-text {
+        color: #9ca3af;
+        padding: 0 0.25rem;
+    }
+    
+    input[type="datetime-local"]::-webkit-datetime-edit-month-field,
+    input[type="datetime-local"]::-webkit-datetime-edit-day-field,
+    input[type="datetime-local"]::-webkit-datetime-edit-year-field,
+    input[type="datetime-local"]::-webkit-datetime-edit-hour-field,
+    input[type="datetime-local"]::-webkit-datetime-edit-minute-field {
+        background: transparent;
+        color: #f3f4f6;
+        padding: 0 0.125rem;
+    }
+    
+    /* Datetime helper text */
+    .datetime-helper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
+    }
+    
+    .datetime-example {
+        background: #374151;
+        color: #9ca3af;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        border: 1px solid #4b5563;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum datetime to current time for arrival fields
+        const arrivalInput = document.querySelector('input[name="arrival_time"]');
+        if (arrivalInput) {
+            const now = new Date();
+            // Set minimum to current time
+            arrivalInput.min = now.toISOString().slice(0, 16);
+            
+            // Add helper text
+            const helper = document.createElement('div');
+            helper.className = 'datetime-helper';
+            helper.innerHTML = `
+                <span class="datetime-example">Example: ${formatDateTimeExample(now)}</span>
+            `;
+            arrivalInput.parentNode.appendChild(helper);
+        }
+        
+        // Add helper for departure field
+        const departureInput = document.querySelector('input[name="departure_time"]');
+        if (departureInput) {
+            const helper = document.createElement('div');
+            helper.className = 'datetime-helper';
+            helper.innerHTML = `
+                <span class="datetime-example">Optional - leave blank if unknown</span>
+            `;
+            departureInput.parentNode.appendChild(helper);
+        }
+        
+        // Update departure minimum when arrival changes
+        if (arrivalInput && departureInput) {
+            arrivalInput.addEventListener('change', function() {
+                if (this.value) {
+                    departureInput.min = this.value;
+                }
+            });
+        }
+    });
+    
+    function formatDateTimeExample(date) {
+        const options = {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        };
+        return date.toLocaleString('en-US', options);
+    }
+</script>
+{% endblock content %}
