@@ -2,7 +2,7 @@ apiron
 django-allauth
 django-click
 django-q2
-Django<5.2
+Django<6
 environs[django]
 gunicorn
 psycopg[binary]

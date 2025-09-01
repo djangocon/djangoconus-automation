@@ -1,3 +1,31 @@
+[project]
+name = "djangoconus-automation"
+version = "2025.9.4"
+description = "Django Project to automate tasks for DjangoCon US"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "apiron",
+    "django-allauth",
+    "django-click",
+    "django-q2",
+    "Django<6",
+    "environs[django]",
+    "gunicorn",
+    "psycopg[binary]",
+    "rich",
+    "whitenoise",
+]
+
+[project.optional-dependencies]
+dev = [
+    "bumpver",
+    "django-test-plus",
+    "pre-commit",
+    "pytest",
+    "pytest-django",
+]
+
 [tool.bumpver]
 commit = true
 commit_message = ":bookmark: bump version {old_version} -> {new_version}"
@@ -9,6 +37,10 @@ version_pattern = "YYYY.MM.INC1"
 [tool.bumpver.file_patterns]
 "automation/__init__.py" = [
     '__version__ = "{version}"',
+]
+"pyproject.toml" = [
+    'version = "{version}"',
+    'current_version = "{version}"',
 ]
 
 [tool.isort]

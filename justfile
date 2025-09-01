@@ -142,12 +142,9 @@ bootstrap:
 # Generate pinned requirements.txt from requirements.in
 [group('deps')]
 @lock *ARGS:
-    docker compose run \
-        --entrypoint= \
-        --rm web \
-            bash -c "uv pip compile \
-                --output-file ./requirements.txt \
-                {{ ARGS }} ./requirements.in"
+    uv pip compile \
+        --output-file ./requirements.txt \
+        {{ ARGS }} ./requirements.in
 
 # Update all Python dependencies to their latest compatible versions
 [group('deps')]
