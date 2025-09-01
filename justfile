@@ -139,17 +139,15 @@ bootstrap:
 @lint *ARGS:
     uv --quiet tool run --with pre-commit-uv pre-commit run {{ ARGS }} --all-files
 
-# Generate pinned requirements.txt from requirements.in
+# Update and lock dependencies using uv
 [group('deps')]
 @lock *ARGS:
-    uv pip compile \
-        --output-file ./requirements.txt \
-        {{ ARGS }} ./requirements.in
+    uv lock {{ ARGS }}
 
 # Update all Python dependencies to their latest compatible versions
 [group('deps')]
 @upgrade:
-    just lock --upgrade
+    uv lock --upgrade
 
 # Deploy the application to Fly.io production environment
 [group('deploy')]
@@ -171,6 +169,16 @@ bootstrap:
 [group('deploy')]
 @open:
     open https://dcus-automation-prod.fly.dev/
+
+# Install project dependencies locally with uv
+[group('deps')]
+@install:
+    uv sync
+
+# Install project dependencies including dev dependencies
+[group('deps')]
+@install-dev:
+    uv sync --dev
 
 # Update version number using bumpver (--dry for preview, omit for actual bump)
 [group('utils')]

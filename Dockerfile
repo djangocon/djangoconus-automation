@@ -10,14 +10,14 @@ ENV PYTHONUNBUFFERED 1
 RUN --mount=type=cache,target=/root/.cache,id=pip \
     python -m pip install --upgrade pip uv
 
-COPY requirements.txt /tmp/requirements.txt
-
-RUN --mount=type=cache,target=/root/.cache,id=pip \
-    uv pip install --system --requirement /tmp/requirements.txt
-
-COPY . /code/
-
 WORKDIR /code
+
+COPY pyproject.toml uv.lock ./
+
+RUN --mount=type=cache,target=/root/.cache,id=uv \
+    uv pip sync --system --requirement <(uv pip compile --no-header pyproject.toml)
+
+COPY . .
 
 RUN python -m manage collectstatic --noinput
 
