@@ -44,28 +44,48 @@ If you don't have Just installed:
 
 ## Development Commands
 
-### Common Tasks
-- `just up` - Start all services
-- `just down` - Stop all services  
-- `just test` - Run all tests
-- `just lint` - Run linting and formatting checks
-- `just shell` - Open Django shell
-- `just console` - Open bash shell in web container
+### Setup & Initialization
+- `just setup` - Complete initial setup for new developers (runs bootstrap then migrations)
+- `just bootstrap` - Bootstrap the project: install Python tools, create .env file, and build Docker images
+- `just update` - Update the project: upgrade pip/uv, pull latest images, and rebuild containers
 
-### Database Operations
-- `just migrate` - Apply database migrations
-- `just makemigrations` - Create new migrations
-- `just createsuperuser` - Create Django admin user
+### Docker & Services
+- `just up` / `just server` - Start all services (web, db, worker) in the foreground
+- `just start` - Start services in detached/background mode
+- `just down` / `just stop` - Stop and remove all running containers (preserves volumes)
+- `just restart [service]` - Restart one or more services (e.g., 'just restart web')
+- `just build` - Build or rebuild the Docker images without cache
+- `just console` - Open an interactive bash shell inside the web container
+- `just logs` - View container logs (use -f to follow, --tail N to limit lines)
+- `just tail` - Follow the last 100 lines of logs in real-time
+- `just clean` - Remove all containers, volumes, and locally built images
 
-### Testing and Quality
-- `just test path/to/test.py::TestClass::test_method` - Run specific test
-- `just check` - Run Django system checks
-- `just lint` - Run pre-commit hooks on all files
+### Django Operations
+- `just migrate` - Apply all pending database migrations
+- `just makemigrations` - Create new migration files for model changes
+- `just createsuperuser` - Create a superuser account for Django admin access
+- `just shell` - Open Django's interactive Python shell with project context
+- `just runserver` - Run Django's built-in development server (bypasses Docker)
+- `just run [command]` - Run any Django management command (e.g., 'just run collectstatic')
+- `just check` - Validate Django project configuration and settings
+
+### Testing & Code Quality
+- `just test [path]` - Run the test suite with pytest (optionally specify test paths)
+- `just lint` - Run pre-commit hooks on all files (formatting, linting, type checks)
+- `just fmt` - Format this justfile using Just's built-in formatter (requires --unstable flag)
 
 ### Dependency Management
-- `just lock` - Compile requirements.in to requirements.txt
-- `just upgrade` - Upgrade dependencies to latest versions
-- `just update` - Update project (pull images, build)
+- `just lock` - Generate pinned requirements.txt from requirements.in
+- `just upgrade` - Update all Python dependencies to their latest compatible versions
+
+### Deployment & Production
+- `just deploy` - Deploy the application to Fly.io production environment
+- `just ssh` - SSH into the production server for debugging or maintenance
+- `just status` - View the current status and health of production deployment
+- `just open` - Open the production website in your default browser
+
+### Utilities
+- `just bump [--dry]` - Update version number using bumpver (--dry for preview, omit for actual bump)
 
 ## Project Structure
 
