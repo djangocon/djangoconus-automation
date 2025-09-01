@@ -129,7 +129,7 @@ Edit `.env` file to configure:
 
 ## Architecture
 
-- **Backend**: Django 4.2.11 LTS with Python 3.11
+- **Backend**: Django 4.2.11 LTS with Python 3.12
 - **Database**: PostgreSQL with atomic transactions
 - **Task Queue**: django-q2 for background processing
 - **Frontend**: Tailwind CSS with minimal JavaScript
