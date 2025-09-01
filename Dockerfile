@@ -15,7 +15,7 @@ WORKDIR /code
 COPY pyproject.toml uv.lock ./
 
 RUN --mount=type=cache,target=/root/.cache,id=uv \
-    uv pip sync --system --requirement <(uv pip compile --no-header pyproject.toml)
+    uv pip sync --system
 
 COPY . .
 

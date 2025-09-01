@@ -1,0 +1,104 @@
+{
+    "_type": "ticket",
+    "admin_url": "https://dashboard.tito.io/defna/djangocon-us-2023/tickets/ti_test_pM1XtGfbnKDf6GgWdQav4gg",
+    "answers": [
+        {
+            "humanized_response": "Yes",
+            "question": {
+                "id": 1153481,
+                "title": "I understand that I must show proof of testing negative for covid-19 within 24 hours of the conference start (at home tests allowed), and wear a mask (n95, kn95, or equivalent will be provided) at most times while inside (see full policy). For people unwilling or unable to follow these guidelines, online tickets are also available. Vaccination against covid-19 including boosters is strongly suggested, but will not be verified this year."
+            },
+            "response": [
+                "Yes"
+            ]
+        },
+        {
+            "humanized_response": "NO BADGE, TEST REGISTRATION",
+            "question": {
+                "id": 1153485,
+                "title": "What other information should be printed on your badge?"
+            },
+            "response": "NO BADGE, TEST REGISTRATION"
+        }
+    ],
+    "company_name": null,
+    "custom": "",
+    "discount_code_used": "",
+    "email": "adam@defna.org",
+    "event": {
+        "_type": "event",
+        "account_slug": "defna",
+        "end_date": "2023-10-20",
+        "id": 1128358,
+        "metadata": null,
+        "slug": "djangocon-us-2023",
+        "start_date": "2023-10-08",
+        "title": "DjangoCon US 2023",
+        "url": "https://ti.to/defna/djangocon-us-2023"
+    },
+    "first_name": "Webhook",
+    "gender": null,
+    "id": 9641538,
+    "last_name": "Test",
+    "last_updated_by_type": "admin",
+    "metadata": null,
+    "name": "Webhook Test",
+    "opt_ins": [],
+    "phone_number": null,
+    "price": "0.0",
+    "price_less_tax": "0.0",
+    "reference": "MQG1-1",
+    "registration": {
+        "admin_url": "https://dashboard.tito.io/defna/djangocon-us-2023/registrations/reg_test_p3afDdC0nCj5aqWuFMaDRow",
+        "currency": "USD",
+        "email": "adam@defna.org",
+        "id": 12647274,
+        "name": "Webhook Test",
+        "payment_reference": null,
+        "receipt": {
+            "paid": true,
+            "payment_provider": "",
+            "receipt_lines": [
+                {
+                    "quantity": 1,
+                    "tax": 0,
+                    "tax_description": " @0.0%",
+                    "total": "0.0"
+                }
+            ],
+            "tax": 0,
+            "total": "0.0"
+        },
+        "slug": "reg_test_p3afDdC0nCj5aqWuFMaDRow",
+        "source": null,
+        "total": "0.0",
+        "url": "https://ti.to/registrations/reg_test_p3afDdC0nCj5aqWuFMaDRow"
+    },
+    "registration_id": 12647274,
+    "registration_slug": "reg_test_p3afDdC0nCj5aqWuFMaDRow",
+    "release": {
+        "id": 1414273,
+        "metadata": null,
+        "slug": "sprint-thursday-october-20",
+        "title": "Sprint (In Person)- Thursday (October 19)"
+    },
+    "release_id": 1414273,
+    "release_price": "0.0",
+    "release_slug": "sprint-thursday-october-20",
+    "release_title": "Sprint (In Person)- Thursday (October 19)",
+    "responses": {
+        "i-understand-that-i-will-be-required-to": "Yes",
+        "what-other-information-should-be-printed": "NO BADGE, TEST REGISTRATION"
+    },
+    "slug": "ti_test_pM1XtGfbnKDf6GgWdQav4gg",
+    "state_name": "complete",
+    "tax": "0.0",
+    "test_mode": true,
+    "text": "Sprint (In Person)- Thursday (October 19) MQG1-1 updated",
+    "total_paid": "0.0",
+    "total_paid_less_tax": "0.0",
+    "updated_at": "2023-03-24T20:13:14.000Z",
+    "upgrade_ids": [],
+    "upgrades": [],
+    "url": "https://ti.to/defna/djangocon-us-2023/tickets/ti_test_pM1XtGfbnKDf6GgWdQav4gg"
+}
