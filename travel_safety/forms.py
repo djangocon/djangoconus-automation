@@ -152,6 +152,11 @@ class TravelRegistrationForm(forms.ModelForm):
         
         # If departure time is provided, ensure it's after arrival time
         if departure_time and arrival_time and departure_time <= arrival_time:
-            raise ValidationError("Departure time must be after arrival time.")
+            raise ValidationError(
+                {
+                    "departure_time": "Departure time must be after arrival time.",
+                    "arrival_time": "Arrival time must be before departure time.",
+                },
+            )
             
         return cleaned_data
