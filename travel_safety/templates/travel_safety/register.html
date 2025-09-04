@@ -152,6 +152,24 @@
             </div>
         </div>
 
+        <!-- Accommodation Information Section (Optional) -->
+        <div class="bg-green-800 p-6 rounded-lg border border-green-700">
+            <h2 class="text-2xl font-semibold text-yellow-300 mb-4 flex items-center">
+                🏨 Accommodation Information <span class="text-sm text-green-300 ml-2">(Optional)</span>
+            </h2>
+            <div>
+                <label class="block text-sm font-medium text-green-200 mb-1">
+                    {{ form.accommodation.label }}
+                </label>
+                {{ form.accommodation }}
+                {% if form.accommodation.errors %}
+                    {% for error in form.accommodation.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Departure Flight Information Section (Optional) -->
         <div class="bg-green-800 p-6 rounded-lg border border-green-700">
             <h2 class="text-2xl font-semibold text-yellow-300 mb-4 flex items-center">
@@ -258,6 +276,24 @@
                         {% endfor %}
                     {% endif %}
                 </div>
+            </div>
+        </div>
+
+        <!-- Additional Information Section (Optional) -->
+        <div class="bg-green-800 p-6 rounded-lg border border-green-700">
+            <h2 class="text-2xl font-semibold text-yellow-300 mb-4 flex items-center">
+                📝 Additional Information <span class="text-sm text-green-300 ml-2">(Optional)</span>
+            </h2>
+            <div>
+                <label class="block text-sm font-medium text-green-200 mb-1">
+                    {{ form.user_notes.label }}
+                </label>
+                {{ form.user_notes }}
+                {% if form.user_notes.errors %}
+                    {% for error in form.user_notes.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
 

@@ -28,7 +28,7 @@ class TravelRegistrationAdmin(admin.ModelAdmin):
     
     search_fields = [
         'name', 'email', 'phone', 'arrival_flight_number', 'departure_flight_number',
-        'emergency_contact_name', 'emergency_contact_phone'
+        'emergency_contact_name', 'emergency_contact_phone', 'accommodation', 'user_notes'
     ]
     
     readonly_fields = ['created_at', 'updated_at']
@@ -44,6 +44,11 @@ class TravelRegistrationAdmin(admin.ModelAdmin):
         ('Arrival Flight Information', {
             'fields': ('arrival_airline', 'arrival_flight_number', 'arrival_time', 'arrival_airport')
         }),
+        ('Accommodation Information', {
+            'fields': ('accommodation',),
+            'classes': ('collapse',),
+            'description': 'Optional accommodation details provided by attendee'
+        }),
         ('Departure Flight Information', {
             'fields': ('departure_airline', 'departure_flight_number', 'departure_time', 
                       'departure_airport', 'departure_destination'),
@@ -54,7 +59,8 @@ class TravelRegistrationAdmin(admin.ModelAdmin):
             'fields': ('emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship')
         }),
         ('Status & Notes', {
-            'fields': ('status', 'notes')
+            'fields': ('status', 'user_notes', 'notes'),
+            'description': 'Status tracking and notes (user_notes are from attendee, notes are for admin use)'
         }),
         ('System Information', {
             'fields': ('created_at', 'updated_at'),

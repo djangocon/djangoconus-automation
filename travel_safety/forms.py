@@ -17,9 +17,11 @@ class TravelRegistrationForm(forms.ModelForm):
         fields = [
             'name', 'email', 'phone', 'preferred_contact',
             'arrival_airline', 'arrival_flight_number', 'arrival_time', 'arrival_airport',
+            'accommodation',
             'departure_airline', 'departure_flight_number', 'departure_time', 
             'departure_airport', 'departure_destination',
-            'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'
+            'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship',
+            'user_notes'
         ]
         
         widgets = {
@@ -86,6 +88,16 @@ class TravelRegistrationForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'e.g., Spouse, Parent, Sibling (optional)'
             }),
+            'accommodation': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Hotel name, address, or other accommodation details (optional)',
+                'rows': 3
+            }),
+            'user_notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Any additional information we should know (optional)',
+                'rows': 3
+            }),
         }
         
         labels = {
@@ -105,6 +117,8 @@ class TravelRegistrationForm(forms.ModelForm):
             'emergency_contact_name': 'Emergency Contact Name',
             'emergency_contact_phone': 'Emergency Contact Phone',
             'emergency_contact_relationship': 'Relationship to Emergency Contact (Optional)',
+            'accommodation': 'Where are you staying in Chicago?',
+            'user_notes': 'Any notes or other info we should know?',
         }
 
     def clean_arrival_time(self):

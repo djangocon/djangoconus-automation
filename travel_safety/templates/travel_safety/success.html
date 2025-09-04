@@ -37,6 +37,16 @@
                     </div>
                 </div>
 
+                <!-- Accommodation Info (if provided) -->
+                {% if registration.accommodation %}
+                    <div>
+                        <h3 class="text-lg font-medium text-green-200 mb-2">🏨 Accommodation</h3>
+                        <div class="text-sm">
+                            <div class="text-green-100">{{ registration.accommodation|linebreaksbr }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+
                 <!-- Departure Info (if provided) -->
                 {% if registration.departure_airline %}
                     <div>
@@ -64,6 +74,16 @@
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Additional Information (if provided) -->
+                {% if registration.user_notes %}
+                    <div>
+                        <h3 class="text-lg font-medium text-green-200 mb-2">📝 Additional Information</h3>
+                        <div class="text-sm">
+                            <div class="text-green-100">{{ registration.user_notes|linebreaksbr }}</div>
+                        </div>
+                    </div>
+                {% endif %}
 
                 <!-- Status -->
                 <div class="border-t border-green-700 pt-4">

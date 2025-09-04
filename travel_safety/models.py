@@ -48,10 +48,16 @@ class TravelRegistration(models.Model):
     departure_airport = models.CharField(max_length=100, blank=True, null=True)
     departure_destination = models.CharField(max_length=100, blank=True, null=True)
     
+    # Accommodation Information (optional)
+    accommodation = models.TextField(blank=True, null=True, help_text="Where you are staying in Chicago")
+    
     # Emergency Contact
     emergency_contact_name = models.CharField(max_length=200)
     emergency_contact_phone = models.CharField(max_length=20)
     emergency_contact_relationship = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Additional Information (optional)
+    user_notes = models.TextField(blank=True, null=True, help_text="Any notes or other info we should know?")
     
     # Status and Tracking
     status = models.CharField(
