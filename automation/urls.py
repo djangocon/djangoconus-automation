@@ -27,4 +27,5 @@ urlpatterns = [
     path("tickets/create/", create_tickets_view, name="create_tickets"),
     path("tickets/list/", tickets_list_view, name="tickets_list"),
     path("tickets/claim/", claim_ticket_view, name="claim_ticket"),
+    path("travel-safety/", include("travel_safety.urls")),
 ]

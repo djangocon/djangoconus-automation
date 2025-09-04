@@ -69,6 +69,7 @@ INSTALLED_APPS += [
     "sendy",
     "tickets",
     "titowebhooks",
+    "travel_safety",
 ]
 
 MIDDLEWARE = [
