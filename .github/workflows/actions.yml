@@ -1,23 +1,21 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
-  push:
-    branches: ['*']
   pull_request:
-    branches: ['*']
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'
   workflow_dispatch:
-    inputs:
-      skip_tests:
-        description: 'Skip tests and deploy directly'
-        required: false
-        default: false
-        type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   test:
-    name: Run Tests
-    runs-on: ubuntu-22.04
-    if: github.event_name != 'workflow_dispatch' || !github.event.inputs.skip_tests
+    runs-on: ubuntu-24.04
+    name: Tests with Python
 
     services:
       postgres:
@@ -30,61 +28,53 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Enable caching
+        uses: astral-sh/setup-uv@v7
         with:
-          python-version: "3.12"
-          cache: "pip"
+          enable-cache: true
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
-          python -m pip install uv
-          python -m uv pip install --system --requirement requirements.txt
+          uv sync --all-extras --dev --locked --no-editable --no-install-project
 
       - name: Collect Static Assets
         env:
           DATABASE_URL: 'postgres://postgres:postgres@localhost:${{ job.services.postgres.ports[5432] }}/postgres'
           SECRET_KEY: 'for-testing'
         run: |
-          python -m manage collectstatic --noinput
+          uv run --locked -m manage collectstatic --noinput
 
       - name: Test with pytest
         env:
           DATABASE_URL: 'postgres://postgres:postgres@localhost:${{ job.services.postgres.ports[5432] }}/postgres'
           SECRET_KEY: 'for-testing'
         run: |
-          python -m pytest
+          uv run -m pytest
 
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
+  version-bump:
     needs: [test]
-    if: |
-      always() &&
-      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
-      (
-        (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-        (github.event_name == 'workflow_dispatch')
-      )
+    name: Version Bump
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Enable caching
+        uses: astral-sh/setup-uv@v7
         with:
-          python-version: "3.12"
+          enable-cache: true
+          python-version: "3.13"
 
-      - name: Install bumpver
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install bumpver
+      - name: Set up Python
+        run: uv python install
 
       - name: Configure git to push
         run: |
@@ -94,16 +84,22 @@ jobs:
       - name: Bump Version
         id: vars
         run: |
-          bumpver update
-          eval $(bumpver show --env)
-          echo "{current_version}=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          uvx bumpver update
+          eval $(uvx --quiet bumpver show --environ)
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          uv lock
+
+      - name: Commit uv.lock
+        run: |
+          # Stage the uv.lock file
+          git add uv.lock
+          # Commit only if there are changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m ":arrow_up: Bump uv.lock"
+          else
+            echo "No changes to commit."
+          fi
 
       - name: Push Release Build to GitHub
         run: |
-          git push
-
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - run: flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          git push origin main
