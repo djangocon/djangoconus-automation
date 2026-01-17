@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sites",
     "django.contrib.staticfiles",
+    "django_prodserver",
     "django_tailwind_cli",
     "health_check",
     "health_check.db",
@@ -183,6 +184,19 @@ LOGIN_REDIRECT_URL = "/"
 
 SENDY_API_KEY = env("SENDY_API_KEY", default="")
 SENDY_ENDPOINT_URL = env("SENDY_ENDPOINT_URL", default="")
+
+# django-prodserver settings
+
+PRODUCTION_PROCESSES = {
+    "web": {
+        "BACKEND": "django_prodserver.backends.gunicorn.GunicornServer",
+        "ARGS": {"bind": "0.0.0.0:8000", "workers": "2"},
+    },
+    "worker": {
+        "BACKEND": "django_prodserver.backends.django_q2.DjangoQ2Worker",
+        "ARGS": {},
+    },
+}
 
 # django-q settings
 
