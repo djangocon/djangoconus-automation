@@ -1,6 +1,6 @@
 [project]
 name = "dcus-automation"
-version = "2026.1.1"
+version = "2026.1.2"
 description = "DjangoCon US Automation"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -25,7 +25,7 @@ dependencies = [
 [tool.bumpver]
 commit = true
 commit_message = ":bookmark: bump version {old_version} -> {new_version}"
-current_version = "2026.1.1"
+current_version = "2026.1.2"
 push = false
 tag = true
 version_pattern = "YYYY.MM.INC1"
