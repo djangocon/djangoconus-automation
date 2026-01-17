@@ -192,6 +192,7 @@ SENDY_ENDPONT_URL = env("SENDY_ENDPONT_URL", default="")
 
 Q_CLUSTER = {
     "bulk": 10,
+    "max_attempts": 1,
     "name": "DjangORM",
     "orm": "default",
     "queue_limit": 50,
