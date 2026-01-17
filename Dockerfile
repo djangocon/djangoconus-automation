@@ -42,6 +42,13 @@ COPY . /src/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --compile
 
+# Download the TailwindCSS CLI
+# Using SQLite memory database and dummy secret key during build
+RUN DATABASE_URL=sqlite://:memory: SECRET_KEY=build-key uv run --frozen -m manage tailwind --skip-checks download_cli
+
+# Build the TailwindCSS styles
+RUN DATABASE_URL=sqlite://:memory: SECRET_KEY=build-key uv run --frozen -m manage tailwind --skip-checks build
+
 # Collect static files for production serving
 RUN DATABASE_URL=sqlite://:memory: SECRET_KEY=build-key uv run --frozen -m manage collectstatic --noinput
 
