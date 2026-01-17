@@ -6,9 +6,11 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "apiron",
+    "blessed",
     "bumpver",
     "django-allauth",
     "django-click",
+    "django-health-check",
     "django-prodserver[gunicorn]",
     "django-q2",
     "django-test-plus",

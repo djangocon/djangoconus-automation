@@ -12,6 +12,7 @@ admin.site.site_header = admin_header
 admin.site.site_title = admin_header
 
 urlpatterns = [
+    path("health/", include("health_check.urls")),
     path(
         "",
         TemplateView.as_view(

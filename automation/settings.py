@@ -58,6 +58,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sites",
     "django.contrib.staticfiles",
+    "health_check",
+    "health_check.db",
+    "health_check.storage",
+    "health_check.contrib.migrations",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -188,6 +192,7 @@ SENDY_ENDPONT_URL = env("SENDY_ENDPONT_URL", default="")
 
 Q_CLUSTER = {
     "bulk": 10,
+    "max_attempts": 1,
     "name": "DjangORM",
     "orm": "default",
     "queue_limit": 50,
