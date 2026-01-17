@@ -9,6 +9,7 @@ dependencies = [
     "bumpver",
     "django-allauth",
     "django-click",
+    "django-health-check",
     "django-prodserver[gunicorn]",
     "django-q2",
     "django-test-plus",
