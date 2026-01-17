@@ -10,11 +10,12 @@ ENV UV_LINK_MODE=copy
 # Set working directory
 WORKDIR /src/
 
-# Install curl for health checks
+# Install curl for health checks and procps for pgrep
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
-    curl
+    curl \
+    procps
 
 # Install Python dependencies using uv
 # Mount only the necessary files (dependency definitions)
@@ -64,5 +65,8 @@ CMD ["/src/start-web.sh"]
 
 # Worker stage for django-q2
 FROM release AS worker
+
+HEALTHCHECK --interval=60s --timeout=30s --start-period=30s --retries=3 \
+    CMD ["/src/healthcheck-worker.sh"]
 
 CMD ["/src/start-worker.sh"]
