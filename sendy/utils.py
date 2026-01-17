@@ -4,7 +4,7 @@ from rich import print
 
 
 class Sendy(Service):
-    domain = settings.SENDY_ENDPONT_URL
+    domain = settings.SENDY_ENDPOINT_URL
 
     brands = JsonEndpoint(
         path="/api/brands/get-brands.php",

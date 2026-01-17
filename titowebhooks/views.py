@@ -22,7 +22,7 @@ def tito_webhook(request):
     )
 
     try:
-        if settings.SENDY_ENDPONT_URL and settings.SENDY_API_KEY:
+        if settings.SENDY_ENDPOINT_URL and settings.SENDY_API_KEY:
             sendy_lists = List.objects.filter(default=True)
             for sendy_list in sendy_lists:
                 async_task(

@@ -28,16 +28,7 @@ SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-37x6xs*$^dve-e2cl2ht
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
-ALLOWED_HOSTS = env.list(
-    "ALLOWED_HOSTS",
-    default=[
-        "attend.djangocon.us",
-        "dcus-automation.fly.dev",
-        "dcus-automation-prod.fly.dev",
-        "9996-66-45-158-82.ngrok.io",
-        "localhost",
-    ],
-)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
@@ -191,7 +182,7 @@ LOGIN_REDIRECT_URL = "/"
 # Send API settings
 
 SENDY_API_KEY = env("SENDY_API_KEY", default="")
-SENDY_ENDPONT_URL = env("SENDY_ENDPONT_URL", default="")
+SENDY_ENDPOINT_URL = env("SENDY_ENDPOINT_URL", default="")
 
 # django-q settings
 
