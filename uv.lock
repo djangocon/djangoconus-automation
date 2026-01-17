@@ -134,7 +134,7 @@ wheels = [
 
 [[package]]
 name = "dcus-automation"
-version = "2026.1.5"
+version = "2026.1.6"
 source = { virtual = "." }
 dependencies = [
     { name = "apiron" },
