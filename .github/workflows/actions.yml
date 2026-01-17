@@ -47,6 +47,8 @@ jobs:
           DATABASE_URL: 'postgres://postgres:postgres@localhost:${{ job.services.postgres.ports[5432] }}/postgres'
           SECRET_KEY: 'for-testing'
         run: |
+          uv run --locked -m manage tailwind --skip-checks download_cli
+          uv run --locked -m manage tailwind --skip-checks build
           uv run --locked -m manage collectstatic --noinput
 
       - name: Test with pytest

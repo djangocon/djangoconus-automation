@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* Use legacy config for content sources */
+@config "../tailwind.config.js";
