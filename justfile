@@ -1,181 +1,155 @@
 set dotenv-load := false
 
-# Define common command prefixes for docker operations
+export JUST_UNSTABLE := "true"
 
-COMPOSE := "docker compose run --rm --no-deps web"
-MANAGE := COMPOSE + " python -m manage"
-
-# List all available commands with groups when running 'just' without arguments
+# Display list of available recipes
 @_default:
-    just --list --list-heading $'Available commands:\n'
+    just --list
 
-# Format this justfile using Just's built-in formatter (requires --unstable flag)
-@fmt:
-    just --fmt --unstable
-
-# Bootstrap the project: install Python tools, create .env file, and build Docker images
-[group('setup')]
-bootstrap:
+# Initialize project with first-time setup
+bootstrap *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
-
-    python -m pip install --upgrade pip uv
 
     if [ ! -f ".env" ]; then
         cp .env-dist .env
         echo ".env created"
     fi
 
-    docker compose build --force-rm
+    just build {{ ARGS }} --force-rm
 
-# Complete initial setup for new developers (runs bootstrap then migrations)
-[group('setup')]
-@setup: bootstrap migrate
+# Build Docker containers with optional arguments
+@build *ARGS:
+    docker compose build {{ ARGS }}
 
-# Update the project: upgrade pip/uv, pull latest images, and rebuild containers
-[group('setup')]
-@update:
-    -pip install --upgrade pip uv
-    -docker compose pull
-    -docker compose build
+# Open a bash shell in the utility container
+@console:
+    docker compose run --rm --no-deps utility /bin/bash
 
-# Build or rebuild the Docker images without cache
-[group('docker')]
-@build:
-    docker compose build
+# Open interactive bash console in database container
+@console-db:
+    docker compose run \
+        --no-deps \
+        --rm \
+        db /bin/bash
 
-# Start all services (web, db, worker) in the foreground
-[group('docker')]
-@up *ARGS:
-    docker compose up {{ ARGS }}
+# Stop and remove Docker containers and networks
+@down *ARGS:
+    docker compose down {{ ARGS }}
 
-# Stop and remove all running containers (preserves volumes)
-[group('docker')]
-@down:
-    docker compose down
+# Format justfile with proper indentation and spacing
+@fmt:
+    just --fmt
 
-# Stop and remove all containers (alias for 'down')
-[group('docker')]
-@stop:
-    docker compose down
+# Run pre-commit hooks on all files
+@lint *ARGS:
+    uv --quiet tool run prek {{ ARGS }} --all-files
 
-# Start the development server (alias for 'up')
-[group('docker')]
-@server *ARGS:
-    just up {{ ARGS }}
+# Update pre-commit hooks to latest versions
+@lint-autoupdate:
+    uv --quiet tool run prek autoupdate
 
-# Start services in detached/background mode
-[group('docker')]
-@start +ARGS="--detach":
-    just server {{ ARGS }}
+# Create or update dependency lock file
+@lock *ARGS:
+    uv lock {{ ARGS }}
 
-# Restart one or more services (e.g., 'just restart web')
-[group('docker')]
-@restart *ARGS:
-    docker compose restart {{ ARGS }}
-
-# Remove all containers, volumes, and locally built images
-[group('docker')]
-@clean:
-    docker compose down -v --rmi local
-
-# View container logs (use -f to follow, --tail N to limit lines)
-[group('docker')]
+# Display logs from Docker containers
 @logs *ARGS:
     docker compose logs {{ ARGS }}
 
-# Follow the last 100 lines of logs in real-time
-[group('docker')]
-@tail:
-    just logs --follow --tail 100
+# Run Django management commands in the utility container
+@manage *ARGS:
+    docker compose run --rm --no-deps utility uv run -m manage {{ ARGS }}
 
-# Open an interactive bash shell inside the web container
-[group('docker')]
-@console:
-    {{ COMPOSE }} /bin/bash
-
-# Apply all pending database migrations
-[group('django')]
+# Run Django migrations to apply database schema changes
 @migrate *ARGS:
-    {{ MANAGE }} migrate --noinput {{ ARGS }}
+    docker compose run --rm --no-deps utility uv run -m manage migrate {{ ARGS }}
 
-# Create new migration files for model changes
-[group('django')]
+# Generate Django migration files from model changes
 @makemigrations *ARGS:
-    {{ MANAGE }} makemigrations --noinput {{ ARGS }}
+    docker compose run --rm --no-deps utility uv run -m manage makemigrations {{ ARGS }}
 
-# Open Django's interactive Python shell with project context
-[group('django')]
-@shell:
-    {{ MANAGE }} shell
-
-# Run Django's built-in development server (bypasses Docker)
-[group('django')]
-@runserver:
-    {{ MANAGE }} runserver
-
-# Create a superuser account for Django admin access
-[group('django')]
-@createsuperuser:
-    {{ MANAGE }} createsuperuser
-
-# Run any Django management command (e.g., 'just run collectstatic')
-[group('django')]
-@run +ARGS="--help":
-    {{ MANAGE }} {{ ARGS }}
-
-# Validate Django project configuration and settings
-[group('django')]
-@check:
-    {{ MANAGE }} check
-
-# Run the test suite with pytest (optionally specify test paths)
-[group('quality')]
-@test *ARGS:
-    {{ COMPOSE }} pytest {{ ARGS }}
-
-# Run pre-commit hooks on all files (formatting, linting, type checks)
-[group('quality')]
-@lint *ARGS:
-    uv --quiet tool run --with pre-commit-uv pre-commit run {{ ARGS }} --all-files
-
-# Generate pinned requirements.txt from requirements.in
-[group('deps')]
-@lock *ARGS:
+# Dump database to file
+@pg_dump file='db.dump':
     docker compose run \
-        --entrypoint= \
-        --rm web \
-            bash -c "uv pip compile \
-                --output-file ./requirements.txt \
-                {{ ARGS }} ./requirements.in"
+        --no-deps \
+        --rm \
+        db pg_dump \
+            --dbname "${DATABASE_URL:=postgres://postgres@db/postgres}" \
+            --file /src/{{ file }} \
+            --format=c \
+            --verbose
 
-# Update all Python dependencies to their latest compatible versions
-[group('deps')]
+# Restore database dump from file
+@pg_restore file='db.dump':
+    docker compose run \
+        --no-deps \
+        --rm \
+        db pg_restore \
+            --dbname "${DATABASE_URL:=postgres://postgres@db/postgres}" \
+            --no-owner \
+            --verbose \
+            /src/{{ file }}
+
+# Pull Docker images
+@pull *ARGS:
+    docker compose pull {{ ARGS }}
+
+# Restart Docker containers
+@restart *ARGS:
+    docker compose restart {{ ARGS }}
+
+# Run a one-off command in the utility container
+@run *ARGS:
+    docker compose run \
+        --no-deps \
+        --rm \
+        utility {{ ARGS }}
+
+# Open Django's interactive Python shell
+@shell:
+    docker compose run --rm --no-deps utility uv run -m manage shell
+
+# Start the application (alias for 'up')
+@start *ARGS="--detach":
+    just up {{ ARGS }}
+
+# Stop running containers
+@stop *ARGS:
+    docker compose stop {{ ARGS }}
+
+# Follow logs from Docker containers
+@tail:
+    just logs --follow
+
+# Run tests with pytest in the utility container
+@test *ARGS:
+    docker compose run \
+        --no-deps \
+        --rm \
+        utility uv run pytest {{ ARGS }}
+
+# Start Docker containers with optional arguments
+@up *ARGS:
+    docker compose up {{ ARGS }}
+
+# Update dependencies and pre-commit hooks
+@update:
+    just upgrade
+    just lint-autoupdate
+
+# Upgrade dependencies in lock file
 @upgrade:
     just lock --upgrade
 
-# Deploy the application to Fly.io production environment
-[group('deploy')]
-@deploy *ARGS:
-    # https://dcus-automation-prod.fly.dev/
-    flyctl deploy --config fly.toml {{ ARGS }}
-
-# SSH into the production server for debugging or maintenance
-[group('deploy')]
-@ssh *ARGS:
-    flyctl ssh console --config fly.toml {{ ARGS }}
-
-# View the current status and health of production deployment
-[group('deploy')]
-@status *ARGS:
-    flyctl status --config fly.toml {{ ARGS }}
-
-# Open the production website in your default browser
-[group('deploy')]
-@open:
-    open https://dcus-automation-prod.fly.dev/
+# Watch for file changes and rebuild Docker services
+@watch *ARGS:
+    docker compose watch {{ ARGS }}
 
 # Update version number using bumpver (--dry for preview, omit for actual bump)
-[group('utils')]
 @bump *ARGS="--dry":
-    bumpver update {{ ARGS }}
+    uvx bumpver update {{ ARGS }}
+
+# Create a superuser account for Django admin access
+@createsuperuser:
+    docker compose run --rm --no-deps utility uv run -m manage createsuperuser

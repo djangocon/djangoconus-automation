@@ -1,69 +1,78 @@
+[project]
+name = "dcus-automation"
+version = "2025.9.6"
+description = "DjangoCon US Automation"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "apiron",
+    "bumpver",
+    "django-allauth",
+    "django-click",
+    "django-prodserver[gunicorn]",
+    "django-q2",
+    "django-test-plus",
+    "django<5.2",
+    "environs[django]",
+    "psycopg[binary]",
+    "pytest",
+    "pytest-django",
+    "rich",
+    "whitenoise",
+]
+
 [tool.bumpver]
 commit = true
 commit_message = ":bookmark: bump version {old_version} -> {new_version}"
 current_version = "2025.9.6"
-push = false   # set to false for CI
+push = false
 tag = true
 version_pattern = "YYYY.MM.INC1"
 
 [tool.bumpver.file_patterns]
 "automation/__init__.py" = [
-    '__version__ = "{version}"',
+    '__version__ = "{version}"'
 ]
-
-[tool.isort]
-honor_noqa = true
-known-first-party = ["automation"]
-profile = "black"
-split-on-trailing-comma=true
+"pyproject.toml" = [
+    'version = "{version}"'
+]
 
 [tool.pytest.ini_options]
-addopts = "-p no:warnings --no-migrations --reuse-db"
 DJANGO_SETTINGS_MODULE = "automation.settings"
-norecursedirs = ".git .ruff_cache automation fixtures media node_modules static templates"
-python_files = "test_*.py"
+addopts = "--nomigrations --reuse-db"
+norecursedirs = ".git* .venv staticfiles templates static"
+python_files = ["test_*.py", "tests.py"]
 
-# https://github.com/charliermarsh/ruff#ruff
 [tool.ruff]
-
-line-length = 120
-select = [
-    'B',  # flake8-bugbear
-    'E',  # pycodestyle errors
-    'F',  # pyflakes
-    'I',  # iSort
-    'W',  # pycodestyle warnings
-    'B9',
-]
-ignore = []
-per-file-ignores = {"*/migrations/*" = ["E501"]}
-
-# Allow autofix for all enabled rules (when `--fix`) is provided.
-fixable = ["A", "B", "C", "D", "E", "F", "I"]
-unfixable = []
-
 exclude = [
-    "*/static/*",
     ".bzr",
     ".direnv",
     ".eggs",
     ".git",
+    ".github",
     ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
     ".ruff_cache",
     ".svn",
     ".tox",
     ".venv",
     "__pypackages__",
     "_build",
-    "buck-out",
     "build",
     "dist",
+    "migrations",
     "node_modules",
-    "venv",
+    "static",
 ]
+line-length = 120
+target-version = "py313"
 
-# Assume Python 3.12.
-target-version = "py312"
+[tool.ruff.lint]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+fixable = ["A", "B", "C", "D", "E", "F", "I"]
+ignore = ["E501", "E741"]
+per-file-ignores = {}
+select = ["B", "B9", "E", "F", "I", "W"]
+unfixable = []
+
+[tool.uv]
+package = false

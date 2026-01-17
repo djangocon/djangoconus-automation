@@ -2,47 +2,69 @@ x-common-settings: &common-settings
   build:
     context: .
     dockerfile: Dockerfile
+    target: release
   depends_on:
-    - db
+    db:
+      condition: service_healthy
   environment:
-    - "USE_TAILWINDCSS_CDN=true"
+    - "ALLOWED_HOSTS=*"
+    - "DATABASE_URL=postgres://postgres@db/postgres"
+    - "DJANGO_DEBUG=true"
+  env_file: .env
+  tty: true
   volumes:
-    - .:/code
-    - django-media:/code/media
-    - django-static:/code/static
+    - .:/src:cache
 
 services:
 
   db:
     environment:
       - "POSTGRES_HOST_AUTH_METHOD=trust"
-    env_file:
-      - ".env"
-    image: "pgautoupgrade/pgautoupgrade:latest"
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "pg_isready",
+        "-d",
+        "postgres"
+      ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    image: "pgautoupgrade/pgautoupgrade:17-alpine"
     init: true
     user: postgres
     volumes:
+      - .:/src:cache
       - postgres-data:/var/lib/postgresql/data/
+
+  utility:
+    <<: *common-settings
+    command: [
+      "uv",
+      "run",
+      "-m",
+      "manage",
+      "--version"
+    ]
+    entrypoint: ["/src/compose-entrypoint.sh"]
 
   web:
     <<: *common-settings
-    command: ["python", "-m", "manage", "runserver", "0.0.0.0:8000", "--skip-checks"]
-    entrypoint: /code/docker-entrypoint.sh
-    env_file:
-      - ".env"
+    command: ["/src/start-dev.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "./healthcheck-web.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     init: true
     ports:
       - "8000:8000"
-    tty: true
 
   worker:
     <<: *common-settings
-    command: ["python", "-m", "manage", "qcluster", "--skip-checks"]
-    env_file:
-      - ".env"
+    command: ["uv", "run", "-m", "manage", "qcluster", "--skip-checks"]
     init: true
 
 volumes:
-  django-media:
-  django-static:
   postgres-data:
