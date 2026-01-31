@@ -33,11 +33,12 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
     default=[
-        "https://*.fly.dev",
-        "https://9996-66-45-158-82.ngrok.io",
+        "https://automation.defna.org",
         "http://localhost/",
     ],
 )
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 

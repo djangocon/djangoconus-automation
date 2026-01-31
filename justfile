@@ -153,3 +153,31 @@ bootstrap *ARGS:
 # Create a superuser account for Django admin access
 @createsuperuser:
     docker compose run --rm --no-deps utility uv run -m manage createsuperuser
+
+# Dump Fly.io Postgres database to local file
+flyctl-pg-dump file='dcus-automation-db.dump' db_app='dcus-automation-db' prod_app='dcus-automation-prod':
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    echo "Fetching DATABASE_URL from {{ prod_app }}..."
+    DATABASE_URL=$(flyctl ssh console -a {{ prod_app }} -C "printenv DATABASE_URL")
+
+    # Parse connection details from DATABASE_URL
+    # Format: postgres://user:password@host:port/database?sslmode=disable
+    DB_USER=$(echo "$DATABASE_URL" | sed -n 's|postgres://\([^:]*\):.*|\1|p')
+    DB_PASS=$(echo "$DATABASE_URL" | sed -n 's|postgres://[^:]*:\([^@]*\)@.*|\1|p')
+    DB_HOST=$(echo "$DATABASE_URL" | sed -n 's|.*@\([^:]*\):.*|\1|p')
+    DB_NAME=$(echo "$DATABASE_URL" | sed -n 's|.*/\([^?]*\).*|\1|p')
+
+    echo "Creating dump on {{ db_app }}..."
+    flyctl ssh console -a {{ db_app }} -C "sh -c 'PGPASSWORD=$DB_PASS pg_dump -Fc -h $DB_HOST -p 5433 -U $DB_USER $DB_NAME > /tmp/{{ file }}'"
+
+    echo "Downloading dump file..."
+    rm -f {{ file }}
+    flyctl sftp get -a {{ db_app }} /tmp/{{ file }} {{ file }}
+
+    echo "Cleaning up remote file..."
+    flyctl ssh console -a {{ db_app }} -C "rm /tmp/{{ file }}"
+
+    echo "Done! Backup saved to {{ file }}"
+    ls -la {{ file }}
