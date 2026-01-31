@@ -78,12 +78,6 @@ If you don't have Just installed:
 - `just lock` - Generate pinned requirements.txt from requirements.in
 - `just upgrade` - Update all Python dependencies to their latest compatible versions
 
-### Deployment & Production
-- `just deploy` - Deploy the application to Fly.io production environment
-- `just ssh` - SSH into the production server for debugging or maintenance
-- `just status` - View the current status and health of production deployment
-- `just open` - Open the production website in your default browser
-
 ### Utilities
 - `just bump [--dry]` - Update version number using bumpver (--dry for preview, omit for actual bump)
 
@@ -105,18 +99,9 @@ If you don't have Just installed:
 
 ## Deployment
 
-### Automatic Deployments
-
 Deployments happen automatically when changes are pushed to the `main` branch via GitHub Actions.
 
-### Manual Deployment
-
-- `just deploy` - Deploy to production (Fly.io)
-- `just ssh` - SSH into production server
-- `just status` - Check production deployment status
-- `just open` - Open production site in browser
-
-Production URL: https://dcus-automation-prod.fly.dev
+Production URL: https://automation.defna.org
 
 ## Configuration
 
@@ -134,4 +119,4 @@ Edit `.env` file to configure:
 - **Task Queue**: django-q2 for background processing
 - **Frontend**: Tailwind CSS with minimal JavaScript
 - **Authentication**: django-allauth with GitHub OAuth
-- **Deployment**: Fly.io with Gunicorn WSGI server
+- **Deployment**: Gunicorn WSGI server
