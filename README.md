@@ -78,12 +78,6 @@ If you don't have Just installed:
 - `just lock` - Generate pinned requirements.txt from requirements.in
 - `just upgrade` - Update all Python dependencies to their latest compatible versions
 
-### Deployment & Production
-- `just deploy` - Deploy the application to Fly.io production environment
-- `just ssh` - SSH into the production server for debugging or maintenance
-- `just status` - View the current status and health of production deployment
-- `just open` - Open the production website in your default browser
-
 ### Utilities
 - `just bump [--dry]` - Update version number using bumpver (--dry for preview, omit for actual bump)
 
@@ -105,18 +99,9 @@ If you don't have Just installed:
 
 ## Deployment
 
-### Automatic Deployments
-
 Deployments happen automatically when changes are pushed to the `main` branch via GitHub Actions.
 
-### Manual Deployment
-
-- `just deploy` - Deploy to production (Fly.io)
-- `just ssh` - SSH into production server
-- `just status` - Check production deployment status
-- `just open` - Open production site in browser
-
-Production URL: https://dcus-automation-prod.fly.dev
+Production URL: https://automation.defna.org
 
 ## Configuration
 
@@ -127,6 +112,46 @@ Edit `.env` file to configure:
 - **Slack**: `SLACK_OAUTH_TOKEN` for notifications
 - **Debug**: `DJANGO_DEBUG=True` for development
 
+## Setting up GitHub OAuth
+
+### 1. Create a GitHub OAuth App
+
+1. Go to GitHub → Settings → Developer settings → OAuth Apps → **New OAuth App**
+2. Fill in:
+   - **Application name**: DjangoCon US Automation (or your app name)
+   - **Homepage URL**: `https://your-domain.com`
+   - **Authorization callback URL**: `https://your-domain.com/accounts/github/login/callback/`
+3. Click **Register application**
+4. Copy the **Client ID**
+5. Click **Generate a new client secret** and copy it
+
+### 2. Configure Environment Variables
+
+Add these to your environment variables (`.env` or your deployment platform):
+
+```
+GITHUB_CLIENT_ID=your_client_id_here
+GITHUB_CLIENT_SECRET=your_client_secret_here
+```
+
+### 3. Add the SocialApp in Django Admin
+
+1. Go to `/admin/`
+2. Navigate to **Social applications** → **Add**
+3. Fill in:
+   - **Provider**: GitHub
+   - **Name**: GitHub
+   - **Client id**: (paste from GitHub)
+   - **Secret key**: (paste from GitHub)
+   - **Sites**: Add your site (make sure Site ID 1 exists with correct domain)
+4. Save
+
+### 4. Verify Site Configuration
+
+In Django Admin → Sites, ensure the site with ID 1 has:
+- **Domain name**: `your-domain.com`
+- **Display name**: DjangoCon US Automation (or similar)
+
 ## Architecture
 
 - **Backend**: Django 4.2.11 LTS with Python 3.12
@@ -134,4 +159,4 @@ Edit `.env` file to configure:
 - **Task Queue**: django-q2 for background processing
 - **Frontend**: Tailwind CSS with minimal JavaScript
 - **Authentication**: django-allauth with GitHub OAuth
-- **Deployment**: Fly.io with Gunicorn WSGI server
+- **Deployment**: Gunicorn WSGI server

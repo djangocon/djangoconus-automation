@@ -33,11 +33,12 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
     default=[
-        "https://*.fly.dev",
-        "https://9996-66-45-158-82.ngrok.io",
+        "https://automation.defna.org",
         "http://localhost/",
     ],
 )
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 
@@ -176,9 +177,16 @@ AUTHENTICATION_BACKENDS = [
 
 # Django Allauth settings
 
+ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USERNAME_REQUIRED = False
 LOGIN_REDIRECT_URL = "/"
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 # Send API settings
 
