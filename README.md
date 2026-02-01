@@ -119,8 +119,8 @@ Edit `.env` file to configure:
 1. Go to GitHub → Settings → Developer settings → OAuth Apps → **New OAuth App**
 2. Fill in:
    - **Application name**: DjangoCon US Automation (or your app name)
-   - **Homepage URL**: `https://your-domain.com`
-   - **Authorization callback URL**: `https://your-domain.com/accounts/github/login/callback/`
+   - **Homepage URL**: `https://automation.defna.org`
+   - **Authorization callback URL**: `https://automation.defna.org/accounts/github/login/callback/`
 3. Click **Register application**
 4. Copy the **Client ID**
 5. Click **Generate a new client secret** and copy it
@@ -140,7 +140,7 @@ Edit `.env` file to configure:
 ### 3. Verify Site Configuration
 
 In Django Admin → Sites, ensure the site with ID 1 has:
-- **Domain name**: `your-domain.com`
+- **Domain name**: `automation.defna.org`
 - **Display name**: DjangoCon US Automation (or similar)
 
 ## Architecture
