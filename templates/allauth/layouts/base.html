@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}
+    {% block head_title %}{% endblock head_title %} - DjangoCon US
+{% endblock title %}
+
+{% block content %}
+    <div class="max-w-md mx-auto bg-green-800/50 rounded-lg p-8 shadow-lg">
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="p-3 rounded {% if message.tags %}bg-{{ message.tags }}-600{% else %}bg-blue-600{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block body %}
+            {% block inner_content %}
+            {% endblock inner_content %}
+        {% endblock body %}
+    </div>
+{% endblock content %}
