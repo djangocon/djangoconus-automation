@@ -33,7 +33,7 @@ tag = true
 version_pattern = "YYYY.MM.INC1"
 
 [tool.bumpver.file_patterns]
-"automation/__init__.py" = [
+"config/__init__.py" = [
     '__version__ = "{version}"'
 ]
 "pyproject.toml" = [
@@ -41,7 +41,7 @@ version_pattern = "YYYY.MM.INC1"
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "automation.settings"
+DJANGO_SETTINGS_MODULE = "config.settings"
 addopts = "--nomigrations --reuse-db"
 norecursedirs = ".git* .venv staticfiles templates static"
 python_files = ["test_*.py", "tests.py"]
