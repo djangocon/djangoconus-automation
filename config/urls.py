@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
 
-from automation import __version__
+from config import __version__
 from tickets.views import claim_ticket_view, create_tickets_view, tickets_info, tickets_list_view
 from titowebhooks.views import tito_webhook
 
