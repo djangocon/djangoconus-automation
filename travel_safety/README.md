@@ -27,7 +27,7 @@ Stores all attendee travel information with the following key fields:
 
 **Personal Information:**
 - `name` - Full name
-- `email` - Email address  
+- `email` - Email address
 - `phone` - Phone number
 - `preferred_contact` - Contact method preference (WhatsApp, Signal, SMS)
 
@@ -39,7 +39,7 @@ Stores all attendee travel information with the following key fields:
 
 **Departure Information (Optional):**
 - `departure_airline` - Airline name
-- `departure_flight_number` - Flight number  
+- `departure_flight_number` - Flight number
 - `departure_time` - Departure date/time (US/Chicago timezone)
 - `departure_airport` - Airport code/name
 - `departure_destination` - Final destination
@@ -97,7 +97,7 @@ The Django admin provides comprehensive tools for organizers:
 - **Input Validation**: Server-side validation for all fields
 - **Data Sanitization**: Proper escaping in templates
 - **Access Control**: Admin interface restricted to staff users
-- **Permission Levels**: 
+- **Permission Levels**:
   - Staff: Can view and modify registrations
   - Superuser: Can delete registrations
 
@@ -158,7 +158,7 @@ just lint  # Run all pre-commit hooks
 just check # Run Django system checks
 ```
 
-### Database Operations  
+### Database Operations
 ```bash
 just makemigrations  # Create migrations
 just migrate         # Apply migrations
