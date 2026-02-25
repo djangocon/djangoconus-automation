@@ -1,7 +1,10 @@
+import base64
+import hashlib
+import hmac
 import json
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django_q.tasks import async_task
 from rich import print
@@ -10,15 +13,33 @@ from sendy.models import List
 from titowebhooks.models import TitoWebhookEvent
 
 
+def verify_tito_signature(payload_body: bytes, signature: str, security_token: str) -> bool:
+    computed = base64.b64encode(
+        hmac.new(
+            security_token.encode(),
+            payload_body,
+            hashlib.sha256,
+        ).digest()
+    ).decode().strip()
+    return hmac.compare_digest(computed, signature)
+
+
 @csrf_exempt
 def tito_webhook(request):
-    payload = json.loads(request.body.decode())
+    body = request.body
+    signature = request.headers.get("tito-signature", "")
+
+    if settings.TITO_SECURITY_TOKEN:
+        if not signature or not verify_tito_signature(body, signature, settings.TITO_SECURITY_TOKEN):
+            return HttpResponseForbidden("Invalid signature")
+
+    payload = json.loads(body.decode())
     TitoWebhookEvent.objects.create(
         payload=payload,
-        payload_text=request.body.decode(),
+        payload_text=body.decode(),
         trigger=request.headers.get("x-webhook-name"),
         tito_webhook_endpoint_id=request.headers.get("x-webhook-endpoint-id"),
-        tito_signature=request.headers.get("tito-signature"),
+        tito_signature=signature,
     )
 
     try:

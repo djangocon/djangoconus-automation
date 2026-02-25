@@ -223,6 +223,10 @@ Q_CLUSTER = {
 
 SLACK_OAUTH_TOKEN = env("SLACK_OAUTH_TOKEN", default="")
 
+# Tito settings
+
+TITO_SECURITY_TOKEN = env("TITO_SECURITY_TOKEN", default="")
+
 # Tailwind CSS settings
 
 TAILWIND_CLI_AUTOMATIC_DOWNLOAD = env.bool("TAILWIND_CLI_AUTOMATIC_DOWNLOAD", default=True)
