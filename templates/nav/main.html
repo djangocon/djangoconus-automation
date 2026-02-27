@@ -1,0 +1,20 @@
+<nav class="w-full">
+    {% for item in items %}
+        {% if item.items %}
+            <div class="space-y-2 text-2xl {% if not forloop.first %}mt-4 pt-4 border-t border-green-700{% endif %}">
+                <h3 class="mb-4 text-3xl font-semibold text-green-100">{{ item.title }}</h3>
+                {% for child in item.items %}
+                    <div>
+                        <a class="p-2 text-yellow-300 underline hover:text-yellow-200" href="{{ child.url }}">{{ child.title }}</a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% if not item.anonymous_only or not request.user.is_authenticated %}
+                <div class="text-2xl">
+                    <a class="p-2 text-yellow-300 underline" href="{{ item.url }}">{{ item.title }}</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+</nav>

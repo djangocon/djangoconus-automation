@@ -14,13 +14,17 @@ from titowebhooks.models import TitoWebhookEvent
 
 
 def verify_tito_signature(payload_body: bytes, signature: str, security_token: str) -> bool:
-    computed = base64.b64encode(
-        hmac.new(
-            security_token.encode(),
-            payload_body,
-            hashlib.sha256,
-        ).digest()
-    ).decode().strip()
+    computed = (
+        base64.b64encode(
+            hmac.new(
+                security_token.encode(),
+                payload_body,
+                hashlib.sha256,
+            ).digest()
+        )
+        .decode()
+        .strip()
+    )
     return hmac.compare_digest(computed, signature)
 
 

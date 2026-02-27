@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "django.contrib.staticfiles",
     "django_prodserver",
+    "django_simple_nav",
     "django_tailwind_cli",
     "health_check",
     "health_check.db",
