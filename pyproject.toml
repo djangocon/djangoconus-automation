@@ -13,6 +13,7 @@ dependencies = [
     "django-health-check",
     "django-prodserver[gunicorn]",
     "django-q2",
+    "django-simple-nav",
     "django-tailwind-cli",
     "django-test-plus",
     "django<5.2",

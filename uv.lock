@@ -146,6 +146,7 @@ dependencies = [
     { name = "django-health-check" },
     { name = "django-prodserver", extra = ["gunicorn"] },
     { name = "django-q2" },
+    { name = "django-simple-nav" },
     { name = "django-tailwind-cli" },
     { name = "django-test-plus" },
     { name = "environs", extra = ["django"] },
@@ -167,6 +168,7 @@ requires-dist = [
     { name = "django-health-check" },
     { name = "django-prodserver", extras = ["gunicorn"] },
     { name = "django-q2" },
+    { name = "django-simple-nav" },
     { name = "django-tailwind-cli" },
     { name = "django-test-plus" },
     { name = "environs", extras = ["django"] },
@@ -298,6 +300,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/fc/e6/21375bed54a4be1339f6ee31e4173d361d457dbe91db7bff130b52566126/django_q2-1.9.0.tar.gz", hash = "sha256:ef7facca96fae9c11ddf2c5252d3817975c7a9a6d989fa0d65487d8823d57799", size = 77218, upload-time = "2025-12-04T22:11:29.336Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3e/b7/8282f9815fc9df3187d9303a6f54e0388e02742255dee1fed7b4019a03ae/django_q2-1.9.0-py3-none-any.whl", hash = "sha256:4eded27644b0ffb291839c9f9c12fea6c0dec63ebd891fa6881b0b446098a49d", size = 89615, upload-time = "2025-12-04T22:11:28.079Z" },
+]
+
+[[package]]
+name = "django-simple-nav"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7f/96/ca52735a966431b6797ee7240abf71153e7d0ab104dc61d9c5abbf5f696f/django_simple_nav-0.14.0.tar.gz", hash = "sha256:0cece60bc0692adc2dbda651dcd201e7ddcf2574601f9f08044590a7f1c502f6", size = 10198, upload-time = "2026-02-26T04:59:31.792Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/04/3f038405dc97e2c91f0784418d2cf1aee35723680ac25719a6404d261b7b/django_simple_nav-0.14.0-py3-none-any.whl", hash = "sha256:743d23516ba41da9097be1242d180b1181a6f8afd22501c008be391968756041", size = 12372, upload-time = "2026-02-26T04:59:30.646Z" },
 ]
 
 [[package]]
