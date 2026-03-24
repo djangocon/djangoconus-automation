@@ -11,6 +11,13 @@ NAV_ITEMS = [
         ],
     ),
     NavGroup(
+        title="Thunderdome",
+        permissions=["is_staff"],
+        items=[
+            NavItem(title="Submissions", url="thunderdome_submissions"),
+        ],
+    ),
+    NavGroup(
         title="Sprints",
         permissions=["is_staff"],
         items=[
