@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class SendyConfig(AppConfig):
+class EmailOctopusConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "sendy"
+    name = "emailoctopus"

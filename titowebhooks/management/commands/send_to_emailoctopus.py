@@ -2,7 +2,7 @@ import djclick as click
 from django_q.tasks import async_task
 from rich import print
 
-from sendy.models import List
+from emailoctopus.models import List
 from titowebhooks.models import TitoWebhookEvent
 
 
@@ -14,7 +14,7 @@ from titowebhooks.models import TitoWebhookEvent
     help="Primary keys of TitoWebhookEvent objects to process. If not provided, processes all events.",
 )
 def command(pks):
-    """Send TitoWebhookEvent data to Sendy mailing lists."""
+    """Send TitoWebhookEvent data to Email Octopus mailing lists."""
     if pks:
         queryset = TitoWebhookEvent.objects.filter(pk__in=pks)
         print(f"Processing {queryset.count()} events with PKs: {list(pks)}")
@@ -22,18 +22,18 @@ def command(pks):
         queryset = TitoWebhookEvent.objects.all()
         print(f"Processing all {queryset.count()} events")
 
-    sendy_lists = List.objects.filter(default=True)
+    eo_lists = List.objects.filter(default=True)
 
-    if not sendy_lists.exists():
-        print("[red]No default Sendy lists found![/red]")
+    if not eo_lists.exists():
+        print("[red]No default Email Octopus lists found![/red]")
         return
 
-    print(f"Found {sendy_lists.count()} default Sendy list(s)")
+    print(f"Found {eo_lists.count()} default Email Octopus list(s)")
 
     success_count = 0
     error_count = 0
 
-    for sendy_list in sendy_lists:
+    for eo_list in eo_lists:
         for event in queryset:
             try:
                 if "email" not in event.payload:
@@ -46,13 +46,13 @@ def command(pks):
                 name = f"{first_name} {last_name}".strip()
 
                 async_task(
-                    "sendy.utils.send_to_sendy",
+                    "emailoctopus.utils.send_to_emailoctopus",
                     email=email,
                     name=name,
-                    campaign_id=sendy_list.list_id,
+                    list_id=eo_list.list_id,
                 )
 
-                print(f"[green]Queued: {email} -> {sendy_list.name}[/green]")
+                print(f"[green]Queued: {email} -> {eo_list.name}[/green]")
                 success_count += 1
 
             except Exception as e:
