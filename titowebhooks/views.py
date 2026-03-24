@@ -79,8 +79,8 @@ def _get_answer(answers, question_id):
 
 def _extract_sprint_tickets():
     events = TitoWebhookEvent.objects.filter(trigger="ticket.completed")
-    sprint_tickets = []
-    seen_emails = {}
+    # Collect per email+release, keeping most recent
+    by_email_release = {}
 
     for event in events:
         payload = event.payload
@@ -97,23 +97,50 @@ def _extract_sprint_tickets():
 
         answers = payload.get("answers", [])
         email = payload.get("email", "")
+        created_at = payload.get("created_at", "")
 
-        # Keep the most recent ticket per email+release combo
         key = (email, release_title)
-        ticket_data = {
-            "name": payload.get("name", ""),
-            "email": email,
-            "release_title": release_title,
-            "leading": _get_answer(answers, LEADER_QUESTION_ID),
-            "joining": _get_answer(answers, JOINER_QUESTION_ID),
-            "created_at": payload.get("created_at", ""),
-        }
+        if key not in by_email_release or created_at > by_email_release[key]["created_at"]:
+            by_email_release[key] = {
+                "name": payload.get("name", ""),
+                "email": email,
+                "release_title": release_title,
+                "leading": _get_answer(answers, LEADER_QUESTION_ID),
+                "joining": _get_answer(answers, JOINER_QUESTION_ID),
+                "created_at": created_at,
+            }
 
-        if key not in seen_emails or ticket_data["created_at"] > seen_emails[key]["created_at"]:
-            seen_emails[key] = ticket_data
+    # Consolidate to one row per person
+    people = {}
+    for ticket in by_email_release.values():
+        email = ticket["email"]
+        if email not in people:
+            people[email] = {
+                "name": ticket["name"],
+                "email": email,
+                "thursday": False,
+                "thursday_leading": "",
+                "thursday_joining": "",
+                "friday": False,
+                "friday_leading": "",
+                "friday_joining": "",
+                "created_at": ticket["created_at"],
+            }
 
-    sprint_tickets = sorted(seen_emails.values(), key=lambda t: t["created_at"], reverse=True)
-    return sprint_tickets
+        if ticket["created_at"] > people[email]["created_at"]:
+            people[email]["created_at"] = ticket["created_at"]
+            people[email]["name"] = ticket["name"]
+
+        if "Thursday" in ticket["release_title"]:
+            people[email]["thursday"] = True
+            people[email]["thursday_leading"] = ticket["leading"]
+            people[email]["thursday_joining"] = ticket["joining"]
+        elif "Friday" in ticket["release_title"]:
+            people[email]["friday"] = True
+            people[email]["friday_leading"] = ticket["leading"]
+            people[email]["friday_joining"] = ticket["joining"]
+
+    return sorted(people.values(), key=lambda t: t["created_at"], reverse=True)
 
 
 @staff_member_required
@@ -124,24 +151,39 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="sprint_tickets.csv"'
         writer = csv.writer(response)
-        writer.writerow(["Name", "Email", "Sprint Day", "Leading", "Joining", "Ticket Date"])
+        writer.writerow(
+            [
+                "Name",
+                "Email",
+                "Thursday",
+                "Thursday Leading",
+                "Thursday Joining",
+                "Friday",
+                "Friday Leading",
+                "Friday Joining",
+                "Ticket Date",
+            ]
+        )
         for ticket in sprint_tickets:
             writer.writerow(
                 [
                     ticket["name"],
                     ticket["email"],
-                    ticket["release_title"],
-                    ticket["leading"],
-                    ticket["joining"],
+                    "Yes" if ticket["thursday"] else "",
+                    ticket["thursday_leading"],
+                    ticket["thursday_joining"],
+                    "Yes" if ticket["friday"] else "",
+                    ticket["friday_leading"],
+                    ticket["friday_joining"],
                     ticket["created_at"],
                 ]
             )
         return response
 
-    leaders_count = sum(1 for t in sprint_tickets if t["leading"] == "Yes")
-    joiners_count = sum(1 for t in sprint_tickets if t["joining"] == "Yes")
-    thursday_count = sum(1 for t in sprint_tickets if "Thursday" in t["release_title"])
-    friday_count = sum(1 for t in sprint_tickets if "Friday" in t["release_title"])
+    leaders_count = sum(1 for t in sprint_tickets if t["thursday_leading"] == "Yes" or t["friday_leading"] == "Yes")
+    joiners_count = sum(1 for t in sprint_tickets if t["thursday_joining"] == "Yes" or t["friday_joining"] == "Yes")
+    thursday_count = sum(1 for t in sprint_tickets if t["thursday"])
+    friday_count = sum(1 for t in sprint_tickets if t["friday"])
 
     context = {
         "sprint_tickets": sprint_tickets,
