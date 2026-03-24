@@ -1,6 +1,5 @@
 from django_simple_nav.nav import Nav, NavGroup, NavItem
 
-
 NAV_ITEMS = [
     NavGroup(
         title="Ticket Management",
@@ -9,6 +8,13 @@ NAV_ITEMS = [
             NavItem(title="Create Tickets", url="create_tickets", permissions=["is_staff"]),
             NavItem(title="View All Tickets", url="tickets_list", permissions=["is_staff"]),
             NavItem(title="Ticket Info", url="tickets_info"),
+        ],
+    ),
+    NavGroup(
+        title="Sprints",
+        permissions=["is_staff"],
+        items=[
+            NavItem(title="Sprint Tickets", url="sprint_tickets"),
         ],
     ),
     NavGroup(

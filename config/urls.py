@@ -4,7 +4,7 @@ from django.views.generic import TemplateView
 
 from config import __version__
 from tickets.views import claim_ticket_view, create_tickets_view, tickets_info, tickets_list_view
-from titowebhooks.views import tito_webhook
+from titowebhooks.views import sprint_tickets_view, tito_webhook
 
 admin_header = f"DjangoCon US Automation v{__version__}"
 admin.site.enable_nav_sidebar = False
@@ -28,5 +28,6 @@ urlpatterns = [
     path("tickets/create/", create_tickets_view, name="create_tickets"),
     path("tickets/list/", tickets_list_view, name="tickets_list"),
     path("tickets/claim/", claim_ticket_view, name="claim_ticket"),
+    path("sprints/tickets/", sprint_tickets_view, name="sprint_tickets"),
     path("travel-safety/", include("travel_safety.urls")),
 ]

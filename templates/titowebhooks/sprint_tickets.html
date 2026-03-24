@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Sprint Tickets - DjangoCon US Automation{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-6xl">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Sprint Tickets</h1>
+            <a href="?format=csv"
+               class="py-2 px-4 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                Download CSV
+            </a>
+        </div>
+
+        <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
+            <div class="grid grid-cols-5 gap-4 text-center">
+                <div>
+                    <p class="text-2xl font-bold">{{ total_count }}</p>
+                    <p class="text-sm text-gray-300">Total</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-yellow-400">{{ leaders_count }}</p>
+                    <p class="text-sm text-gray-300">Leaders</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-blue-400">{{ joiners_count }}</p>
+                    <p class="text-sm text-gray-300">Joiners</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-green-400">{{ thursday_count }}</p>
+                    <p class="text-sm text-gray-300">Thursday</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-green-400">{{ friday_count }}</p>
+                    <p class="text-sm text-gray-300">Friday</p>
+                </div>
+            </div>
+        </div>
+
+        {% if sprint_tickets %}
+            <div class="overflow-x-auto">
+                <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
+                    <thead class="bg-green-700 bg-opacity-50">
+                        <tr>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Name
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Email
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Sprint Day
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-center uppercase">
+                                Leading
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-center uppercase">
+                                Joining
+                            </th>
+                            <th class="py-3 px-6 text-xs font-medium tracking-wider text-left uppercase">
+                                Ticket Date
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-green-700">
+                        {% for ticket in sprint_tickets %}
+                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-30">
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    {{ ticket.name }}
+                                </td>
+                                <td class="py-4 px-6 text-sm whitespace-nowrap">
+                                    <span class="text-blue-300">{{ ticket.email }}</span>
+                                </td>
+                                <td class="py-4 px-6 text-sm whitespace-nowrap">
+                                    {{ ticket.release_title }}
+                                </td>
+                                <td class="py-4 px-6 text-center whitespace-nowrap">
+                                    {% if ticket.leading == "Yes" %}
+                                        <span class="inline-flex py-1 px-3 text-xs font-semibold leading-5 text-yellow-200 bg-yellow-800 rounded-full">
+                                            Yes
+                                        </span>
+                                    {% else %}
+                                        <span class="text-gray-500">No</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-4 px-6 text-center whitespace-nowrap">
+                                    {% if ticket.joining == "Yes" %}
+                                        <span class="inline-flex py-1 px-3 text-xs font-semibold leading-5 text-blue-200 bg-blue-800 rounded-full">
+                                            Yes
+                                        </span>
+                                    {% else %}
+                                        <span class="text-gray-500">No</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-4 px-6 text-sm whitespace-nowrap">
+                                    {{ ticket.created_at }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="py-12 text-center bg-green-800 bg-opacity-30 rounded-lg">
+                <p class="text-xl text-gray-300">No sprint tickets found.</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
