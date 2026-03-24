@@ -1,47 +1,68 @@
 <p class="mb-2 text-sm text-gray-300">{{ submissions|length }} submission{{ submissions|length|pluralize }}</p>
 
 {% if submissions %}
-    <div class="overflow-x-auto">
-        <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
-            <thead class="bg-green-700 bg-opacity-50">
-                <tr>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">
-                        <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == 'id' %}-id{% else %}id{% endif %}'); return false;">
-                            ID{% if current_sort == 'id' %} &#9650;{% elif current_sort == '-id' %} &#9660;{% endif %}
-                        </a>
-                    </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">
-                        <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == 'title' %}-title{% else %}title{% endif %}'); return false;">
-                            Title{% if current_sort == 'title' %} &#9650;{% elif current_sort == '-title' %} &#9660;{% endif %}
-                        </a>
-                    </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Speakers</th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
-                        <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-duration' %}duration{% else %}-duration{% endif %}'); return false;">
-                            Duration{% if current_sort == 'duration' %} &#9650;{% elif current_sort == '-duration' %} &#9660;{% endif %}
-                        </a>
-                    </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
-                        <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-reviews' %}reviews{% else %}-reviews{% endif %}'); return false;">
-                            Reviews{% if current_sort == 'reviews' %} &#9650;{% elif current_sort == '-reviews' %} &#9660;{% endif %}
-                        </a>
-                    </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
-                        <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-mean' %}mean{% else %}-mean{% endif %}'); return false;">
-                            Mean{% if current_sort == 'mean' %} &#9650;{% elif current_sort == '-mean' %} &#9660;{% endif %}
-                        </a>
-                    </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Pretalx</th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Decision</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-green-700">
-                {% for submission in submissions %}
-                    {% include "thunderdome/_submission_row.html" %}
+    <form id="bulk-action-form" method="post" action="{% url 'thunderdome_bulk_state' %}">
+        {% csrf_token %}
+        <div class="flex gap-3 items-center mb-3">
+            <select name="bulk_state" class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
+                <option value="">-- Set decision --</option>
+                {% for value, label in states %}
+                    <option value="{{ value }}">{{ label }}</option>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </select>
+            <button type="submit"
+                    class="py-1 px-3 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700">
+                Apply
+            </button>
+            <span class="text-sm text-gray-400" id="selected-count"></span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
+                <thead class="bg-green-700 bg-opacity-50">
+                    <tr>
+                        <th class="py-3 px-3 w-8">
+                            <input type="checkbox" id="select-all" class="rounded"
+                                   onchange="document.querySelectorAll('input[name=selected]').forEach(c => c.checked = this.checked); updateSelectedCount();">
+                        </th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">
+                            <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == 'id' %}-id{% else %}id{% endif %}'); return false;">
+                                ID{% if current_sort == 'id' %} &#9650;{% elif current_sort == '-id' %} &#9660;{% endif %}
+                            </a>
+                        </th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">
+                            <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == 'title' %}-title{% else %}title{% endif %}'); return false;">
+                                Title{% if current_sort == 'title' %} &#9650;{% elif current_sort == '-title' %} &#9660;{% endif %}
+                            </a>
+                        </th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Speakers</th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
+                            <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-duration' %}duration{% else %}-duration{% endif %}'); return false;">
+                                Duration{% if current_sort == 'duration' %} &#9650;{% elif current_sort == '-duration' %} &#9660;{% endif %}
+                            </a>
+                        </th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
+                            <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-reviews' %}reviews{% else %}-reviews{% endif %}'); return false;">
+                                Reviews{% if current_sort == 'reviews' %} &#9650;{% elif current_sort == '-reviews' %} &#9660;{% endif %}
+                            </a>
+                        </th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
+                            <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-mean' %}mean{% else %}-mean{% endif %}'); return false;">
+                                Mean{% if current_sort == 'mean' %} &#9650;{% elif current_sort == '-mean' %} &#9660;{% endif %}
+                            </a>
+                        </th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Pretalx</th>
+                        <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Decision</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-green-700">
+                    {% for submission in submissions %}
+                        {% include "thunderdome/_submission_row.html" %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
 {% else %}
     <div class="py-12 text-center bg-green-800 bg-opacity-30 rounded-lg">
         <p class="text-xl text-gray-300">No submissions found.</p>

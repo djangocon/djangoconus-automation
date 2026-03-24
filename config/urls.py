@@ -4,6 +4,7 @@ from django.views.generic import TemplateView
 
 from config import __version__
 from thunderdome.views import (
+    bulk_set_state_view,
     submission_detail_view,
     submission_page_view,
     submission_set_state_view,
@@ -37,6 +38,7 @@ urlpatterns = [
     path("tickets/claim/", claim_ticket_view, name="claim_ticket"),
     path("sprints/tickets/", sprint_tickets_view, name="sprint_tickets"),
     path("thunderdome/", submissions_view, name="thunderdome_submissions"),
+    path("thunderdome/bulk-state/", bulk_set_state_view, name="thunderdome_bulk_state"),
     path("thunderdome/sync/", sync_from_pretalx_view, name="thunderdome_sync"),
     path("thunderdome/<int:pk>/set-state/", submission_set_state_view, name="thunderdome_submission_set_state"),
     path("thunderdome/<str:pretalx_id>/", submission_page_view, name="thunderdome_submission_page"),

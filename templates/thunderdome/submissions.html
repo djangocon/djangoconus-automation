@@ -15,6 +15,14 @@
             document.getElementById('sort-input').value = value;
             htmx.trigger('#filter-form', 'change');
         }
+
+        function updateSelectedCount() {
+            var count = document.querySelectorAll('input[name=selected]:checked').length;
+            var el = document.getElementById('selected-count');
+            if (el) {
+                el.textContent = count ? count + ' selected' : '';
+            }
+        }
     </script>
 {% endblock extra_head %}
 
@@ -49,7 +57,7 @@
               hx-push-url="true">
             <input type="hidden" name="sort" id="sort-input" value="{{ current_sort }}">
             <div class="flex-grow">
-                <label class="block mb-1 text-xs uppercase text-gray-300" for="q">Search</label>
+                <label class="block mb-1 text-xs text-gray-300 uppercase" for="q">Search</label>
                 <input type="text"
                        name="q"
                        id="q"
@@ -58,7 +66,7 @@
                        class="py-1 px-2 w-full text-sm text-gray-900 rounded border border-gray-300">
             </div>
             <div>
-                <label class="block mb-1 text-xs uppercase text-gray-300" for="duration">Duration</label>
+                <label class="block mb-1 text-xs text-gray-300 uppercase" for="duration">Duration</label>
                 <select name="duration" id="duration"
                         class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
                     <option value="">All</option>
@@ -67,7 +75,7 @@
                 </select>
             </div>
             <div>
-                <label class="block mb-1 text-xs uppercase text-gray-300" for="pretalx_state">Pretalx</label>
+                <label class="block mb-1 text-xs text-gray-300 uppercase" for="pretalx_state">Pretalx</label>
                 <select name="pretalx_state" id="pretalx_state"
                         class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
                     <option value="">All (excl. withdrawn)</option>
@@ -79,7 +87,7 @@
                 </select>
             </div>
             <div>
-                <label class="block mb-1 text-xs uppercase text-gray-300" for="state">Decision</label>
+                <label class="block mb-1 text-xs text-gray-300 uppercase" for="state">Decision</label>
                 <select name="state" id="state"
                         class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
                     <option value="">All Decisions</option>

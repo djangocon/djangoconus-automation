@@ -102,13 +102,36 @@ def submission_set_state_view(request: HttpRequest, pk: int) -> HttpResponse:
         submission.state = new_state
         submission.save(update_fields=["state"])
 
-    submission = Submission.objects.annotate(
-        annotated_review_count=Count("reviews", filter=~Q(reviews__score__isnull=True)),
-        annotated_review_mean=Avg("reviews__score"),
-    ).prefetch_related("speakers", "tags").get(pk=pk)
+    submission = (
+        Submission.objects.annotate(
+            annotated_review_count=Count("reviews", filter=~Q(reviews__score__isnull=True)),
+            annotated_review_mean=Avg("reviews__score"),
+        )
+        .prefetch_related("speakers", "tags")
+        .get(pk=pk)
+    )
 
     context = {"submission": submission}
     return render(request, "thunderdome/_submission_row.html", context)
+
+
+@staff_member_required
+@require_POST
+def bulk_set_state_view(request: HttpRequest) -> HttpResponse:
+    selected_pks = request.POST.getlist("selected")
+    new_state = request.POST.get("bulk_state", "")
+
+    valid_states = {choice[0] for choice in Submission.STATE_CHOICES}
+    if not selected_pks:
+        messages.error(request, "No submissions selected.")
+    elif new_state not in valid_states:
+        messages.error(request, "Please select a decision.")
+    else:
+        count = Submission.objects.filter(pk__in=selected_pks).update(state=new_state)
+        label = dict(Submission.STATE_CHOICES).get(new_state, new_state)
+        messages.success(request, f"Updated {count} submission(s) to {label}.")
+
+    return redirect("thunderdome_submissions")
 
 
 @staff_member_required

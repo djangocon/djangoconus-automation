@@ -138,7 +138,6 @@ class SubmissionAdmin(ThunderdomeAdminMixin, admin.ModelAdmin):
         self.message_user(request, f"{count} submission(s) set to Waitlist (Online).", messages.SUCCESS)
 
 
-
 @admin.register(Review)
 class ReviewAdmin(ThunderdomeAdminMixin, admin.ModelAdmin):
     list_display = ["submission", "reviewer_display", "score", "notes_snippet", "created_at"]

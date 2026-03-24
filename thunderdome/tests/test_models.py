@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+from django.db import IntegrityError
 
 from thunderdome.models import Event, Review, Speaker, Submission
 
@@ -48,7 +49,7 @@ class TestSubmission:
 
     def test_unique_together(self, event):
         Submission.objects.create(pretalx_id="UNIQ01", event=event, title="Talk 1")
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             Submission.objects.create(pretalx_id="UNIQ01", event=event, title="Talk 2")
 
 
