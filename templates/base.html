@@ -4,6 +4,9 @@
         <title>{% block title %}DjangoCon US Automation{% endblock title %}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.tailwindcss.com?plugins=typography,aspect-ratio"></script>
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        {% block extra_head %}{% endblock extra_head %}
         <link rel="icon" href="https://fav.farm/🦄" />
     </head>
     <body class="flex p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950">

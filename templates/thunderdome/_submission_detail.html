@@ -1,0 +1,36 @@
+<div class="flex justify-center items-center p-4 min-h-screen bg-black bg-opacity-70">
+    <div class="relative p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-green-900 rounded-lg shadow-xl">
+        <button class="absolute top-4 right-4 text-2xl text-gray-400 hover:text-white"
+                onclick="document.getElementById('detail-modal').classList.add('hidden');document.getElementById('detail-modal').innerHTML=''">
+            &times;
+        </button>
+
+        <div class="flex justify-between items-start mb-1">
+            <h2 class="text-xl font-bold">{{ submission.title }}</h2>
+            <a href="{% url 'thunderdome_submission_page' submission.pretalx_id %}"
+               class="ml-4 text-xs text-blue-300 whitespace-nowrap hover:text-blue-200 underline">
+                Full page &rarr;
+            </a>
+        </div>
+        <p class="mb-4 text-sm text-gray-300">
+            <a href="https://pretalx.com/djangocon-us-2026/talk/{{ submission.pretalx_id }}/"
+               target="_blank"
+               class="text-blue-300 hover:text-blue-200 underline">
+                {{ submission.pretalx_id }}
+            </a>
+            &middot;
+            Pretalx: {{ submission.get_pretalx_state_display }}
+            &middot;
+            Decision: {{ submission.get_state_display }}
+            {% if submission.duration %}&middot; {{ submission.duration }} min{% endif %}
+        </p>
+
+        {% include "thunderdome/_submission_content.html" %}
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.markdown-content').forEach(function(el) {
+        el.innerHTML = marked.parse(el.textContent);
+    });
+</script>

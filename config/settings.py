@@ -66,6 +66,7 @@ INSTALLED_APPS = [
 
 INSTALLED_APPS += [
     "sendy",
+    "thunderdome",
     "tickets",
     "titowebhooks",
     "travel_safety",
