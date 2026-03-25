@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+import datetime
+
 import environs
 
 env = environs.Env()
@@ -237,7 +239,7 @@ SLACK_OAUTH_TOKEN = env("SLACK_OAUTH_TOKEN", default="")
 
 # Conference settings
 
-CONFERENCE_END_DATE = env.date("CONFERENCE_END_DATE", default="2026-08-28")
+CONFERENCE_END_DATE = env.date("CONFERENCE_END_DATE", default=datetime.date(2026, 8, 28))
 
 # Tito settings
 
