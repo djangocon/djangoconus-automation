@@ -23,6 +23,28 @@
                 el.textContent = count ? count + ' selected' : '';
             }
         }
+
+        function toggleTagDropdown() {
+            document.getElementById('tag-dropdown').classList.toggle('hidden');
+        }
+
+        function updateTagLabel() {
+            var checked = document.querySelectorAll('#tag-dropdown input[name=tags]:checked');
+            var btn = document.getElementById('tag-dropdown-btn');
+            if (checked.length === 0) {
+                btn.textContent = 'All Tags';
+            } else {
+                var names = Array.from(checked).map(function(cb) { return cb.dataset.name; });
+                btn.textContent = names.join(', ');
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            var container = document.getElementById('tag-dropdown-container');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('tag-dropdown').classList.add('hidden');
+            }
+        });
     </script>
 {% endblock extra_head %}
 
@@ -97,6 +119,33 @@
                         </option>
                     {% endfor %}
                 </select>
+            </div>
+            <div class="relative" id="tag-dropdown-container">
+                <label class="block mb-1 text-xs text-gray-300 uppercase">Tags</label>
+                <button type="button" id="tag-dropdown-btn"
+                        onclick="toggleTagDropdown()"
+                        class="py-1 px-2 text-sm text-left text-gray-900 bg-white rounded border border-gray-300 truncate"
+                        style="min-width: 140px; max-width: 200px;">
+                    {% if current_tags %}
+                        {% for tag in tags %}{% if tag.pk in current_tags %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}
+                    {% else %}
+                        All Tags
+                    {% endif %}
+                </button>
+                <div id="tag-dropdown"
+                     class="hidden overflow-y-auto absolute z-50 py-1 mt-1 w-56 bg-white rounded border border-gray-300 shadow-lg"
+                     style="max-height: 250px;">
+                    {% for tag in tags %}
+                        <label class="flex items-center py-1.5 px-3 cursor-pointer hover:bg-gray-100">
+                            <input type="checkbox" name="tags" value="{{ tag.pk }}"
+                                   data-name="{{ tag.name }}"
+                                   {% if tag.pk in current_tags %}checked{% endif %}
+                                   onchange="updateTagLabel()"
+                                   class="mr-2 text-green-600 rounded">
+                            <span class="text-sm text-gray-900">{{ tag.name }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
             </div>
         </form>
 
