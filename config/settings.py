@@ -224,6 +224,10 @@ Q_CLUSTER = {
 
 SLACK_OAUTH_TOKEN = env("SLACK_OAUTH_TOKEN", default="")
 
+# Conference settings
+
+CONFERENCE_END_DATE = env.date("CONFERENCE_END_DATE", default="2026-08-28")
+
 # Tito settings
 
 TITO_SECURITY_TOKEN = env("TITO_SECURITY_TOKEN", default="")
