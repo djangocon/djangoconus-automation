@@ -64,6 +64,7 @@ INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS += [
+    "config",
     "emailoctopus",
     "thunderdome",
     "tickets",
@@ -218,6 +219,17 @@ Q_CLUSTER = {
     "retry": 120,
     "timeout": 90,
     "workers": 2,
+}
+
+Q_SCHEDULES = {
+    "emailoctopus-sync-campaigns": {
+        "func": "emailoctopus.utils.sync_campaigns",
+        "schedule_type": "HOURLY",
+    },
+    "travel-safety-retention-policy": {
+        "func": "travel_safety.tasks.enforce_retention",
+        "schedule_type": "DAILY",
+    },
 }
 
 # Slack settings
