@@ -9,12 +9,12 @@
         {% block extra_head %}{% endblock extra_head %}
         <link rel="icon" href="https://fav.farm/🦄" />
     </head>
-    <body class="{% block body_class %}flex p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock body_class %}">
-        <main class="{% block main_class %}m-auto text-white{% endblock main_class %}">
+    <body class="{% block body_class %}flex flex-col p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock body_class %}">
+        <main class="{% block main_class %}flex-1 m-auto text-white{% endblock main_class %}">
             {% block content %}
             {% endblock content %}
         </main>
-        <footer class="py-6 mt-8 text-sm text-center text-gray-400">
+        <footer class="py-6 text-sm text-center text-gray-400">
             <a href="/" class="hover:text-gray-200">Home</a>
             <span class="mx-1">&middot;</span>
             <a href="https://github.com/djangocon/djangoconus-automation/issues"
