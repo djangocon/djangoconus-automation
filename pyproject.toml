@@ -21,6 +21,7 @@ dependencies = [
     "psycopg[binary]",
     "pytest",
     "pytest-django",
+    "requests",
     "rich",
     "whitenoise",
 ]
