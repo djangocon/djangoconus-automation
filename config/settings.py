@@ -64,7 +64,6 @@ INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS += [
-    "config",
     "emailoctopus",
     "thunderdome",
     "tickets",
