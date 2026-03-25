@@ -4,14 +4,14 @@ import pytest
 from django.core.management import call_command
 from django.test import TestCase
 
-from emailoctopus.models import List
+from emailoctopus.models import Campaign
 from titowebhooks.models import TitoWebhookEvent
 
 
 @pytest.mark.django_db
 class TestSendToEmailOctopusCommand(TestCase):
     def setUp(self):
-        self.eo_list = List.objects.create(list_id="test-list-123", name="Test List", default=True)
+        self.campaign = Campaign.objects.create(list_id="test-list-123", name="Test Campaign", default=True)
 
         self.event1 = TitoWebhookEvent.objects.create(
             trigger="ticket.created", payload={"email": "test1@example.com", "first_name": "John", "last_name": "Doe"}
@@ -51,8 +51,8 @@ class TestSendToEmailOctopusCommand(TestCase):
     @patch("titowebhooks.management.commands.send_to_emailoctopus.async_task")
     def test_no_default_lists(self, mock_async_task):
         """Test behavior when no default Email Octopus lists exist."""
-        self.eo_list.default = False
-        self.eo_list.save()
+        self.campaign.default = False
+        self.campaign.save()
 
         call_command("send_to_emailoctopus")
 

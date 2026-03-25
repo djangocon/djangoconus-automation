@@ -69,21 +69,21 @@ def fetch_lists():
     return all_lists
 
 
-def sync_lists():
-    """Sync lists from Email Octopus into the local database."""
-    from emailoctopus.models import List
+def sync_campaigns():
+    """Sync campaigns from Email Octopus into the local database."""
+    from emailoctopus.models import Campaign
 
     remote_lists = fetch_lists()
 
     if not remote_lists:
-        print("[yellow]No lists found in Email Octopus.[/yellow]")
+        print("[yellow]No campaigns found in Email Octopus.[/yellow]")
         return
 
     synced = 0
     created = 0
 
     for remote_list in remote_lists:
-        _, was_created = List.objects.update_or_create(
+        _, was_created = Campaign.objects.update_or_create(
             list_id=remote_list["id"],
             defaults={"name": remote_list["name"]},
         )
@@ -91,4 +91,4 @@ def sync_lists():
             created += 1
         synced += 1
 
-    print(f"[green]Synced {synced} list(s) ({created} new).[/green]")
+    print(f"[green]Synced {synced} campaign(s) ({created} new).[/green]")

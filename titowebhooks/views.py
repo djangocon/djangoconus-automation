@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django_q.tasks import async_task
 from rich import print
 
-from emailoctopus.models import List
+from emailoctopus.models import Campaign
 from titowebhooks.models import TitoWebhookEvent
 
 LEADER_QUESTION_ID = 1216404
@@ -55,13 +55,13 @@ def tito_webhook(request):
 
     try:
         if settings.EMAILOCTOPUS_API_KEY:
-            eo_lists = List.objects.filter(default=True)
-            for eo_list in eo_lists:
+            campaigns = Campaign.objects.filter(default=True)
+            for campaign in campaigns:
                 async_task(
                     "emailoctopus.utils.send_to_emailoctopus",
                     email=payload["email"],
                     name=f"{payload['first_name']} {payload['last_name']}",
-                    list_id=eo_list.list_id,
+                    list_id=campaign.list_id,
                 )
 
     except Exception as e:

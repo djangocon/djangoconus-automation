@@ -2,21 +2,21 @@ from django.contrib import admin
 from django_q.tasks import async_task
 from rich import print
 
-from emailoctopus.models import List
+from emailoctopus.models import Campaign
 from titowebhooks.models import TitoWebhookEvent
 
 
 @admin.action(description="Send Event to Email Octopus")
 def send_to_emailoctopus_action(modeladmin, request, queryset):
-    eo_lists = List.objects.filter(default=True)
-    for eo_list in eo_lists:
+    campaigns = Campaign.objects.filter(default=True)
+    for campaign in campaigns:
         for event in queryset:
             try:
                 async_task(
                     "emailoctopus.utils.send_to_emailoctopus",
                     email=event.payload["email"],
                     name=f"{event.payload['first_name']} {event.payload['last_name']}",
-                    list_id=eo_list.list_id,
+                    list_id=campaign.list_id,
                 )
 
             except Exception as e:

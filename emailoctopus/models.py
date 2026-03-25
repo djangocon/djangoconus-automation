@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class List(models.Model):
+class Campaign(models.Model):
     list_id = models.CharField(max_length=64)
     name = models.CharField(max_length=100)
     active = models.BooleanField(default=True)

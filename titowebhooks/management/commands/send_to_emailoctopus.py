@@ -2,7 +2,7 @@ import djclick as click
 from django_q.tasks import async_task
 from rich import print
 
-from emailoctopus.models import List
+from emailoctopus.models import Campaign
 from titowebhooks.models import TitoWebhookEvent
 
 
@@ -22,18 +22,18 @@ def command(pks):
         queryset = TitoWebhookEvent.objects.all()
         print(f"Processing all {queryset.count()} events")
 
-    eo_lists = List.objects.filter(default=True)
+    campaigns = Campaign.objects.filter(default=True)
 
-    if not eo_lists.exists():
-        print("[red]No default Email Octopus lists found![/red]")
+    if not campaigns.exists():
+        print("[red]No default Email Octopus campaigns found![/red]")
         return
 
-    print(f"Found {eo_lists.count()} default Email Octopus list(s)")
+    print(f"Found {campaigns.count()} default Email Octopus campaign(s)")
 
     success_count = 0
     error_count = 0
 
-    for eo_list in eo_lists:
+    for campaign in campaigns:
         for event in queryset:
             try:
                 if "email" not in event.payload:
@@ -49,10 +49,10 @@ def command(pks):
                     "emailoctopus.utils.send_to_emailoctopus",
                     email=email,
                     name=name,
-                    list_id=eo_list.list_id,
+                    list_id=campaign.list_id,
                 )
 
-                print(f"[green]Queued: {email} -> {eo_list.name}[/green]")
+                print(f"[green]Queued: {email} -> {campaign.name}[/green]")
                 success_count += 1
 
             except Exception as e:
