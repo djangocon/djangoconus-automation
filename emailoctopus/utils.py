@@ -2,8 +2,13 @@ import httpx
 from django.conf import settings
 from rich import print
 
-
 EMAILOCTOPUS_BASE_URL = "https://emailoctopus.com/api/2.0"
+
+
+def _get_headers():
+    return {
+        "Authorization": f"Bearer {settings.EMAILOCTOPUS_API_KEY}",
+    }
 
 
 def send_to_emailoctopus(*, email: str, name: str, list_id: str):
@@ -35,3 +40,55 @@ def send_to_emailoctopus(*, email: str, name: str, list_id: str):
 
         case _:
             print(f"[red]Error subscribing {email}: {response.status_code} {response.text}[/red]")
+
+
+def fetch_lists():
+    """Fetch all lists from Email Octopus API."""
+    url = f"{EMAILOCTOPUS_BASE_URL}/lists"
+    all_lists = []
+
+    params = {"api_key": settings.EMAILOCTOPUS_API_KEY, "limit": 100}
+
+    while url:
+        response = httpx.get(url, params=params)
+
+        if response.status_code != 200:
+            print(f"[red]Error fetching lists: {response.status_code} {response.text}[/red]")
+            break
+
+        data = response.json()
+        all_lists.extend(data.get("data", []))
+
+        paging = data.get("paging", {})
+        next_page = paging.get("next")
+        if next_page:
+            params["starting_after"] = next_page
+        else:
+            break
+
+    return all_lists
+
+
+def sync_lists():
+    """Sync lists from Email Octopus into the local database."""
+    from emailoctopus.models import List
+
+    remote_lists = fetch_lists()
+
+    if not remote_lists:
+        print("[yellow]No lists found in Email Octopus.[/yellow]")
+        return
+
+    synced = 0
+    created = 0
+
+    for remote_list in remote_lists:
+        _, was_created = List.objects.update_or_create(
+            list_id=remote_list["id"],
+            defaults={"name": remote_list["name"]},
+        )
+        if was_created:
+            created += 1
+        synced += 1
+
+    print(f"[green]Synced {synced} list(s) ({created} new).[/green]")
