@@ -8,7 +8,10 @@
 {% block content %}
     <div class="p-6 mx-auto max-w-6xl">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold">All Ticket Links</h1>
+            <div>
+                <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
+                <h1 class="text-3xl font-bold">All Ticket Links</h1>
+            </div>
             <a href="{% url 'create_tickets' %}"
                class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                 Create New Tickets

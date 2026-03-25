@@ -23,10 +23,7 @@ urlpatterns = [
     path("health/", include("health_check.urls")),
     path(
         "",
-        TemplateView.as_view(
-            template_name="homepage.html",
-            extra_context={"app_version": __version__},
-        ),
+        TemplateView.as_view(template_name="homepage.html"),
         name="home",
     ),
     path("accounts/", include("allauth.urls")),
