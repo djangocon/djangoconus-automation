@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
-from .models import Event, Submission
+from .models import Event, Submission, Tag
 
 
 @staff_member_required
@@ -32,6 +32,13 @@ def submissions_view(request: HttpRequest) -> HttpResponse:
     duration = request.GET.get("duration")
     if duration:
         submissions = submissions.filter(duration=duration)
+
+    # Tag filter (supports multiple tags)
+    tag_ids = request.GET.getlist("tags")
+    if tag_ids:
+        for tag_id in tag_ids:
+            submissions = submissions.filter(tags__pk=tag_id)
+        submissions = submissions.distinct()
 
     # Thunderdome decision filter
     state = request.GET.get("state")
@@ -59,10 +66,12 @@ def submissions_view(request: HttpRequest) -> HttpResponse:
         "submissions": submissions,
         "states": Submission.STATE_CHOICES,
         "pretalx_states": Submission.PRETALX_STATE_CHOICES,
+        "tags": Tag.objects.all(),
         "current_search": search,
         "current_duration": duration or "",
         "current_pretalx_state": pretalx_state or "",
         "current_state": state or "",
+        "current_tags": [int(t) for t in tag_ids if t.isdigit()],
         "current_sort": sort,
     }
 
