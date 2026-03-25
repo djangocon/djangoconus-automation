@@ -74,6 +74,23 @@
             </div>
         {% endif %}
 
+        <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
+            <div class="grid grid-cols-7 gap-4 text-center">
+                <div>
+                    <p class="text-2xl font-bold">{{ total_count }}</p>
+                    <p class="text-sm text-gray-300">Total</p>
+                </div>
+                {% for key, info in state_counts.items %}
+                    <div>
+                        <p class="text-2xl font-bold {% if key == 'accepted-in-person' or key == 'accepted-online' %}text-green-400{% elif key == 'waitlist-in-person' or key == 'waitlist-online' %}text-yellow-400{% elif key == 'rejected' %}text-red-400{% else %}text-gray-300{% endif %}">
+                            {{ info.count }}
+                        </p>
+                        <p class="text-sm text-gray-300">{{ info.label }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <form id="filter-form"
               class="flex flex-wrap gap-4 items-end p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg"
               hx-get="{% url 'thunderdome_submissions' %}"
@@ -111,18 +128,6 @@
                     {% endfor %}
                 </select>
             </div>
-            <div>
-                <label class="block mb-1 text-xs text-gray-300 uppercase" for="state">Decision</label>
-                <select name="state" id="state"
-                        class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
-                    <option value="">All Decisions</option>
-                    {% for value, label in states %}
-                        <option value="{{ value }}" {% if current_state == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
             <div class="relative" id="tag-dropdown-container">
                 <label class="block mb-1 text-xs text-gray-300 uppercase">Tags</label>
                 <button type="button" id="tag-dropdown-btn"
@@ -149,6 +154,18 @@
                         </label>
                     {% endfor %}
                 </div>
+            </div>
+            <div>
+                <label class="block mb-1 text-xs text-gray-300 uppercase" for="state">Decision</label>
+                <select name="state" id="state"
+                        class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
+                    <option value="">All Decisions</option>
+                    {% for value, label in states %}
+                        <option value="{{ value }}" {% if current_state == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
         </form>
 

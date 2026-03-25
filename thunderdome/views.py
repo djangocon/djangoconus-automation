@@ -62,11 +62,19 @@ def submissions_view(request: HttpRequest) -> HttpResponse:
     order_field = SORT_OPTIONS.get(sort, "-annotated_review_mean")
     submissions = submissions.order_by(order_field, "title")
 
+    # Decision stats
+    state_counts = {}
+    for value, label in Submission.STATE_CHOICES:
+        state_counts[value] = {"label": label, "count": submissions.filter(state=value).count()}
+    total_count = submissions.count()
+
     context = {
         "submissions": submissions,
         "states": Submission.STATE_CHOICES,
         "pretalx_states": Submission.PRETALX_STATE_CHOICES,
         "tags": Tag.objects.all(),
+        "state_counts": state_counts,
+        "total_count": total_count,
         "current_search": search,
         "current_duration": duration or "",
         "current_pretalx_state": pretalx_state or "",

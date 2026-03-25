@@ -1,5 +1,3 @@
-<p class="mb-2 text-sm text-gray-300">{{ submissions|length }} submission{{ submissions|length|pluralize }}</p>
-
 {% if submissions %}
     <form id="bulk-action-form" method="post" action="{% url 'thunderdome_bulk_state' %}">
         {% csrf_token %}
