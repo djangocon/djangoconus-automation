@@ -5,7 +5,7 @@ description = "DjangoCon US Automation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "apiron",
+    "httpx",
     "blessed",
     "bumpver",
     "django-allauth",
@@ -21,6 +21,7 @@ dependencies = [
     "psycopg[binary]",
     "pytest",
     "pytest-django",
+    "requests",
     "rich",
     "whitenoise",
 ]

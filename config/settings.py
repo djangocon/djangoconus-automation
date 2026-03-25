@@ -64,7 +64,7 @@ INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS += [
-    "sendy",
+    "emailoctopus",
     "thunderdome",
     "tickets",
     "titowebhooks",
@@ -189,10 +189,9 @@ LOGIN_REDIRECT_URL = "/"
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
-# Send API settings
+# Email Octopus API settings
 
-SENDY_API_KEY = env("SENDY_API_KEY", default="")
-SENDY_ENDPOINT_URL = env("SENDY_ENDPOINT_URL", default="")
+EMAILOCTOPUS_API_KEY = env("EMAILOCTOPUS_API_KEY", default="")
 
 # django-prodserver settings
 

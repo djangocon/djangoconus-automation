@@ -97,6 +97,6 @@ class TitoWebhookCases(TestCase):
         twe.payload = json.loads(twe.payload_text)
         twe.save()
 
-    # todo: ticket_created should subscribe the purchaser to the Sendy list
+    # todo: ticket_created should subscribe the purchaser to the Email Octopus list
 
     # todo: ticket_reassigned should ? (unsubscribe original / subscribe new?; only subscribe new?)
