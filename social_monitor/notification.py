@@ -28,13 +28,11 @@ def _format_item(item: SocialItem) -> list:
     return blocks
 
 
-def send_slack_notification(content: SocialItem, unfurl_links: bool = True) -> bool:
+def send_slack_notification(content: SocialItem) -> bool:
     try:
         response = client.chat_postMessage(
             channel=settings.SLACK_CHANNEL_ID,
             blocks=_format_item(content),
-            unfurl_links=unfurl_links,
-            unfurl_media=unfurl_links,
         )
 
         return response.get("ok", False)
