@@ -19,7 +19,7 @@ def monitor():
         name=name,
         defaults={
             "func": "social_monitor.mastodon_client.collect_social_activity",
-            "schedule_type": Schedule.MINUTES,
+            "schedule_type": Schedule.HOURLY,
         }
     )
 
