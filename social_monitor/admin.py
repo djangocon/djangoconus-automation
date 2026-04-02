@@ -13,7 +13,7 @@ class SocialPlatformAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlatformHashTag)
-class SocialQueryAdmin(admin.ModelAdmin):
+class PlatformHashTagAdmin(admin.ModelAdmin):
     list_display = (
         "platform",
         "query",
