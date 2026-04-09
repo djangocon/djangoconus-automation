@@ -24,6 +24,8 @@ dependencies = [
     "requests",
     "rich",
     "whitenoise",
+    "mastodon-py>=2.1.4",
+    "slack-sdk>=3.41.0",
 ]
 
 [tool.bumpver]

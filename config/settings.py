@@ -71,6 +71,7 @@ INSTALLED_APPS += [
     "tickets",
     "titowebhooks",
     "travel_safety",
+    "social_monitor",
 ]
 
 MIDDLEWARE = [
@@ -236,6 +237,7 @@ Q_SCHEDULES = {
 # Slack settings
 
 SLACK_OAUTH_TOKEN = env("SLACK_OAUTH_TOKEN", default="")
+SLACK_CHANNEL_ID = env("SLACK_CHANNEL_ID", default="")
 
 # Conference settings
 
@@ -253,3 +255,8 @@ TAILWIND_CLI_DIST_CSS = env.str("TAILWIND_CLI_DIST_CSS", default="css/tailwind.c
 TAILWIND_CLI_PATH = env.str("TAILWIND_CLI_PATH", default="~/.local/bin/")
 TAILWIND_CLI_SRC_CSS = env.str("TAILWIND_CLI_SRC_CSS", default="frontend/index.css")
 TAILWIND_CLI_VERSION = env.str("TAILWIND_CLI_VERSION", default="4.1.18")
+
+# Social monitor
+
+MASTODON_ACCESS_TOKEN = env("MASTODON_ACCESS_TOKEN", default="")
+MASTODON_API_BASE_URL = env("MASTODON_API_BASE_URL", default="https://mastodon.social")
