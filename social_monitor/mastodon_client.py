@@ -45,7 +45,7 @@ def fetch_mentions(limit: int = 5) -> List[SocialItem]:
                     )
                 )
         else:
-            logging.info(f"mentions for `{platform.name}` are not being collected. Please enable them first.")
+            logging.info(f"mentions for `{platform.name}` are not being collected. Please enable it first.")
     except Exception as e:
         logging.error(e)
 
@@ -86,7 +86,7 @@ def fetch_posts(limit: int = 5) -> List[SocialItem]:
 def collect_social_activity():
 
     mentions = fetch_mentions()
-    posts = fetch_posts(limit=1)
+    posts = fetch_posts()
 
     all_activities = mentions + posts
     last_seen_marked = []
