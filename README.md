@@ -86,7 +86,7 @@ If you don't have Just installed:
 ### Django Applications
 
 - **tickets/** - Ticket link distribution system for event access
-- **sendy/** - Email marketing integration with Sendy API
+- **emailoctopus/** - Email marketing integration with Email Octopus API
 - **titowebhooks/** - Webhook receiver for Tito event platform
 
 ### Key Features
@@ -94,7 +94,7 @@ If you don't have Just installed:
 - **Email-based ticket claiming** - Attendees can claim unique ticket links
 - **Admin ticket management** - Bulk creation and monitoring of tickets
 - **GitHub OAuth authentication** - Staff login via GitHub
-- **Email subscription management** - Integration with Sendy for marketing
+- **Email subscription management** - Integration with Email Octopus for marketing
 - **Webhook processing** - Handle Tito purchase events
 
 ## Deployment
@@ -108,7 +108,7 @@ Production URL: https://automation.defna.org
 Edit `.env` file to configure:
 
 - **Database**: `DATABASE_URL` (defaults to local PostgreSQL)
-- **Email**: `SENDY_API_KEY`, `SENDY_ENDPOINT_URL` for Sendy integration
+- **Email**: `EMAILOCTOPUS_API_KEY` for Email Octopus integration
 - **Slack**: `SLACK_OAUTH_TOKEN` for notifications
 - **Debug**: `DJANGO_DEBUG=True` for development
 
