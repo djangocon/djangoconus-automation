@@ -41,6 +41,21 @@ def get_reviews(event_slug, token):
     return reviews
 
 
+def get_speakers(event_slug, token):
+    """Fetch all speakers from pretalx (includes email for organizers)."""
+    url = f"{PRETALX_BASE_URL}/events/{event_slug}/speakers/"
+    speakers = []
+
+    while url:
+        response = requests.get(url, headers=_headers(token), timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        speakers.extend(data.get("results", []))
+        url = data.get("next")
+
+    return speakers
+
+
 def accept_submission(event_slug, token, submission_code):
     """POST to accept a submission in pretalx."""
     url = f"{PRETALX_BASE_URL}/events/{event_slug}/submissions/{submission_code}/accept/"
