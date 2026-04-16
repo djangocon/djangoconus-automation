@@ -35,6 +35,8 @@ class Tag(models.Model):
 class Speaker(models.Model):
     name = models.CharField(max_length=200)
     pretalx_code = models.CharField(max_length=100, unique=True)
+    email = models.EmailField(blank=True)
+    applied_for_grant = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["name"]

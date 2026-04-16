@@ -40,8 +40,10 @@ class TagAdmin(ThunderdomeAdminMixin, admin.ModelAdmin):
 
 @admin.register(Speaker)
 class SpeakerAdmin(ThunderdomeAdminMixin, admin.ModelAdmin):
-    list_display = ["name", "pretalx_code"]
-    search_fields = ["name", "pretalx_code"]
+    list_display = ["name", "pretalx_code", "email", "applied_for_grant"]
+    list_filter = ["applied_for_grant"]
+    list_editable = ["applied_for_grant"]
+    search_fields = ["name", "pretalx_code", "email"]
 
 
 class ReviewInline(admin.TabularInline):

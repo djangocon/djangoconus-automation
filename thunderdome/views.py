@@ -1,19 +1,24 @@
+import re
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Exists, OuterRef, Q
+from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
-from .models import Event, Submission, Tag
+from .models import Event, Speaker, Submission, Tag
 
 
 @staff_member_required
 def submissions_view(request: HttpRequest) -> HttpResponse:
+    grant_speakers = Speaker.objects.filter(submissions=OuterRef("pk"), applied_for_grant=True)
     submissions = Submission.objects.annotate(
         annotated_review_count=Count("reviews", filter=~Q(reviews__score__isnull=True)),
         annotated_review_mean=Avg("reviews__score"),
+        has_grant_applicant=Exists(grant_speakers),
     ).prefetch_related("speakers", "tags")
 
     # Text search (title and speaker name)
@@ -119,10 +124,12 @@ def submission_set_state_view(request: HttpRequest, pk: int) -> HttpResponse:
         submission.state = new_state
         submission.save(update_fields=["state"])
 
+    grant_speakers = Speaker.objects.filter(submissions=OuterRef("pk"), applied_for_grant=True)
     submission = (
         Submission.objects.annotate(
             annotated_review_count=Count("reviews", filter=~Q(reviews__score__isnull=True)),
             annotated_review_mean=Avg("reviews__score"),
+            has_grant_applicant=Exists(grant_speakers),
         )
         .prefetch_related("speakers", "tags")
         .get(pk=pk)
@@ -149,6 +156,49 @@ def bulk_set_state_view(request: HttpRequest) -> HttpResponse:
         messages.success(request, f"Updated {count} submission(s) to {label}.")
 
     return redirect("thunderdome_submissions")
+
+
+EMAIL_SPLIT_RE = re.compile(r"[\s,;]+")
+
+
+@staff_member_required
+def grants_view(request: HttpRequest) -> HttpResponse:
+    raw_emails = ""
+    matched = []
+    unmatched = []
+    updated_count = 0
+
+    if request.method == "POST":
+        raw_emails = request.POST.get("emails", "")
+        action = request.POST.get("action", "mark")
+
+        emails = {e.strip().lower() for e in EMAIL_SPLIT_RE.split(raw_emails) if e.strip()}
+
+        if not emails:
+            messages.error(request, "Paste at least one email address.")
+        else:
+            speakers = Speaker.objects.annotate(_email_lower=Lower("email")).filter(_email_lower__in=emails)
+            matched_emails = set(speakers.values_list("_email_lower", flat=True))
+            unmatched = sorted(emails - matched_emails)
+
+            applied = action != "unmark"
+            matched = list(speakers.order_by("name"))
+            updated_count = speakers.update(applied_for_grant=applied)
+
+            verb = "marked" if applied else "unmarked"
+            messages.success(
+                request,
+                f"{updated_count} speaker(s) {verb} as applied for a grant.",
+            )
+
+    context = {
+        "raw_emails": raw_emails,
+        "matched": matched,
+        "unmatched": unmatched,
+        "updated_count": updated_count,
+        "applied_speakers": Speaker.objects.filter(applied_for_grant=True).order_by("name"),
+    }
+    return render(request, "thunderdome/grants.html", context)
 
 
 @staff_member_required

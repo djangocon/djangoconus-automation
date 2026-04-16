@@ -2,7 +2,7 @@ import logging
 from decimal import Decimal, InvalidOperation
 
 from .models import Event, Review, Speaker, Submission, Tag
-from .pretalx import get_reviews, get_submissions
+from .pretalx import get_reviews, get_speakers, get_submissions
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,15 @@ def sync_event(event_slug):
     if not event.pretalx_token:
         logger.error("No pretalx token configured for event '%s'.", event.name)
         return {"error": f"No pretalx token for '{event.name}'."}
+
+    # Build code -> email map from the speakers endpoint (submissions expand
+    # doesn't include email).
+    try:
+        speakers_data = get_speakers(event.pretalx_slug, event.pretalx_token)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Failed to fetch speakers for %s: %s", event_slug, exc)
+        speakers_data = []
+    speaker_email_map = {s.get("code"): (s.get("email") or "") for s in speakers_data if s.get("code")}
 
     # Sync submissions
     submissions_data = get_submissions(event.pretalx_slug, event.pretalx_token)
@@ -61,13 +70,18 @@ def sync_event(event_slug):
             if isinstance(speaker_data, dict):
                 speaker_code = speaker_data.get("code", "")
                 speaker_name = speaker_data.get("name", "")
+                speaker_email = speaker_data.get("email") or speaker_email_map.get(speaker_code, "")
             else:
                 speaker_code = str(speaker_data)
                 speaker_name = str(speaker_data)
+                speaker_email = speaker_email_map.get(speaker_code, "")
             if speaker_code:
+                defaults = {"name": speaker_name}
+                if speaker_email:
+                    defaults["email"] = speaker_email
                 speaker, _ = Speaker.objects.update_or_create(
                     pretalx_code=speaker_code,
-                    defaults={"name": speaker_name},
+                    defaults=defaults,
                 )
                 speaker_objects.append(speaker)
         submission.speakers.set(speaker_objects)
