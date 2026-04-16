@@ -44,6 +44,16 @@
         </div>
     </td>
     <td class="py-3 px-4 text-sm text-center whitespace-nowrap">
+        {% if submission.has_grant_applicant %}
+            <span title="At least one speaker has applied for a grant"
+                  class="inline-flex py-1 px-2 text-xs text-yellow-100 bg-yellow-700 rounded-full">
+                $
+            </span>
+        {% else %}
+            <span class="text-gray-500">-</span>
+        {% endif %}
+    </td>
+    <td class="py-3 px-4 text-sm text-center whitespace-nowrap">
         <span class="inline-flex py-1 px-2 text-xs rounded-full {% if submission.pretalx_state == 'withdrawn' %}bg-gray-700 text-gray-300{% elif submission.pretalx_state == 'accepted' %}bg-green-800 text-green-200{% elif submission.pretalx_state == 'rejected' %}bg-red-800 text-red-200{% elif submission.pretalx_state == 'confirmed' %}bg-blue-800 text-blue-200{% else %}bg-gray-600 text-gray-200{% endif %}">
             {{ submission.get_pretalx_state_display }}
         </span>

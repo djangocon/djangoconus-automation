@@ -2,7 +2,7 @@ import re
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Exists, OuterRef, Q
 from django.db.models.functions import Lower
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,9 +14,11 @@ from .models import Event, Speaker, Submission, Tag
 
 @staff_member_required
 def submissions_view(request: HttpRequest) -> HttpResponse:
+    grant_speakers = Speaker.objects.filter(submissions=OuterRef("pk"), applied_for_grant=True)
     submissions = Submission.objects.annotate(
         annotated_review_count=Count("reviews", filter=~Q(reviews__score__isnull=True)),
         annotated_review_mean=Avg("reviews__score"),
+        has_grant_applicant=Exists(grant_speakers),
     ).prefetch_related("speakers", "tags")
 
     # Text search (title and speaker name)
@@ -122,10 +124,12 @@ def submission_set_state_view(request: HttpRequest, pk: int) -> HttpResponse:
         submission.state = new_state
         submission.save(update_fields=["state"])
 
+    grant_speakers = Speaker.objects.filter(submissions=OuterRef("pk"), applied_for_grant=True)
     submission = (
         Submission.objects.annotate(
             annotated_review_count=Count("reviews", filter=~Q(reviews__score__isnull=True)),
             annotated_review_mean=Avg("reviews__score"),
+            has_grant_applicant=Exists(grant_speakers),
         )
         .prefetch_related("speakers", "tags")
         .get(pk=pk)
