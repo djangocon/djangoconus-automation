@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block body_class %}flex flex-col p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock %}
+{% block main_class %}flex-1 mx-auto text-white{% endblock %}
+
+{% block title %}Grant Applicants - Thunderdome{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-4xl">
+        <div class="mb-4">
+            <a href="/" class="text-sm text-gray-400 hover:text-gray-200">Home</a>
+            <span class="text-sm text-gray-500">/</span>
+            <a href="{% url 'thunderdome_submissions' %}"
+               class="text-sm text-gray-400 hover:text-gray-200">
+                Thunderdome
+            </a>
+        </div>
+
+        <h1 class="mb-2 text-3xl font-bold">Grant Applicants</h1>
+        <p class="mb-6 text-sm text-gray-300">
+            Paste a list of email addresses (one per line, or separated by commas/spaces) to mark the matching
+            presenters as having applied for a grant.
+        </p>
+
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 mb-3 rounded-lg {% if message.tags == 'success' %}bg-green-800{% elif message.tags == 'error' %}bg-red-800{% else %}bg-blue-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
+            {% csrf_token %}
+            <label for="emails" class="block mb-2 text-xs font-medium text-gray-300 uppercase">
+                Email Addresses
+            </label>
+            <textarea name="emails"
+                      id="emails"
+                      rows="10"
+                      placeholder="alice@example.com&#10;bob@example.com"
+                      class="p-2 w-full font-mono text-sm text-gray-900 rounded border border-gray-300">{{ raw_emails }}</textarea>
+            <div class="flex gap-3 mt-3">
+                <button type="submit"
+                        name="action"
+                        value="mark"
+                        class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700">
+                    Mark as Applied
+                </button>
+                <button type="submit"
+                        name="action"
+                        value="unmark"
+                        class="py-2 px-4 font-semibold text-white bg-gray-600 rounded-lg hover:bg-gray-700">
+                    Unmark
+                </button>
+            </div>
+        </form>
+
+        {% if matched or unmatched %}
+            <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
+                <div class="p-4 bg-green-800 bg-opacity-50 rounded-lg">
+                    <h2 class="mb-2 text-lg font-semibold">Matched ({{ matched|length }})</h2>
+                    {% if matched %}
+                        <ul class="space-y-1 text-sm">
+                            {% for speaker in matched %}
+                                <li>
+                                    <span class="font-medium">{{ speaker.name }}</span>
+                                    <span class="text-gray-300">&lt;{{ speaker.email }}&gt;</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-300">No matches.</p>
+                    {% endif %}
+                </div>
+                <div class="p-4 bg-red-900 bg-opacity-50 rounded-lg">
+                    <h2 class="mb-2 text-lg font-semibold">Unmatched ({{ unmatched|length }})</h2>
+                    {% if unmatched %}
+                        <ul class="space-y-1 font-mono text-sm">
+                            {% for email in unmatched %}<li>{{ email }}</li>{% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-300">All emails matched a speaker.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="p-4 bg-green-800 bg-opacity-50 rounded-lg">
+            <h2 class="mb-2 text-lg font-semibold">
+                Currently Flagged ({{ applied_speakers.count }})
+            </h2>
+            {% if applied_speakers %}
+                <ul class="space-y-1 text-sm">
+                    {% for speaker in applied_speakers %}
+                        <li>
+                            <span class="font-medium">{{ speaker.name }}</span>
+                            {% if speaker.email %}<span class="text-gray-300">&lt;{{ speaker.email }}&gt;</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-sm text-gray-300">No speakers flagged yet.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

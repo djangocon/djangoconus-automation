@@ -61,13 +61,18 @@ def sync_event(event_slug):
             if isinstance(speaker_data, dict):
                 speaker_code = speaker_data.get("code", "")
                 speaker_name = speaker_data.get("name", "")
+                speaker_email = speaker_data.get("email", "") or ""
             else:
                 speaker_code = str(speaker_data)
                 speaker_name = str(speaker_data)
+                speaker_email = ""
             if speaker_code:
+                defaults = {"name": speaker_name}
+                if speaker_email:
+                    defaults["email"] = speaker_email
                 speaker, _ = Speaker.objects.update_or_create(
                     pretalx_code=speaker_code,
-                    defaults={"name": speaker_name},
+                    defaults=defaults,
                 )
                 speaker_objects.append(speaker)
         submission.speakers.set(speaker_objects)

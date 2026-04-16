@@ -5,6 +5,7 @@ from django.views.generic import TemplateView
 from config import __version__
 from thunderdome.views import (
     bulk_set_state_view,
+    grants_view,
     submission_detail_view,
     submission_page_view,
     submission_set_state_view,
@@ -37,6 +38,7 @@ urlpatterns = [
     path("thunderdome/", submissions_view, name="thunderdome_submissions"),
     path("thunderdome/bulk-state/", bulk_set_state_view, name="thunderdome_bulk_state"),
     path("thunderdome/sync/", sync_from_pretalx_view, name="thunderdome_sync"),
+    path("thunderdome/grants/", grants_view, name="thunderdome_grants"),
     path("thunderdome/<int:pk>/set-state/", submission_set_state_view, name="thunderdome_submission_set_state"),
     path("thunderdome/<str:pretalx_id>/", submission_page_view, name="thunderdome_submission_page"),
     path("thunderdome/<str:pretalx_id>/modal/", submission_detail_view, name="thunderdome_submission_detail"),
