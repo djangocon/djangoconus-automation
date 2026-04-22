@@ -6,6 +6,8 @@ import json
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import user_passes_test
+from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -13,7 +15,12 @@ from django_q.tasks import async_task
 from rich import print
 
 from emailoctopus.models import Campaign
-from titowebhooks.models import TitoWebhookEvent
+from titowebhooks.models import TitoEvent, TitoWebhookEvent
+from titowebhooks.tito_api import get_activities, get_releases
+
+superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser)
+
+TITO_CACHE_TTL = 300  # 5 minutes
 
 LEADER_QUESTION_ID = 1216404
 JOINER_QUESTION_ID = 1216405
@@ -194,3 +201,42 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
         "friday_count": friday_count,
     }
     return render(request, "titowebhooks/sprint_tickets.html", context)
+
+
+@superuser_required
+def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
+    tito_event = TitoEvent.objects.filter(api_token__gt="").first()
+
+    releases = None
+    activities = None
+    error = None
+
+    if tito_event:
+        cache_key_releases = f"tito_releases_{tito_event.account_slug}_{tito_event.event_slug}"
+        cache_key_activities = f"tito_activities_{tito_event.account_slug}_{tito_event.event_slug}"
+
+        releases = cache.get(cache_key_releases)
+        if releases is None:
+            releases = get_releases(tito_event.account_slug, tito_event.event_slug, tito_event.api_token)
+            if releases is not None:
+                cache.set(cache_key_releases, releases, TITO_CACHE_TTL)
+
+        activities = cache.get(cache_key_activities)
+        if activities is None:
+            activities = get_activities(tito_event.account_slug, tito_event.event_slug, tito_event.api_token)
+            if activities is not None:
+                cache.set(cache_key_activities, activities, TITO_CACHE_TTL)
+
+        if releases is None and activities is None:
+            error = "Could not reach the Tito API. Check the API token and try again."
+    else:
+        error = "No Tito event with an API token is configured."
+
+    context = {
+        "tito_event": tito_event,
+        "releases": releases or [],
+        "activities": activities or [],
+        "error": error,
+        "cache_ttl": TITO_CACHE_TTL,
+    }
+    return render(request, "titowebhooks/sales_dashboard.html", context)

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block body_class %}flex flex-col p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock %}
+{% block main_class %}flex-1 mx-auto text-white{% endblock %}
+
+{% block title %}Ticket Sales - DjangoCon US Automation{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-5xl">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
+                <h1 class="text-3xl font-bold">Ticket Sales</h1>
+                {% if tito_event %}
+                    <p class="mt-1 text-sm text-gray-400">{{ tito_event.name }} &middot; data cached for {{ cache_ttl|floatformat:0 }}s</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if error %}
+            <div class="p-4 mb-6 bg-red-800 rounded-lg">{{ error }}</div>
+        {% else %}
+
+            {% if activities %}
+                <h2 class="mb-3 text-xl font-semibold">Activities</h2>
+                <div class="overflow-hidden mb-8 bg-green-800 bg-opacity-30 rounded-lg">
+                    <table class="w-full">
+                        <thead class="bg-green-700 bg-opacity-50">
+                            <tr>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Activity</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-right uppercase">Sold / Capacity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-green-700">
+                            {% for activity in activities %}
+                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                    <td class="py-3 px-4 text-sm">{{ activity.name }}</td>
+                                    <td class="py-3 px-4 text-sm font-mono text-right">
+                                        <span class="{% if activity.registrations_count > 0 %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            {{ activity.registrations_count|default:0 }}
+                                        </span>
+                                        <span class="text-gray-500">/</span>
+                                        <span class="text-gray-300">{% if activity.capacity %}{{ activity.capacity }}{% else %}&infin;{% endif %}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            {% if releases %}
+                <h2 class="mb-3 text-xl font-semibold">Tickets</h2>
+                <div class="overflow-hidden bg-green-800 bg-opacity-30 rounded-lg">
+                    <table class="w-full">
+                        <thead class="bg-green-700 bg-opacity-50">
+                            <tr>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Release</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">State</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-right uppercase">Sold / Capacity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-green-700">
+                            {% for release in releases %}
+                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                    <td class="py-3 px-4 text-sm">{{ release.title }}</td>
+                                    <td class="py-3 px-4 text-sm text-center">
+                                        <span class="inline-flex py-0.5 px-2 text-xs rounded-full
+                                            {% if release.state == 'on_sale' %}bg-green-800 text-green-200
+                                            {% elif release.state == 'paused' %}bg-yellow-800 text-yellow-200
+                                            {% else %}bg-gray-700 text-gray-300{% endif %}">
+                                            {{ release.state|default:"unknown" }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-sm font-mono text-right">
+                                        <span class="{% if release.tickets_count > 0 %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            {{ release.tickets_count|default:0 }}
+                                        </span>
+                                        <span class="text-gray-500">/</span>
+                                        <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            {% if not activities and not releases %}
+                <p class="text-gray-400">No data returned from Tito.</p>
+            {% endif %}
+
+        {% endif %}
+    </div>
+{% endblock %}
