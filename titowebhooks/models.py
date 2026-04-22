@@ -1,6 +1,34 @@
 from django.db import models
 
 
+class TitoHistoricalEvent(models.Model):
+    slug = models.SlugField(max_length=128, unique=True)
+    year = models.PositiveIntegerField(db_index=True)
+    title = models.CharField(max_length=256)
+    account_slug = models.CharField(max_length=64, default="defna")
+    is_current = models.BooleanField(default=False)
+    releases = models.JSONField(null=True, blank=True)
+    last_synced = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-year"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def total_sold(self):
+        if not self.releases:
+            return 0
+        return sum(r.get("tickets_count") or 0 for r in self.releases)
+
+    @property
+    def total_capacity(self):
+        if not self.releases:
+            return 0
+        return sum(r.get("quantity") or 0 for r in self.releases)
+
+
 class TitoWebhookEvent(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     trigger = models.CharField(max_length=256, blank=True)

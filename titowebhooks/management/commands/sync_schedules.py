@@ -54,3 +54,10 @@ def command():
             schedule_type=Schedule.DAILY,
             args=f'"{event.pretalx_slug}"',
         )
+
+    # Sync Tito historical ticket sales daily
+    _ensure_schedule(
+        name="tito-events-sync",
+        func="titowebhooks.sync.sync_tito_events",
+        schedule_type=Schedule.DAILY,
+    )
