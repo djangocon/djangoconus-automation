@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import Avg
+from django.db.models.functions import Lower
 
 
 class Event(models.Model):
@@ -26,7 +27,7 @@ class Tag(models.Model):
     pretalx_id = models.CharField(max_length=100, blank=True, null=True, unique=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = [Lower("name")]
 
     def __str__(self):
         return self.name
