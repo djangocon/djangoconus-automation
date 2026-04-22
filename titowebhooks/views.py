@@ -5,22 +5,20 @@ import hmac
 import json
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
-from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 from rich import print
 
 from emailoctopus.models import Campaign
-from titowebhooks.models import TitoEvent, TitoWebhookEvent
-from titowebhooks.tito_api import get_activities, get_releases
+from titowebhooks.models import TitoHistoricalEvent, TitoWebhookEvent
 
 superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser)
-
-TITO_CACHE_TTL = 300  # 5 minutes
 
 LEADER_QUESTION_ID = 1216404
 JOINER_QUESTION_ID = 1216405
@@ -205,48 +203,19 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
 
 @superuser_required
 def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
-    tito_event = TitoEvent.objects.filter(api_token__gt="").first()
-
-    # Fall back to env vars if no DB record is configured
-    if tito_event:
-        account_slug = tito_event.account_slug
-        event_slug = tito_event.event_slug
-        api_token = tito_event.api_token
-    else:
-        account_slug = settings.TITO_ACCOUNT_SLUG
-        event_slug = settings.TITO_EVENT_SLUG
-        api_token = settings.TITO_API_TOKEN
-
-    releases = None
-    activities = None
-    error = None
-
-    if api_token and account_slug and event_slug:
-        cache_key_releases = f"tito_releases_{account_slug}_{event_slug}"
-        cache_key_activities = f"tito_activities_{account_slug}_{event_slug}"
-
-        releases = cache.get(cache_key_releases)
-        if releases is None:
-            releases = get_releases(account_slug, event_slug, api_token)
-            if releases is not None:
-                cache.set(cache_key_releases, releases, TITO_CACHE_TTL)
-
-        activities = cache.get(cache_key_activities)
-        if activities is None:
-            activities = get_activities(account_slug, event_slug, api_token)
-            if activities is not None:
-                cache.set(cache_key_activities, activities, TITO_CACHE_TTL)
-
-        if releases is None and activities is None:
-            error = "Could not reach the Tito API. Check the API token and try again."
-    else:
-        error = "Configure TITO_API_TOKEN, TITO_ACCOUNT_SLUG, and TITO_EVENT_SLUG (or add a TitoEvent record)."
+    events = TitoHistoricalEvent.objects.all()  # ordered by -year via Meta
+    never_synced = not events.exists()
 
     context = {
-        "tito_event": tito_event,
-        "releases": releases or [],
-        "activities": activities or [],
-        "error": error,
-        "cache_ttl": TITO_CACHE_TTL,
+        "events": events,
+        "never_synced": never_synced,
     }
     return render(request, "titowebhooks/sales_dashboard.html", context)
+
+
+@superuser_required
+@require_POST
+def tito_sync_view(request: HttpRequest) -> HttpResponse:
+    async_task("titowebhooks.sync.sync_tito_events")
+    messages.success(request, "Tito sync queued. Refresh in a moment to see updated data.")
+    return redirect("tito_sales_dashboard")

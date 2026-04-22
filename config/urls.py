@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import TemplateView
 
 from config import __version__
+from config.views import homepage_view
 from thunderdome.views import (
     bulk_set_state_view,
     grants_view,
@@ -13,7 +13,7 @@ from thunderdome.views import (
     sync_from_pretalx_view,
 )
 from tickets.views import claim_ticket_view, create_tickets_view, tickets_info, tickets_list_view
-from titowebhooks.views import sprint_tickets_view, tito_sales_dashboard_view, tito_webhook
+from titowebhooks.views import sprint_tickets_view, tito_sales_dashboard_view, tito_sync_view, tito_webhook
 
 admin_header = f"DjangoCon US Automation v{__version__}"
 admin.site.enable_nav_sidebar = False
@@ -22,11 +22,7 @@ admin.site.site_title = admin_header
 
 urlpatterns = [
     path("health/", include("health_check.urls")),
-    path(
-        "",
-        TemplateView.as_view(template_name="homepage.html"),
-        name="home",
-    ),
+    path("", homepage_view, name="home"),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("titowebhook/", tito_webhook),
@@ -36,6 +32,7 @@ urlpatterns = [
     path("tickets/claim/", claim_ticket_view, name="claim_ticket"),
     path("sprints/tickets/", sprint_tickets_view, name="sprint_tickets"),
     path("tito/sales/", tito_sales_dashboard_view, name="tito_sales_dashboard"),
+    path("tito/sync/", tito_sync_view, name="tito_sync"),
     path("thunderdome/", submissions_view, name="thunderdome_submissions"),
     path("thunderdome/bulk-state/", bulk_set_state_view, name="thunderdome_bulk_state"),
     path("thunderdome/sync/", sync_from_pretalx_view, name="thunderdome_sync"),
