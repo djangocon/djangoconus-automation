@@ -1,6 +1,6 @@
 <tr id="submission-{{ submission.pk }}" class="transition-colors hover:bg-green-700 hover:bg-opacity-30">
     <td class="py-3 px-3 w-8">
-        <input type="checkbox" name="selected" value="{{ submission.pk }}" class="rounded" onchange="updateSelectedCount();">
+        <input type="checkbox" class="rounded row-select" data-pk="{{ submission.pk }}" onchange="updateSelectedCount();">
     </td>
     <td class="py-3 px-4 text-sm whitespace-nowrap">
         <a href="https://pretalx.com/djangocon-us-2026/talk/{{ submission.pretalx_id }}/"

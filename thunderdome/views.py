@@ -115,6 +115,7 @@ def submission_page_view(request: HttpRequest, pretalx_id: str) -> HttpResponse:
 
 
 @staff_member_required
+@require_POST
 def submission_set_state_view(request: HttpRequest, pk: int) -> HttpResponse:
     submission = get_object_or_404(Submission, pk=pk)
     new_state = request.POST.get("state", "")
