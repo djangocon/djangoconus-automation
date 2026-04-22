@@ -207,30 +207,40 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
 def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
     tito_event = TitoEvent.objects.filter(api_token__gt="").first()
 
+    # Fall back to env vars if no DB record is configured
+    if tito_event:
+        account_slug = tito_event.account_slug
+        event_slug = tito_event.event_slug
+        api_token = tito_event.api_token
+    else:
+        account_slug = settings.TITO_ACCOUNT_SLUG
+        event_slug = settings.TITO_EVENT_SLUG
+        api_token = settings.TITO_API_TOKEN
+
     releases = None
     activities = None
     error = None
 
-    if tito_event:
-        cache_key_releases = f"tito_releases_{tito_event.account_slug}_{tito_event.event_slug}"
-        cache_key_activities = f"tito_activities_{tito_event.account_slug}_{tito_event.event_slug}"
+    if api_token and account_slug and event_slug:
+        cache_key_releases = f"tito_releases_{account_slug}_{event_slug}"
+        cache_key_activities = f"tito_activities_{account_slug}_{event_slug}"
 
         releases = cache.get(cache_key_releases)
         if releases is None:
-            releases = get_releases(tito_event.account_slug, tito_event.event_slug, tito_event.api_token)
+            releases = get_releases(account_slug, event_slug, api_token)
             if releases is not None:
                 cache.set(cache_key_releases, releases, TITO_CACHE_TTL)
 
         activities = cache.get(cache_key_activities)
         if activities is None:
-            activities = get_activities(tito_event.account_slug, tito_event.event_slug, tito_event.api_token)
+            activities = get_activities(account_slug, event_slug, api_token)
             if activities is not None:
                 cache.set(cache_key_activities, activities, TITO_CACHE_TTL)
 
         if releases is None and activities is None:
             error = "Could not reach the Tito API. Check the API token and try again."
     else:
-        error = "No Tito event with an API token is configured."
+        error = "Configure TITO_API_TOKEN, TITO_ACCOUNT_SLUG, and TITO_EVENT_SLUG (or add a TitoEvent record)."
 
     context = {
         "tito_event": tito_event,

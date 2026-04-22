@@ -246,6 +246,9 @@ CONFERENCE_END_DATE = env.date("CONFERENCE_END_DATE", default=datetime.date(2026
 # Tito settings
 
 TITO_SECURITY_TOKEN = env("TITO_SECURITY_TOKEN", default="")
+TITO_API_TOKEN = env("TITO_API_TOKEN", default="")
+TITO_ACCOUNT_SLUG = env("TITO_ACCOUNT_SLUG", default="")
+TITO_EVENT_SLUG = env("TITO_EVENT_SLUG", default="")
 
 # Tailwind CSS settings
 
