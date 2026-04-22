@@ -88,7 +88,7 @@
                             </div>
                         {% endif %}
 
-                        {% if event.releases %}
+                        {% if event.releases_by_activity %}
                             <h3 class="mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">Tickets</h3>
                             <div class="overflow-hidden bg-green-800 bg-opacity-30 rounded-lg">
                                 <table class="w-full">
@@ -100,23 +100,30 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-green-700">
-                                        {% for release in event.releases %}
-                                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
-                                                <td class="py-2 px-4 text-sm">{{ release.title }}</td>
-                                                <td class="py-2 px-4 text-sm text-center">
-                                                    <span class="inline-flex py-0.5 px-2 text-xs rounded-full
-                                                                 {% if release.state_name == 'on_sale' %}bg-green-800 text-green-200
-                                                                 {% elif release.state_name == 'paused' %}bg-yellow-800 text-yellow-200
-                                                                 {% else %}bg-gray-700 text-gray-300{% endif %}">
-                                                        {{ release.state_name|default:"—" }}
-                                                    </span>
-                                                </td>
-                                                <td class="py-2 px-4 font-mono text-sm text-right">
-                                                    <span class="{% if release.tickets_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ release.tickets_count|default:0 }}</span>
-                                                    <span class="text-gray-600">/</span>
-                                                    <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
+                                        {% for group in event.releases_by_activity %}
+                                            <tr class="bg-green-900 bg-opacity-60">
+                                                <td colspan="3" class="py-1 px-4 text-xs font-semibold tracking-wider text-green-300 uppercase">
+                                                    {{ group.name }}
                                                 </td>
                                             </tr>
+                                            {% for release in group.releases %}
+                                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                                    <td class="py-2 px-4 pl-6 text-sm">{{ release.title }}</td>
+                                                    <td class="py-2 px-4 text-sm text-center">
+                                                        <span class="inline-flex py-0.5 px-2 text-xs rounded-full
+                                                                     {% if release.state_name == 'on_sale' %}bg-green-800 text-green-200
+                                                                     {% elif release.state_name == 'paused' %}bg-yellow-800 text-yellow-200
+                                                                     {% else %}bg-gray-700 text-gray-300{% endif %}">
+                                                            {{ release.state_name|default:"—" }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
+                                                        <span class="{% if release.tickets_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ release.tickets_count|default:0 }}</span>
+                                                        <span class="text-gray-600">/</span>
+                                                        <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -151,19 +158,24 @@
                                     </tbody>
                                 </table>
                             {% endif %}
-                            {% if event.releases %}
+                            {% if event.releases_by_activity %}
                                 <p class="py-2 px-4 text-xs font-semibold tracking-wider text-gray-500 uppercase border-t border-green-700">Tickets</p>
                                 <table class="w-full">
                                     <tbody class="divide-y divide-green-800">
-                                        {% for release in event.releases %}
-                                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
-                                                <td class="py-2 px-4 text-sm">{{ release.title }}</td>
-                                                <td class="py-2 px-4 font-mono text-sm text-right">
-                                                    <span class="{% if release.tickets_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ release.tickets_count|default:0 }}</span>
-                                                    <span class="text-gray-600">/</span>
-                                                    <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
-                                                </td>
+                                        {% for group in event.releases_by_activity %}
+                                            <tr class="bg-green-900 bg-opacity-40">
+                                                <td colspan="2" class="py-1 px-4 text-xs font-semibold tracking-wider text-green-400 uppercase">{{ group.name }}</td>
                                             </tr>
+                                            {% for release in group.releases %}
+                                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
+                                                    <td class="py-2 px-4 pl-6 text-sm">{{ release.title }}</td>
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
+                                                        <span class="{% if release.tickets_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ release.tickets_count|default:0 }}</span>
+                                                        <span class="text-gray-600">/</span>
+                                                        <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
                                         {% endfor %}
                                     </tbody>
                                 </table>
