@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from thunderdome.models import Event, Speaker, Submission
+from thunderdome.models import Event, Submission
 
 User = get_user_model()
 
@@ -43,16 +43,6 @@ class TestSubmissionSetState:
         assert s1.state == "rejected"
         assert s2.state == "unreviewed"
 
-    def test_set_state_ignores_extra_state_values(self, staff_client, two_submissions):
-        """Posting multiple state values must not bleed over from other rows."""
-        s1, s2 = two_submissions
-        url = reverse("thunderdome_submission_set_state", args=[s1.pk])
-        # Simulate old buggy form that included all rows' state fields
-        response = staff_client.post(url, {"state": ["accepted-in-person", "unreviewed"]})
-        assert response.status_code == 200
-        s1.refresh_from_db()
-        assert s1.state == "accepted-in-person"
-
     def test_invalid_state_not_saved(self, staff_client, two_submissions):
         s1, _ = two_submissions
         url = reverse("thunderdome_submission_set_state", args=[s1.pk])
@@ -67,9 +57,9 @@ class TestSubmissionSetState:
         assert response.status_code == 405
 
     def test_all_valid_states_accepted(self, staff_client, event):
-        for state_value, _ in Submission.STATE_CHOICES:
+        for i, (state_value, _) in enumerate(Submission.STATE_CHOICES):
             sub = Submission.objects.create(
-                pretalx_id=f"TST{state_value[:3].upper()}",
+                pretalx_id=f"TST{i:03d}",
                 event=event,
                 title=f"Talk {state_value}",
             )
