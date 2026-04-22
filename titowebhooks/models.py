@@ -77,9 +77,17 @@ class TitoHistoricalEvent(models.Model):
             else:
                 other.append(release)
 
-        groups = [{"name": name, "releases": releases} for name, releases in buckets.items() if releases]
+        def _make_group(name, releases):
+            return {
+                "name": name,
+                "releases": releases,
+                "total_sold": sum(r.get("tickets_count") or 0 for r in releases),
+                "total_capacity": sum(r.get("quantity") or 0 for r in releases),
+            }
+
+        groups = [_make_group(name, releases) for name, releases in buckets.items() if releases]
         if other:
-            groups.append({"name": "Other", "releases": other})
+            groups.append(_make_group("Other", other))
         return groups
 
 

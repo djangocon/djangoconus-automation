@@ -102,8 +102,12 @@
                                     <tbody class="divide-y divide-green-700">
                                         {% for group in event.releases_by_activity %}
                                             <tr class="bg-green-900 bg-opacity-60">
-                                                <td colspan="3" class="py-1 px-4 text-xs font-semibold tracking-wider text-green-300 uppercase">
-                                                    {{ group.name }}
+                                                <td class="py-1 px-4 text-xs font-semibold tracking-wider text-green-300 uppercase">{{ group.name }}</td>
+                                                <td class="py-1 px-4 text-xs text-center text-gray-500"></td>
+                                                <td class="py-1 px-4 font-mono text-xs text-right text-gray-400">
+                                                    <span class="{% if group.total_sold %}text-green-300{% else %}text-gray-600{% endif %}">{{ group.total_sold }}</span>
+                                                    <span class="text-gray-600">/</span>
+                                                    <span>{% if group.total_capacity %}{{ group.total_capacity }}{% else %}&infin;{% endif %}</span>
                                                 </td>
                                             </tr>
                                             {% for release in group.releases %}
@@ -164,7 +168,12 @@
                                     <tbody class="divide-y divide-green-800">
                                         {% for group in event.releases_by_activity %}
                                             <tr class="bg-green-900 bg-opacity-40">
-                                                <td colspan="2" class="py-1 px-4 text-xs font-semibold tracking-wider text-green-400 uppercase">{{ group.name }}</td>
+                                                <td class="py-1 px-4 text-xs font-semibold tracking-wider text-green-400 uppercase">{{ group.name }}</td>
+                                                <td class="py-1 px-4 font-mono text-xs text-right text-gray-400">
+                                                    <span class="{% if group.total_sold %}text-green-300{% else %}text-gray-600{% endif %}">{{ group.total_sold }}</span>
+                                                    <span class="text-gray-600">/</span>
+                                                    <span>{% if group.total_capacity %}{{ group.total_capacity }}{% else %}&infin;{% endif %}</span>
+                                                </td>
                                             </tr>
                                             {% for release in group.releases %}
                                                 <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
