@@ -20,11 +20,22 @@
         }
 
         function updateSelectedCount() {
-            var count = document.querySelectorAll('input[name=selected]:checked').length;
+            var count = document.querySelectorAll('input.row-select:checked').length;
             var el = document.getElementById('selected-count');
             if (el) {
                 el.textContent = count ? count + ' selected' : '';
             }
+        }
+
+        function collectSelectedPks(form) {
+            form.querySelectorAll('input[name=selected]').forEach(function(el) { el.remove(); });
+            document.querySelectorAll('input.row-select:checked').forEach(function(cb) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected';
+                input.value = cb.dataset.pk;
+                form.appendChild(input);
+            });
         }
 
         function toggleTagDropdown() {
