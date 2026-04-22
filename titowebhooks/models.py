@@ -9,6 +9,7 @@ class TitoHistoricalEvent(models.Model):
     is_current = models.BooleanField(default=False)
     goal = models.PositiveIntegerField(null=True, blank=True, help_text="Sales goal for this year")
     releases = models.JSONField(null=True, blank=True)
+    activities = models.JSONField(null=True, blank=True)
     last_synced = models.DateTimeField(null=True, blank=True)
 
     class Meta:

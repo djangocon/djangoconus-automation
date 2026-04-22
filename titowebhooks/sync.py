@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from django.conf import settings
 
 from titowebhooks.models import TitoEvent, TitoHistoricalEvent
-from titowebhooks.tito_api import DJANGOCON_EVENT_SLUGS, get_releases
+from titowebhooks.tito_api import DJANGOCON_EVENT_SLUGS, get_activities, get_releases
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,8 @@ def sync_tito_events():
             failed_slugs.append(slug)
             continue
 
+        activities = get_activities(account_slug, slug, api_token) or []
+
         _, created = TitoHistoricalEvent.objects.update_or_create(
             slug=slug,
             defaults={
@@ -47,6 +49,7 @@ def sync_tito_events():
                 "account_slug": account_slug,
                 "is_current": slug == CURRENT_SLUG,
                 "releases": releases,
+                "activities": activities,
                 "last_synced": datetime.now(tz=timezone.utc),
             },
         )

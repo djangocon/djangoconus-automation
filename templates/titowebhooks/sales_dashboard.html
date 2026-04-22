@@ -68,7 +68,28 @@
                             {% endif %}
                         </div>
 
+                        {% if event.activities %}
+                            <h3 class="mt-4 mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">Activities</h3>
+                            <div class="overflow-hidden mb-4 bg-green-800 bg-opacity-30 rounded-lg">
+                                <table class="w-full">
+                                    <tbody class="divide-y divide-green-700">
+                                        {% for activity in event.activities %}
+                                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                                <td class="py-2 px-4 text-sm">{{ activity.name }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right">
+                                                    <span class="{% if activity.allocation_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ activity.allocation_count|default:0 }}</span>
+                                                    <span class="text-gray-600">/</span>
+                                                    <span class="text-gray-300">{% if activity.capacity %}{{ activity.capacity }}{% else %}&infin;{% endif %}</span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+
                         {% if event.releases %}
+                            <h3 class="mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">Tickets</h3>
                             <div class="overflow-hidden bg-green-800 bg-opacity-30 rounded-lg">
                                 <table class="w-full">
                                     <thead class="bg-green-700 bg-opacity-50">
@@ -113,8 +134,26 @@
                                     &middot; {{ event.releases|length }} release{{ event.releases|length|pluralize }}
                                 </span>
                             </summary>
+                            {% if event.activities %}
+                                <p class="py-2 px-4 text-xs font-semibold tracking-wider text-gray-500 uppercase border-t border-green-700">Activities</p>
+                                <table class="w-full">
+                                    <tbody class="divide-y divide-green-800">
+                                        {% for activity in event.activities %}
+                                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
+                                                <td class="py-2 px-4 text-sm">{{ activity.name }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right">
+                                                    <span class="{% if activity.allocation_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ activity.allocation_count|default:0 }}</span>
+                                                    <span class="text-gray-600">/</span>
+                                                    <span class="text-gray-300">{% if activity.capacity %}{{ activity.capacity }}{% else %}&infin;{% endif %}</span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% endif %}
                             {% if event.releases %}
-                                <table class="w-full border-t border-green-700">
+                                <p class="py-2 px-4 text-xs font-semibold tracking-wider text-gray-500 uppercase border-t border-green-700">Tickets</p>
+                                <table class="w-full">
                                     <tbody class="divide-y divide-green-800">
                                         {% for release in event.releases %}
                                             <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
