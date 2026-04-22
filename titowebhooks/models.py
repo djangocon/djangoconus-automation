@@ -7,6 +7,7 @@ class TitoHistoricalEvent(models.Model):
     title = models.CharField(max_length=256)
     account_slug = models.CharField(max_length=64, default="defna")
     is_current = models.BooleanField(default=False)
+    goal = models.PositiveIntegerField(null=True, blank=True, help_text="Sales goal for this year")
     releases = models.JSONField(null=True, blank=True)
     last_synced = models.DateTimeField(null=True, blank=True)
 
@@ -27,6 +28,12 @@ class TitoHistoricalEvent(models.Model):
         if not self.releases:
             return 0
         return sum(r.get("quantity") or 0 for r in self.releases)
+
+    @property
+    def percent_of_goal(self):
+        if not self.goal:
+            return None
+        return round(self.total_sold / self.goal * 100, 1)
 
 
 class TitoWebhookEvent(models.Model):

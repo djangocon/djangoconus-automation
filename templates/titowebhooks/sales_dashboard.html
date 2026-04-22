@@ -50,14 +50,22 @@
                                     <p class="text-2xl font-bold text-green-400">{{ event.total_sold }}</p>
                                     <p class="text-sm text-gray-300">Sold</p>
                                 </div>
-                                <div class="text-center">
-                                    <p class="text-2xl font-bold text-gray-300">{{ event.total_capacity }}</p>
-                                    <p class="text-sm text-gray-300">Capacity (paid/limited)</p>
-                                </div>
-                                {% if event.last_synced %}
-                                    <p class="ml-auto text-xs text-gray-500">synced {{ event.last_synced|date:"N j, Y H:i" }} UTC</p>
+                                {% if event.goal %}
+                                    <div class="text-center">
+                                        <p class="text-2xl font-bold text-gray-300">{{ event.goal }}</p>
+                                        <p class="text-sm text-gray-300">Goal</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-2xl font-bold {% if event.percent_of_goal >= 100 %}text-green-400{% elif event.percent_of_goal >= 75 %}text-yellow-400{% else %}text-orange-400{% endif %}">
+                                            {{ event.percent_of_goal }}%
+                                        </p>
+                                        <p class="text-sm text-gray-300">of Goal</p>
+                                    </div>
                                 {% endif %}
                             </div>
+                            {% if event.last_synced %}
+                                <p class="mt-2 text-xs text-gray-500">Last synced {{ event.last_synced|date:"N j, Y H:i" }} UTC</p>
+                            {% endif %}
                         </div>
 
                         {% if event.releases %}
@@ -100,7 +108,9 @@
                                 <span class="font-semibold">{{ event.title }}</span>
                                 <span class="font-mono text-sm text-gray-300">
                                     <span class="text-green-400">{{ event.total_sold }}</span>
-                                    sold &middot; {{ event.releases|length }} release{{ event.releases|length|pluralize }}
+                                    sold
+                                    {% if event.goal %}&middot; <span class="text-yellow-300">{{ event.percent_of_goal }}%</span> of goal{% endif %}
+                                    &middot; {{ event.releases|length }} release{{ event.releases|length|pluralize }}
                                 </span>
                             </summary>
                             {% if event.releases %}

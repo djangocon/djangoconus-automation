@@ -25,18 +25,20 @@ def send_to_emailoctopus_action(modeladmin, request, queryset):
 
 @admin.register(TitoHistoricalEvent)
 class TitoHistoricalEventAdmin(admin.ModelAdmin):
-    list_display = ["title", "slug", "year", "is_current", "total_sold", "total_capacity", "last_synced"]
+    list_display = ["title", "year", "is_current", "goal", "total_sold", "percent_of_goal", "last_synced"]
     list_filter = ["is_current"]
     readonly_fields = ["slug", "year", "title", "account_slug", "releases", "last_synced"]
+    fields = ["slug", "year", "title", "account_slug", "is_current", "goal", "releases", "last_synced"]
     ordering = ["-year"]
 
-    @admin.display(description="Total Sold")
+    @admin.display(description="Sold")
     def total_sold(self, obj):
         return obj.total_sold
 
-    @admin.display(description="Total Capacity")
-    def total_capacity(self, obj):
-        return obj.total_capacity
+    @admin.display(description="% of Goal")
+    def percent_of_goal(self, obj):
+        pct = obj.percent_of_goal
+        return f"{pct}%" if pct is not None else "—"
 
 
 @admin.register(TitoWebhookEvent)
