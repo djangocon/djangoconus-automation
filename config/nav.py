@@ -25,6 +25,13 @@ NAV_ITEMS = [
         ],
     ),
     NavGroup(
+        title="Sales",
+        permissions=["is_superuser"],
+        items=[
+            NavItem(title="Ticket Sales Dashboard", url="tito_sales_dashboard"),
+        ],
+    ),
+    NavGroup(
         title="Administration",
         permissions=["is_authenticated"],
         items=[

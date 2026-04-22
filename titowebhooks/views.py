@@ -16,11 +16,12 @@ from rich import print
 
 from emailoctopus.models import Campaign
 from titowebhooks.models import TitoEvent, TitoWebhookEvent
-from titowebhooks.tito_api import get_activities, get_releases
+from titowebhooks.tito_api import DJANGOCON_EVENT_SLUGS, get_releases
 
 superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser)
 
-TITO_CACHE_TTL = 300  # 5 minutes
+TITO_CACHE_TTL = 300  # 5 minutes for current year
+TITO_HISTORICAL_CACHE_TTL = 86400  # 24 hours for past years
 
 LEADER_QUESTION_ID = 1216404
 JOINER_QUESTION_ID = 1216405
@@ -210,43 +211,50 @@ def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
     # Fall back to env vars if no DB record is configured
     if tito_event:
         account_slug = tito_event.account_slug
-        event_slug = tito_event.event_slug
         api_token = tito_event.api_token
     else:
         account_slug = settings.TITO_ACCOUNT_SLUG
-        event_slug = settings.TITO_EVENT_SLUG
         api_token = settings.TITO_API_TOKEN
 
-    releases = None
-    activities = None
     error = None
+    events_data = []
 
-    if api_token and account_slug and event_slug:
-        cache_key_releases = f"tito_releases_{account_slug}_{event_slug}"
-        cache_key_activities = f"tito_activities_{account_slug}_{event_slug}"
+    if api_token and account_slug:
+        current_slug = settings.TITO_EVENT_SLUG or (tito_event.event_slug if tito_event else DJANGOCON_EVENT_SLUGS[0])
 
-        releases = cache.get(cache_key_releases)
-        if releases is None:
-            releases = get_releases(account_slug, event_slug, api_token)
+        for slug in DJANGOCON_EVENT_SLUGS:
+            is_current = slug == current_slug
+            ttl = TITO_CACHE_TTL if is_current else TITO_HISTORICAL_CACHE_TTL
+            cache_key = f"tito_releases_{account_slug}_{slug}"
+
+            releases = cache.get(cache_key)
+            if releases is None:
+                releases = get_releases(account_slug, slug, api_token)
+                if releases is not None:
+                    cache.set(cache_key, releases, ttl)
+
             if releases is not None:
-                cache.set(cache_key_releases, releases, TITO_CACHE_TTL)
+                total_sold = sum(r.get("tickets_count") or 0 for r in releases)
+                total_capacity = sum(r.get("quantity") or 0 for r in releases)
+                events_data.append(
+                    {
+                        "slug": slug,
+                        "year": slug.split("-")[-1],
+                        "is_current": is_current,
+                        "releases": releases,
+                        "total_sold": total_sold,
+                        "total_capacity": total_capacity,
+                    }
+                )
 
-        activities = cache.get(cache_key_activities)
-        if activities is None:
-            activities = get_activities(account_slug, event_slug, api_token)
-            if activities is not None:
-                cache.set(cache_key_activities, activities, TITO_CACHE_TTL)
-
-        if releases is None and activities is None:
+        if not events_data:
             error = "Could not reach the Tito API. Check the API token and try again."
     else:
-        error = "Configure TITO_API_TOKEN, TITO_ACCOUNT_SLUG, and TITO_EVENT_SLUG (or add a TitoEvent record)."
+        error = "Configure TITO_API_TOKEN and TITO_ACCOUNT_SLUG (or add a TitoEvent record)."
 
     context = {
         "tito_event": tito_event,
-        "releases": releases or [],
-        "activities": activities or [],
+        "events_data": events_data,
         "error": error,
-        "cache_ttl": TITO_CACHE_TTL,
     }
     return render(request, "titowebhooks/sales_dashboard.html", context)

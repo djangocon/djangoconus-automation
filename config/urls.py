@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import TemplateView
 
 from config import __version__
+from config.views import homepage_view
 from thunderdome.views import (
     bulk_set_state_view,
     grants_view,
@@ -22,11 +22,7 @@ admin.site.site_title = admin_header
 
 urlpatterns = [
     path("health/", include("health_check.urls")),
-    path(
-        "",
-        TemplateView.as_view(template_name="homepage.html"),
-        name="home",
-    ),
+    path("", homepage_view, name="home"),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("titowebhook/", tito_webhook),
