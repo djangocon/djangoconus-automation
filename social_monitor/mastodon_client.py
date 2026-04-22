@@ -30,7 +30,9 @@ def fetch_mentions(limit: int = 5) -> List[SocialItem]:
         platform = SocialPlatform.objects.get(name=PLATFORM_NAME)
 
         if platform.get_mentions:
-            mentions = mastodon.notifications(types=['mention'], limit=limit, since_id=0 if platform.last_seen is None else int(platform.last_seen))
+            mentions = mastodon.notifications(
+                types=["mention"], limit=limit, since_id=0 if platform.last_seen is None else int(platform.last_seen)
+            )
             for mention in mentions:
                 mastodon_mentions.append(
                     SocialItem(
@@ -41,7 +43,7 @@ def fetch_mentions(limit: int = 5) -> List[SocialItem]:
                         content=mention.status.content,
                         url=mention.status.url,
                         tag=ItemType.MENTION.name,
-                        created_at=mention.status.created_at
+                        created_at=mention.status.created_at,
                     )
                 )
         else:
@@ -59,7 +61,9 @@ def fetch_posts(limit: int = 5) -> List[SocialItem]:
         queries = _get_hashtags()
         for query in queries:
             if query.is_active:
-                posts = mastodon.timeline_hashtag(query.query, limit=limit, since_id=0 if query.last_seen is None else int(query.last_seen))
+                posts = mastodon.timeline_hashtag(
+                    query.query, limit=limit, since_id=0 if query.last_seen is None else int(query.last_seen)
+                )
                 for post in posts:
                     mastodon_posts.append(
                         SocialItem(
@@ -81,10 +85,7 @@ def fetch_posts(limit: int = 5) -> List[SocialItem]:
     return mastodon_posts
 
 
-
-
 def collect_social_activity():
-
     mentions = fetch_mentions()
     posts = fetch_posts()
 
@@ -109,5 +110,3 @@ def collect_social_activity():
                     last_seen_marked.append(activity.tag)
             else:
                 logging.error(f"error while sending notification for `{activity.id}` `{activity.tag}`")
-
-

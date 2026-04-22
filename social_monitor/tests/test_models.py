@@ -9,6 +9,7 @@ def social_platform():
         name="Mastodon",
     )
 
+
 @pytest.fixture
 def hashtags(social_platform):
     return PlatformHashTag.objects.create(
@@ -39,4 +40,3 @@ class TestPlatformHashTag:
 
     def test_is_active(self, hashtags):
         assert hashtags.is_active
-

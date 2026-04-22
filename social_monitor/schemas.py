@@ -7,6 +7,7 @@ class ItemType(str, Enum):
     MENTION = "mention"
     HASHTAG = "hashtag"
 
+
 @dataclass
 class SocialItem:
     id: int

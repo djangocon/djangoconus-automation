@@ -20,8 +20,8 @@ def _format_item(item: SocialItem) -> list:
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*{item.author}* on {item.platform} ({item.created_at:%Y-%m-%d %H:%M})\n\n{type_emoji} {item.tag}\n\n{content_preview}\n{item.url}\n"
-            }
+                "text": f"*{item.author}* on {item.platform} ({item.created_at:%Y-%m-%d %H:%M})\n\n{type_emoji} {item.tag}\n\n{content_preview}\n{item.url}\n",
+            },
         },
     ]
 
@@ -40,4 +40,3 @@ def send_slack_notification(content: SocialItem) -> bool:
         logging.error(e)
 
     return False
-

@@ -32,7 +32,7 @@ class PlatformHashTag(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('platform', 'query')
+        unique_together = ("platform", "query")
 
     def __str__(self):
         return f"{self.platform.name} -> #{self.query}"

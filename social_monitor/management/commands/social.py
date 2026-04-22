@@ -20,11 +20,12 @@ def monitor():
         defaults={
             "func": "social_monitor.mastodon_client.collect_social_activity",
             "schedule_type": Schedule.HOURLY,
-        }
+        },
     )
 
     action = "Created" if created else "Updated"
     print(f"[green]{action} schedule for {name}[/green]")
+
 
 @command.command()
 @click.option("--fetch", "fetch_flag", is_flag=True, help="fetch all platforms")
@@ -38,16 +39,13 @@ def platform(fetch_flag, add_platform_name, remove_platform_name, fetch_mentions
         platforms = SocialPlatform.objects.all()
         if platforms:
             for i, p in enumerate(platforms):
-                print(f"{i+1}) [green]{p}[/green]")
+                print(f"{i + 1}) [green]{p}[/green]")
         else:
             print("[red]No platforms found![/red]")
             return
 
     if add_platform_name:
-        p, created = SocialPlatform.objects.get_or_create(
-            name=add_platform_name,
-            get_mentions=fetch_mentions
-        )
+        p, created = SocialPlatform.objects.get_or_create(name=add_platform_name, get_mentions=fetch_mentions)
 
         if created:
             print(f"[green]Platform `{add_platform_name}` added![/green]")
@@ -62,8 +60,9 @@ def platform(fetch_flag, add_platform_name, remove_platform_name, fetch_mentions
         except SocialPlatform.DoesNotExist:
             print(f"[red]Platform `{remove_platform_name}` does not exists![/red]`")
 
+
 @command.command()
-@click.argument('platform_name')
+@click.argument("platform_name")
 @click.argument("query_str", required=False)
 @click.option("--add", "add_flag", is_flag=True, help="add query to social platform")
 @click.option("--remove", "remove_flag", is_flag=True, help="remove query from social platform")
@@ -101,8 +100,5 @@ def query(platform_name, query_str, add_flag, remove_flag, fetch_query):
         except PlatformHashTag.DoesNotExist:
             print(f"[red]Query `{query_str}` not found for {platform_name}![/red]")
 
-
     if not add_flag and not remove_flag:
         print(f"[blue]No action specified. Use --add or --remove for `{query_str}` on {platform_name}.[/blue]")
-
-
