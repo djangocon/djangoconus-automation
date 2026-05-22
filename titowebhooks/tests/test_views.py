@@ -5,7 +5,12 @@ import json
 from unittest.mock import patch
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from titowebhooks.models import TitoWebhookEvent
+from titowebhooks.views import EVENT_SLUG, JOINER_QUESTION_ID, LEADER_QUESTION_ID
 
 TEST_PAYLOAD = {
     "_type": "ticket",
@@ -89,3 +94,154 @@ class TestTitoWebhookView(TestCase):
         signature = make_signature(payload_bytes, "wrong-token")
         response = self._post_webhook(payload_bytes, headers={"HTTP_TITO_SIGNATURE": signature})
         assert response.status_code == 403
+
+
+def _sprint_payload(*, email, release_title, created_at, leading="No", joining="No", name=None):
+    return {
+        "name": name or email.split("@")[0],
+        "email": email,
+        "release_title": release_title,
+        "created_at": created_at,
+        "event": {"slug": EVENT_SLUG},
+        "answers": [
+            {"question": {"id": LEADER_QUESTION_ID}, "humanized_response": leading},
+            {"question": {"id": JOINER_QUESTION_ID}, "humanized_response": joining},
+        ],
+    }
+
+
+@pytest.mark.django_db
+class TestSprintTicketsView(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user(
+            username="staff", password="x", email="staff@example.com", is_staff=True
+        )
+        self.client.force_login(self.staff)
+
+    def _create_event(self, payload):
+        TitoWebhookEvent.objects.create(trigger="ticket.completed", payload=payload)
+
+    def test_excludes_online_sprints_by_default(self):
+        self._create_event(
+            _sprint_payload(
+                email="inperson@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2026-09-01T10:00:00Z",
+                leading="Yes",
+            )
+        )
+        self._create_event(
+            _sprint_payload(
+                email="onliner@example.com",
+                release_title="Online Sprint - Thursday",
+                created_at="2026-09-02T10:00:00Z",
+            )
+        )
+
+        response = self.client.get(reverse("sprint_tickets"))
+
+        assert response.status_code == 200
+        emails = [t["email"] for t in response.context["sprint_tickets"]]
+        assert "inperson@example.com" in emails
+        assert "onliner@example.com" not in emails
+        assert response.context["total_count"] == 1
+
+    def test_include_online_query_param_shows_online(self):
+        self._create_event(
+            _sprint_payload(
+                email="inperson@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2026-09-01T10:00:00Z",
+            )
+        )
+        self._create_event(
+            _sprint_payload(
+                email="onliner@example.com",
+                release_title="Online Sprint - Thursday",
+                created_at="2026-09-02T10:00:00Z",
+            )
+        )
+
+        response = self.client.get(reverse("sprint_tickets") + "?include_online=1")
+
+        assert response.status_code == 200
+        emails = [t["email"] for t in response.context["sprint_tickets"]]
+        assert {"inperson@example.com", "onliner@example.com"} <= set(emails)
+        assert response.context["online_count"] == 1
+        assert response.context["include_online"] is True
+
+    def test_email_dedup_is_case_insensitive(self):
+        self._create_event(
+            _sprint_payload(
+                email="Mixed@Example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2026-09-01T10:00:00Z",
+                leading="Yes",
+            )
+        )
+        self._create_event(
+            _sprint_payload(
+                email="mixed@example.com",
+                release_title="Sprint (In Person) - Friday",
+                created_at="2026-09-02T10:00:00Z",
+                joining="Yes",
+            )
+        )
+
+        response = self.client.get(reverse("sprint_tickets"))
+
+        tickets = response.context["sprint_tickets"]
+        assert len(tickets) == 1
+        ticket = tickets[0]
+        assert ticket["email"] == "mixed@example.com"
+        assert ticket["thursday"] is True
+        assert ticket["thursday_leading"] == "Yes"
+        assert ticket["friday"] is True
+        assert ticket["friday_joining"] == "Yes"
+
+    def test_ignores_other_events_and_non_sprint_releases(self):
+        self._create_event(
+            _sprint_payload(
+                email="other-event@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2026-09-01T10:00:00Z",
+            )
+            | {"event": {"slug": "djangocon-us-2023"}}
+        )
+        self._create_event(
+            _sprint_payload(
+                email="conf-only@example.com",
+                release_title="In-person Conference",
+                created_at="2026-09-01T10:00:00Z",
+            )
+        )
+
+        response = self.client.get(reverse("sprint_tickets"))
+
+        assert response.context["total_count"] == 0
+
+    def test_csv_download_excludes_online_by_default(self):
+        self._create_event(
+            _sprint_payload(
+                email="inperson@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2026-09-01T10:00:00Z",
+            )
+        )
+        self._create_event(
+            _sprint_payload(
+                email="onliner@example.com",
+                release_title="Online Sprint - Thursday",
+                created_at="2026-09-02T10:00:00Z",
+            )
+        )
+
+        response = self.client.get(reverse("sprint_tickets") + "?format=csv")
+
+        assert response.status_code == 200
+        assert response["Content-Type"] == "text/csv"
+        body = response.content.decode()
+        assert "inperson@example.com" in body
+        assert "onliner@example.com" not in body
+        assert "Online" in body.splitlines()[0]
