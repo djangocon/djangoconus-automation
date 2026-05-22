@@ -30,6 +30,21 @@ class TitoHistoricalEvent(models.Model):
             return 0
         return sum(r.get("quantity") or 0 for r in self.releases)
 
+    @staticmethod
+    def _release_revenue(release: dict) -> float:
+        try:
+            price = float(release.get("price") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+        sold = release.get("tickets_count") or 0
+        return price * sold
+
+    @property
+    def total_revenue(self) -> float:
+        if not self.releases:
+            return 0.0
+        return sum(self._release_revenue(r) for r in self.releases)
+
     @property
     def percent_of_goal(self):
         if not self.goal:
@@ -78,11 +93,13 @@ class TitoHistoricalEvent(models.Model):
                 other.append(release)
 
         def _make_group(name, releases):
+            enriched = [{**r, "revenue": self._release_revenue(r)} for r in releases]
             return {
                 "name": name,
-                "releases": releases,
+                "releases": enriched,
                 "total_sold": sum(r.get("tickets_count") or 0 for r in releases),
                 "total_capacity": sum(r.get("quantity") or 0 for r in releases),
+                "total_revenue": sum(r["revenue"] for r in enriched),
             }
 
         groups = [_make_group(name, releases) for name, releases in buckets.items() if releases]

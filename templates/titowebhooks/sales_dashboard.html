@@ -6,7 +6,7 @@
 {% block title %}Ticket Sales - DjangoCon US Automation{% endblock %}
 
 {% block content %}
-    <div class="p-6 mx-auto max-w-5xl">
+    <div class="p-6 mx-auto max-w-7xl">
         <div class="flex justify-between items-center mb-6">
             <div>
                 <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
@@ -45,7 +45,7 @@
                         </h2>
 
                         <div class="p-4 mb-3 bg-green-800 bg-opacity-50 rounded-lg">
-                            <div class="grid grid-cols-3 gap-4 text-center">
+                            <div class="grid grid-cols-4 gap-4 text-center">
                                 <div>
                                     <p class="text-2xl font-bold text-green-400">{{ event.total_sold }}</p>
                                     <p class="text-sm text-gray-300">Sold</p>
@@ -63,6 +63,10 @@
                                         <p class="text-2xl font-bold text-gray-600">—</p>
                                     {% endif %}
                                     <p class="text-sm text-gray-300">of Goal</p>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-green-300">${{ event.total_revenue|floatformat:"0g" }}</p>
+                                    <p class="text-sm text-gray-300">Raised</p>
                                 </div>
                             </div>
                             {% if event.last_synced %}
@@ -98,7 +102,9 @@
                                         <tr>
                                             <th class="py-2 px-4 text-xs font-medium tracking-wider text-left uppercase">Release</th>
                                             <th class="py-2 px-4 text-xs font-medium tracking-wider text-center uppercase">State</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Price</th>
                                             <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Sold / Cap</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-green-700">
@@ -106,10 +112,14 @@
                                             <tr class="bg-green-900 bg-opacity-60">
                                                 <td class="py-1 px-4 text-xs font-semibold tracking-wider text-green-300 uppercase">{{ group.name }}</td>
                                                 <td class="py-1 px-4 text-xs text-center text-gray-500"></td>
+                                                <td class="py-1 px-4 text-xs text-right text-gray-500"></td>
                                                 <td class="py-1 px-4 font-mono text-xs text-right text-gray-400">
                                                     <span class="{% if group.total_sold %}text-green-300{% else %}text-gray-600{% endif %}">{{ group.total_sold }}</span>
                                                     <span class="text-gray-600">/</span>
                                                     <span>{% if group.total_capacity %}{{ group.total_capacity }}{% else %}&infin;{% endif %}</span>
+                                                </td>
+                                                <td class="py-1 px-4 font-mono text-xs text-right">
+                                                    <span class="{% if group.total_revenue %}text-green-300{% else %}text-gray-600{% endif %}">${{ group.total_revenue|floatformat:"0g" }}</span>
                                                 </td>
                                             </tr>
                                             {% for release in group.releases %}
@@ -124,13 +134,24 @@
                                                         </span>
                                                     </td>
                                                     <td class="py-2 px-4 font-mono text-sm text-right">
+                                                        {% if release.price %}<span class="text-gray-300">${{ release.price|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
+                                                    </td>
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
                                                         <span class="{% if release.tickets_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ release.tickets_count|default:0 }}</span>
                                                         <span class="text-gray-600">/</span>
                                                         <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
                                                     </td>
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
+                                                        {% if release.revenue %}<span class="text-green-400">${{ release.revenue|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
+                                                    </td>
                                                 </tr>
                                             {% endfor %}
                                         {% endfor %}
+                                        <tr class="bg-green-700 bg-opacity-40">
+                                            <td class="py-2 px-4 text-xs font-semibold tracking-wider text-green-200 uppercase" colspan="3">Total raised</td>
+                                            <td class="py-2 px-4 font-mono text-xs text-right text-gray-300">{{ event.total_sold }}</td>
+                                            <td class="py-2 px-4 font-mono text-sm text-right text-green-300">${{ event.total_revenue|floatformat:"0g" }}</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -143,6 +164,7 @@
                                 <span class="font-mono text-sm text-gray-300">
                                     <span class="text-green-400">{{ event.total_sold }}</span>
                                     sold
+                                    {% if event.total_revenue %}&middot; <span class="text-green-300">${{ event.total_revenue|floatformat:"0g" }}</span> raised{% endif %}
                                     {% if event.goal %}&middot; <span class="text-yellow-300">{{ event.percent_of_goal }}%</span> of goal{% endif %}
                                     &middot; {{ event.releases|length }} release{{ event.releases|length|pluralize }}
                                 </span>
@@ -176,6 +198,9 @@
                                                     <span class="text-gray-600">/</span>
                                                     <span>{% if group.total_capacity %}{{ group.total_capacity }}{% else %}&infin;{% endif %}</span>
                                                 </td>
+                                                <td class="py-1 px-4 font-mono text-xs text-right">
+                                                    <span class="{% if group.total_revenue %}text-green-300{% else %}text-gray-600{% endif %}">${{ group.total_revenue|floatformat:"0g" }}</span>
+                                                </td>
                                             </tr>
                                             {% for release in group.releases %}
                                                 <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
@@ -185,9 +210,17 @@
                                                         <span class="text-gray-600">/</span>
                                                         <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
                                                     </td>
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
+                                                        {% if release.revenue %}<span class="text-green-400">${{ release.revenue|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
+                                                    </td>
                                                 </tr>
                                             {% endfor %}
                                         {% endfor %}
+                                        <tr class="bg-green-700 bg-opacity-30">
+                                            <td class="py-2 px-4 text-xs font-semibold tracking-wider text-green-200 uppercase">Total raised</td>
+                                            <td class="py-2 px-4 font-mono text-xs text-right text-gray-300">{{ event.total_sold }}</td>
+                                            <td class="py-2 px-4 font-mono text-sm text-right text-green-300">${{ event.total_revenue|floatformat:"0g" }}</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             {% endif %}
