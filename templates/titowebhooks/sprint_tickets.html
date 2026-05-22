@@ -12,14 +12,27 @@
                 <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
                 <h1 class="text-3xl font-bold">Sprint Tickets</h1>
             </div>
-            <a href="?format=csv"
-               class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
-                Download CSV
-            </a>
+            <div class="flex gap-2">
+                {% if include_online %}
+                    <a href="?"
+                       class="py-2 px-4 font-semibold text-white bg-gray-700 rounded-lg hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                        Hide online
+                    </a>
+                {% else %}
+                    <a href="?include_online=1"
+                       class="py-2 px-4 font-semibold text-white bg-gray-700 rounded-lg hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                        Show online too
+                    </a>
+                {% endif %}
+                <a href="?format=csv{% if include_online %}&include_online=1{% endif %}"
+                   class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                    Download CSV
+                </a>
+            </div>
         </div>
 
         <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
-            <div class="grid grid-cols-5 gap-4 text-center">
+            <div class="grid {% if include_online %}grid-cols-6{% else %}grid-cols-5{% endif %} gap-4 text-center">
                 <div>
                     <p class="text-2xl font-bold">{{ total_count }}</p>
                     <p class="text-sm text-gray-300">Total</p>
@@ -40,6 +53,12 @@
                     <p class="text-2xl font-bold text-green-400">{{ friday_count }}</p>
                     <p class="text-sm text-gray-300">Friday</p>
                 </div>
+                {% if include_online %}
+                    <div>
+                        <p class="text-2xl font-bold text-purple-400">{{ online_count }}</p>
+                        <p class="text-sm text-gray-300">Online</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
@@ -60,6 +79,11 @@
                             <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase" colspan="2">
                                 Friday
                             </th>
+                            {% if include_online %}
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
+                                    Online
+                                </th>
+                            {% endif %}
                             <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">
                                 Ticket Date
                             </th>
@@ -70,6 +94,7 @@
                             <th class="py-1 px-4 text-xs font-medium tracking-wider text-center text-gray-400 uppercase">Joining</th>
                             <th class="py-1 px-4 text-xs font-medium tracking-wider text-center text-gray-400 uppercase">Leading</th>
                             <th class="py-1 px-4 text-xs font-medium tracking-wider text-center text-gray-400 uppercase">Joining</th>
+                            {% if include_online %}<th></th>{% endif %}
                             <th></th>
                         </tr>
                     </thead>
@@ -126,8 +151,17 @@
                                         <span class="text-gray-600">-</span>
                                     {% endif %}
                                 </td>
+                                {% if include_online %}
+                                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                                        {% if ticket.online %}
+                                            <span class="inline-flex py-1 px-3 text-xs font-semibold leading-5 text-purple-200 bg-purple-800 rounded-full">Yes</span>
+                                        {% else %}
+                                            <span class="text-gray-600">-</span>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
                                 <td class="py-3 px-4 text-sm whitespace-nowrap">
-                                    {{ ticket.created_at }}
+                                    {{ ticket.created_at|date:"Y-m-d H:i" }}
                                 </td>
                             </tr>
                         {% endfor %}

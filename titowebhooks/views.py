@@ -3,6 +3,7 @@ import csv
 import hashlib
 import hmac
 import json
+from datetime import datetime, timezone
 
 from django.conf import settings
 from django.contrib import messages
@@ -82,7 +83,18 @@ def _get_answer(answers, question_id):
     return ""
 
 
-def _extract_sprint_tickets():
+def _parse_created_at(value: str):
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_online_release(release_title: str) -> bool:
+    return "online" in release_title.lower()
+
+
+def _extract_sprint_tickets(include_online: bool = False):
     events = TitoWebhookEvent.objects.filter(trigger="ticket.completed")
     # Collect per email+release, keeping most recent
     by_email_release = {}
@@ -100,9 +112,13 @@ def _extract_sprint_tickets():
         if "Sprint" not in release_title:
             continue
 
+        is_online = _is_online_release(release_title)
+        if is_online and not include_online:
+            continue
+
         answers = payload.get("answers", [])
-        email = payload.get("email", "")
-        created_at = payload.get("created_at", "")
+        email = (payload.get("email") or "").strip().lower()
+        created_at = _parse_created_at(payload.get("created_at", "")) or datetime.min.replace(tzinfo=timezone.utc)
 
         key = (email, release_title)
         if key not in by_email_release or created_at > by_email_release[key]["created_at"]:
@@ -110,6 +126,7 @@ def _extract_sprint_tickets():
                 "name": payload.get("name", ""),
                 "email": email,
                 "release_title": release_title,
+                "is_online": is_online,
                 "leading": _get_answer(answers, LEADER_QUESTION_ID),
                 "joining": _get_answer(answers, JOINER_QUESTION_ID),
                 "created_at": created_at,
@@ -129,12 +146,16 @@ def _extract_sprint_tickets():
                 "friday": False,
                 "friday_leading": "",
                 "friday_joining": "",
+                "online": False,
                 "created_at": ticket["created_at"],
             }
 
         if ticket["created_at"] > people[email]["created_at"]:
             people[email]["created_at"] = ticket["created_at"]
             people[email]["name"] = ticket["name"]
+
+        if ticket["is_online"]:
+            people[email]["online"] = True
 
         if "Thursday" in ticket["release_title"]:
             people[email]["thursday"] = True
@@ -150,7 +171,8 @@ def _extract_sprint_tickets():
 
 @staff_member_required
 def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
-    sprint_tickets = _extract_sprint_tickets()
+    include_online = request.GET.get("include_online") == "1"
+    sprint_tickets = _extract_sprint_tickets(include_online=include_online)
 
     if request.GET.get("format") == "csv":
         response = HttpResponse(content_type="text/csv")
@@ -166,6 +188,7 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
                 "Friday",
                 "Friday Leading",
                 "Friday Joining",
+                "Online",
                 "Ticket Date",
             ]
         )
@@ -180,7 +203,8 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
                     "Yes" if ticket["friday"] else "",
                     ticket["friday_leading"],
                     ticket["friday_joining"],
-                    ticket["created_at"],
+                    "Yes" if ticket["online"] else "",
+                    ticket["created_at"].isoformat() if ticket["created_at"] else "",
                 ]
             )
         return response
@@ -189,6 +213,7 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
     joiners_count = sum(1 for t in sprint_tickets if t["thursday_joining"] == "Yes" or t["friday_joining"] == "Yes")
     thursday_count = sum(1 for t in sprint_tickets if t["thursday"])
     friday_count = sum(1 for t in sprint_tickets if t["friday"])
+    online_count = sum(1 for t in sprint_tickets if t["online"])
 
     context = {
         "sprint_tickets": sprint_tickets,
@@ -197,6 +222,8 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
         "joiners_count": joiners_count,
         "thursday_count": thursday_count,
         "friday_count": friday_count,
+        "online_count": online_count,
+        "include_online": include_online,
     }
     return render(request, "titowebhooks/sprint_tickets.html", context)
 
