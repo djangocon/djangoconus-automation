@@ -245,3 +245,158 @@ class TestSprintTicketsView(TestCase):
         assert "inperson@example.com" in body
         assert "onliner@example.com" not in body
         assert "Online" in body.splitlines()[0]
+
+
+def _historical_payload(*, email, release_title, created_at, year, leading="No", joining="No", name=None):
+    slug = f"djangocon-us-{year}"
+    return {
+        "name": name or email.split("@")[0],
+        "email": email,
+        "release_title": release_title,
+        "created_at": created_at,
+        "event": {"slug": slug, "title": f"DjangoCon US {year}"},
+        "answers": [
+            {"question": {"id": LEADER_QUESTION_ID}, "humanized_response": leading},
+            {"question": {"id": JOINER_QUESTION_ID}, "humanized_response": joining},
+        ],
+    }
+
+
+@pytest.mark.django_db
+class TestHistoricalSprintTicketsCsv(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user(
+            username="staff", password="x", email="staff@example.com", is_staff=True
+        )
+        self.client.force_login(self.staff)
+
+    def _create_event(self, payload):
+        TitoWebhookEvent.objects.create(trigger="ticket.completed", payload=payload)
+
+    def _download(self, query=""):
+        response = self.client.get(reverse("sprint_tickets") + "?scope=historical&format=csv" + query)
+        assert response.status_code == 200
+        assert response["Content-Type"] == "text/csv"
+        assert "sprint_tickets_historical.csv" in response["Content-Disposition"]
+        return response.content.decode()
+
+    def test_spans_multiple_years_with_event_and_year_columns(self):
+        self._create_event(
+            _historical_payload(
+                email="alice@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2024-09-01T10:00:00Z",
+                year=2024,
+            )
+        )
+        self._create_event(
+            _historical_payload(
+                email="bob@example.com",
+                release_title="Sprint (In Person) - Friday",
+                created_at="2026-09-01T10:00:00Z",
+                year=2026,
+            )
+        )
+
+        body = self._download()
+
+        header = body.splitlines()[0]
+        assert header.startswith("Year,Event,Name,Email")
+        assert "DjangoCon US 2024" in body
+        assert "DjangoCon US 2026" in body
+        assert "alice@example.com" in body
+        assert "bob@example.com" in body
+
+    def test_excludes_online_sprints_by_default(self):
+        self._create_event(
+            _historical_payload(
+                email="inperson@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2025-09-01T10:00:00Z",
+                year=2025,
+            )
+        )
+        self._create_event(
+            _historical_payload(
+                email="onliner@example.com",
+                release_title="Online Sprint - Thursday",
+                created_at="2025-09-02T10:00:00Z",
+                year=2025,
+            )
+        )
+
+        body = self._download()
+
+        assert "inperson@example.com" in body
+        assert "onliner@example.com" not in body
+
+    def test_include_online_query_param_shows_online(self):
+        self._create_event(
+            _historical_payload(
+                email="onliner@example.com",
+                release_title="Online Sprint - Thursday",
+                created_at="2025-09-02T10:00:00Z",
+                year=2025,
+            )
+        )
+
+        body = self._download(query="&include_online=1")
+
+        assert "onliner@example.com" in body
+
+    def test_one_row_per_person_per_year_merges_days(self):
+        self._create_event(
+            _historical_payload(
+                email="repeat@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2025-09-01T10:00:00Z",
+                year=2025,
+                leading="Yes",
+            )
+        )
+        self._create_event(
+            _historical_payload(
+                email="repeat@example.com",
+                release_title="Sprint (In Person) - Friday",
+                created_at="2025-09-02T10:00:00Z",
+                year=2025,
+                joining="Yes",
+            )
+        )
+        # Same person, different year -> separate row.
+        self._create_event(
+            _historical_payload(
+                email="repeat@example.com",
+                release_title="Sprint (In Person) - Thursday",
+                created_at="2024-09-01T10:00:00Z",
+                year=2024,
+            )
+        )
+
+        body = self._download()
+        rows = [line for line in body.splitlines()[1:] if "repeat@example.com" in line]
+        assert len(rows) == 2
+        merged_2025 = next(r for r in rows if r.startswith("2025"))
+        # Both Thursday (leading) and Friday (joining) captured on one row.
+        assert merged_2025.count("Yes") >= 2
+
+    def test_limits_to_most_recent_three_years(self):
+        for year in (2022, 2023, 2024, 2025, 2026):
+            self._create_event(
+                _historical_payload(
+                    email=f"y{year}@example.com",
+                    release_title="Sprint (In Person) - Thursday",
+                    created_at=f"{year}-09-01T10:00:00Z",
+                    year=year,
+                )
+            )
+
+        body = self._download()
+
+        # Most recent year is 2026, so window is 2024-2026.
+        assert "y2026@example.com" in body
+        assert "y2025@example.com" in body
+        assert "y2024@example.com" in body
+        assert "y2023@example.com" not in body
+        assert "y2022@example.com" not in body
