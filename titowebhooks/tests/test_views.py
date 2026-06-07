@@ -10,7 +10,12 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from titowebhooks.models import TitoWebhookEvent
-from titowebhooks.views import EVENT_SLUG, JOINER_QUESTION_ID, LEADER_QUESTION_ID
+from titowebhooks.views import (
+    EVENT_SLUG,
+    JOINER_QUESTION_ID,
+    LEADER_QUESTION_ID,
+    _extract_historical_sprints,
+)
 
 TEST_PAYLOAD = {
     "_type": "ticket",
@@ -381,8 +386,8 @@ class TestHistoricalSprintTicketsCsv(TestCase):
         # Both Thursday (leading) and Friday (joining) captured on one row.
         assert merged_2025.count("Yes") >= 2
 
-    def test_limits_to_most_recent_three_years(self):
-        for year in (2022, 2023, 2024, 2025, 2026):
+    def test_window_anchored_to_current_calendar_year(self):
+        for year in (2021, 2022, 2023, 2024, 2025, 2026):
             self._create_event(
                 _historical_payload(
                     email=f"y{year}@example.com",
@@ -392,11 +397,26 @@ class TestHistoricalSprintTicketsCsv(TestCase):
                 )
             )
 
-        body = self._download()
+        # current_year - years (3) = 2023, so 2023 and newer are kept regardless of
+        # which year happens to be the most recent one present in the data.
+        rows = _extract_historical_sprints(current_year=2026)
+        years = {r["year"] for r in rows}
+        assert years == {2023, 2024, 2025, 2026}
 
-        # Most recent year is 2026, so window is 2024-2026.
-        assert "y2026@example.com" in body
-        assert "y2025@example.com" in body
-        assert "y2024@example.com" in body
-        assert "y2023@example.com" not in body
-        assert "y2022@example.com" not in body
+    def test_window_stable_when_current_year_data_missing(self):
+        # No 2026 webhooks captured (e.g. coverage gap); the window must still be
+        # anchored to the current calendar year, not the newest year in the data.
+        for year in (2022, 2023, 2024):
+            self._create_event(
+                _historical_payload(
+                    email=f"y{year}@example.com",
+                    release_title="Sprint (In Person) - Thursday",
+                    created_at=f"{year}-09-01T10:00:00Z",
+                    year=year,
+                )
+            )
+
+        rows = _extract_historical_sprints(current_year=2026)
+        years = {r["year"] for r in rows}
+        # Anchored to 2026: cutoff 2023, so 2022 drops even though it is recent in the data.
+        assert years == {2023, 2024}
