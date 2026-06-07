@@ -114,13 +114,19 @@ def _event_year(payload: dict) -> int | None:
     return created_at.year if created_at else None
 
 
-def _extract_historical_sprints(include_online: bool = False, years: int | None = HISTORICAL_YEARS):
+def _extract_historical_sprints(
+    include_online: bool = False, years: int | None = HISTORICAL_YEARS, current_year: int | None = None
+):
     """One row per person per conference year, across all events in the webhook log.
 
     Used by the "Download Historical" export so the sprints team can see who has
     attended in-person sprints over the last few years. Online sprints are excluded
-    unless ``include_online`` is set. ``years`` limits the result to the most recent
-    N conference years present in the data (``None`` keeps every year).
+    unless ``include_online`` is set.
+
+    ``years`` limits the result to conference years on or after ``current_year - years``
+    (``None`` keeps every year). The window is anchored to the calendar year, not to the
+    most recent year present in the data, so it stays stable even if a year's webhooks are
+    incomplete. ``current_year`` defaults to today's year and exists mainly for testing.
     """
     events = TitoWebhookEvent.objects.filter(trigger="ticket.completed")
     # Collect per email+year+release, keeping most recent.
@@ -163,10 +169,14 @@ def _extract_historical_sprints(include_online: bool = False, years: int | None 
                 "created_at": created_at,
             }
 
-    # Limit to the most recent N conference years present in the data.
-    if years and by_email_year_release:
-        max_year = max(t["year"] for t in by_email_year_release.values())
-        cutoff = max_year - years + 1
+    # Limit to conference years within the last ``years`` calendar years of the current
+    # year (e.g. 2026 with years=3 -> 2023 and newer). Anchoring to the calendar year
+    # rather than the newest year in the data keeps the window stable when a year's
+    # webhook coverage is incomplete.
+    if years:
+        if current_year is None:
+            current_year = datetime.now(timezone.utc).year
+        cutoff = current_year - years
         by_email_year_release = {k: v for k, v in by_email_year_release.items() if v["year"] >= cutoff}
 
     # Consolidate to one row per person per year.
