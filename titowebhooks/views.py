@@ -3,6 +3,7 @@ import csv
 import hashlib
 import hmac
 import json
+import re
 from datetime import datetime, timezone
 
 from django.conf import settings
@@ -24,6 +25,10 @@ superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser)
 LEADER_QUESTION_ID = 1216404
 JOINER_QUESTION_ID = 1216405
 EVENT_SLUG = "djangocon-us-2026"
+
+# How many conference years the "Download Historical" export reaches back, counting
+# from the most recent year present in the data (e.g. 3 -> current + two prior years).
+HISTORICAL_YEARS = 3
 
 
 def verify_tito_signature(payload_body: bytes, signature: str, security_token: str) -> bool:
@@ -92,6 +97,116 @@ def _parse_created_at(value: str):
 
 def _is_online_release(release_title: str) -> bool:
     return "online" in release_title.lower()
+
+
+def _event_year(payload: dict) -> int | None:
+    """Best-effort conference year for a webhook payload.
+
+    Prefers the year embedded in the event slug (e.g. ``djangocon-us-2023``),
+    then falls back to the event start/end dates, then the ticket created_at.
+    """
+    event = payload.get("event", {}) or {}
+    for source in (event.get("slug", ""), event.get("end_date", ""), event.get("start_date", "")):
+        match = re.search(r"(20\d{2})", source or "")
+        if match:
+            return int(match.group(1))
+    created_at = _parse_created_at(payload.get("created_at", ""))
+    return created_at.year if created_at else None
+
+
+def _extract_historical_sprints(include_online: bool = False, years: int | None = HISTORICAL_YEARS):
+    """One row per person per conference year, across all events in the webhook log.
+
+    Used by the "Download Historical" export so the sprints team can see who has
+    attended in-person sprints over the last few years. Online sprints are excluded
+    unless ``include_online`` is set. ``years`` limits the result to the most recent
+    N conference years present in the data (``None`` keeps every year).
+    """
+    events = TitoWebhookEvent.objects.filter(trigger="ticket.completed")
+    # Collect per email+year+release, keeping most recent.
+    by_email_year_release = {}
+
+    for event in events:
+        payload = event.payload
+        if not payload:
+            continue
+
+        release_title = payload.get("release_title", "")
+        if "Sprint" not in release_title:
+            continue
+
+        is_online = _is_online_release(release_title)
+        if is_online and not include_online:
+            continue
+
+        year = _event_year(payload)
+        if year is None:
+            continue
+
+        answers = payload.get("answers", [])
+        email = (payload.get("email") or "").strip().lower()
+        created_at = _parse_created_at(payload.get("created_at", "")) or datetime.min.replace(tzinfo=timezone.utc)
+        event_data = payload.get("event", {}) or {}
+        event_title = event_data.get("title", "") or event_data.get("slug", "")
+
+        key = (email, year, release_title)
+        if key not in by_email_year_release or created_at > by_email_year_release[key]["created_at"]:
+            by_email_year_release[key] = {
+                "name": payload.get("name", ""),
+                "email": email,
+                "year": year,
+                "event_title": event_title,
+                "release_title": release_title,
+                "is_online": is_online,
+                "leading": _get_answer(answers, LEADER_QUESTION_ID),
+                "joining": _get_answer(answers, JOINER_QUESTION_ID),
+                "created_at": created_at,
+            }
+
+    # Limit to the most recent N conference years present in the data.
+    if years and by_email_year_release:
+        max_year = max(t["year"] for t in by_email_year_release.values())
+        cutoff = max_year - years + 1
+        by_email_year_release = {k: v for k, v in by_email_year_release.items() if v["year"] >= cutoff}
+
+    # Consolidate to one row per person per year.
+    people = {}
+    for ticket in by_email_year_release.values():
+        person_key = (ticket["email"], ticket["year"])
+        if person_key not in people:
+            people[person_key] = {
+                "name": ticket["name"],
+                "email": ticket["email"],
+                "year": ticket["year"],
+                "event_title": ticket["event_title"],
+                "thursday": False,
+                "thursday_leading": "",
+                "thursday_joining": "",
+                "friday": False,
+                "friday_leading": "",
+                "friday_joining": "",
+                "online": False,
+                "created_at": ticket["created_at"],
+            }
+
+        person = people[person_key]
+        if ticket["created_at"] > person["created_at"]:
+            person["created_at"] = ticket["created_at"]
+            person["name"] = ticket["name"]
+
+        if ticket["is_online"]:
+            person["online"] = True
+
+        if "Thursday" in ticket["release_title"]:
+            person["thursday"] = True
+            person["thursday_leading"] = ticket["leading"]
+            person["thursday_joining"] = ticket["joining"]
+        elif "Friday" in ticket["release_title"]:
+            person["friday"] = True
+            person["friday_leading"] = ticket["leading"]
+            person["friday_joining"] = ticket["joining"]
+
+    return sorted(people.values(), key=lambda t: (-t["year"], (t["name"] or "").lower()))
 
 
 def _extract_sprint_tickets(include_online: bool = False):
@@ -169,9 +284,54 @@ def _extract_sprint_tickets(include_online: bool = False):
     return sorted(people.values(), key=lambda t: t["created_at"], reverse=True)
 
 
+def _historical_sprints_csv(include_online: bool) -> HttpResponse:
+    rows = _extract_historical_sprints(include_online=include_online)
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="sprint_tickets_historical.csv"'
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "Year",
+            "Event",
+            "Name",
+            "Email",
+            "Thursday",
+            "Thursday Leading",
+            "Thursday Joining",
+            "Friday",
+            "Friday Leading",
+            "Friday Joining",
+            "Online",
+            "Ticket Date",
+        ]
+    )
+    for row in rows:
+        writer.writerow(
+            [
+                row["year"],
+                row["event_title"],
+                row["name"],
+                row["email"],
+                "Yes" if row["thursday"] else "",
+                row["thursday_leading"],
+                row["thursday_joining"],
+                "Yes" if row["friday"] else "",
+                row["friday_leading"],
+                row["friday_joining"],
+                "Yes" if row["online"] else "",
+                row["created_at"].isoformat() if row["created_at"] else "",
+            ]
+        )
+    return response
+
+
 @staff_member_required
 def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
     include_online = request.GET.get("include_online") == "1"
+
+    if request.GET.get("scope") == "historical" and request.GET.get("format") == "csv":
+        return _historical_sprints_csv(include_online=include_online)
+
     sprint_tickets = _extract_sprint_tickets(include_online=include_online)
 
     if request.GET.get("format") == "csv":
@@ -224,6 +384,7 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
         "friday_count": friday_count,
         "online_count": online_count,
         "include_online": include_online,
+        "historical_years": HISTORICAL_YEARS,
     }
     return render(request, "titowebhooks/sprint_tickets.html", context)
 

@@ -28,6 +28,11 @@
                    class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                     Download CSV
                 </a>
+                <a href="?scope=historical&format=csv{% if include_online %}&include_online=1{% endif %}"
+                   title="In-person sprint attendees across the last {{ historical_years }} conference years"
+                   class="py-2 px-4 font-semibold text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                    Download Historical
+                </a>
             </div>
         </div>
 
