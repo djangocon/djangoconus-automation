@@ -72,6 +72,7 @@ INSTALLED_APPS += [
     "titowebhooks",
     "travel_safety",
     "social_monitor",
+    "volunteers",
 ]
 
 MIDDLEWARE = [
@@ -232,7 +233,15 @@ Q_SCHEDULES = {
         "func": "travel_safety.tasks.enforce_retention",
         "schedule_type": "DAILY",
     },
+    "volunteer-shift-reminders": {
+        "func": "volunteers.tasks.send_shift_reminders",
+        "schedule_type": "HOURLY",
+    },
 }
+
+# Volunteer signup settings
+
+VOLUNTEER_MAX_HOURS = env.int("VOLUNTEER_MAX_HOURS", default=8)
 
 # Slack settings
 

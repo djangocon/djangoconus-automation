@@ -39,6 +39,15 @@ NAV_ITEMS = [
             NavItem(title="Sign Out", url="account_logout"),
         ],
     ),
+    NavGroup(
+        title="Volunteers",
+        permissions=["is_authenticated"],
+        items=[
+            NavItem(title="Sign Up to Volunteer", url="volunteers:shifts"),
+            NavItem(title="My Shifts", url="volunteers:my_shifts"),
+            NavItem(title="Volunteer Dashboard", url="volunteers:dashboard", permissions=["is_staff"]),
+        ],
+    ),
     NavItem(title="Sign In", url="account_login", extra_context={"anonymous_only": True}),
 ]
 

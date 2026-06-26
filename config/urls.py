@@ -41,4 +41,5 @@ urlpatterns = [
     path("thunderdome/<str:pretalx_id>/", submission_page_view, name="thunderdome_submission_page"),
     path("thunderdome/<str:pretalx_id>/modal/", submission_detail_view, name="thunderdome_submission_detail"),
     path("travel-safety/", include("travel_safety.urls")),
+    path("volunteers/", include("volunteers.urls")),
 ]
