@@ -86,3 +86,30 @@ def test_total_volunteer_hours(user, role):
 def test_dashboard_requires_staff(auth_client, client, user):
     resp = auth_client.get(reverse("volunteers:dashboard"))
     assert resp.status_code in (302, 403)
+
+
+def test_calendar_feed_returns_ics(auth_client, client, user, role):
+    from volunteers.models import CalendarToken
+
+    shift = make_shift(role, title="Reg Desk")
+    VolunteerSignup.objects.create(shift=shift, user=user)
+    token = CalendarToken.objects.create(user=user)
+
+    resp = client.get(reverse("volunteers:calendar", args=[token.token]))
+    assert resp.status_code == 200
+    assert resp["Content-Type"].startswith("text/calendar")
+    body = resp.content.decode()
+    assert "BEGIN:VCALENDAR" in body
+    assert "SUMMARY:Volunteer: Reg Desk" in body
+    assert "END:VCALENDAR" in body
+
+
+def test_calendar_feed_excludes_cancelled(client, user, role):
+    from volunteers.models import CalendarToken
+
+    shift = make_shift(role, title="Cancelled One")
+    VolunteerSignup.objects.create(shift=shift, user=user, cancelled=True)
+    token = CalendarToken.objects.create(user=user)
+
+    resp = client.get(reverse("volunteers:calendar", args=[token.token]))
+    assert "Cancelled One" not in resp.content.decode()

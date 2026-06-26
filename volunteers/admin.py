@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import Role, Shift, VolunteerSignup
+from .models import CalendarToken, Role, Shift, VolunteerSignup
+
+
+@admin.register(CalendarToken)
+class CalendarTokenAdmin(admin.ModelAdmin):
+    list_display = ["user", "token"]
+    search_fields = ["user__email"]
+    readonly_fields = ["token"]
 
 
 class VolunteerSignupInline(admin.TabularInline):

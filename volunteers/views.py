@@ -5,11 +5,15 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from .ical import build_calendar
 from .models import (
+    CalendarToken,
     Shift,
     VolunteerSignup,
     conflicting_shifts,
@@ -57,13 +61,27 @@ def my_shifts_view(request):
         .select_related("shift", "shift__role")
         .order_by("shift__starts_at")
     )
+    token, _ = CalendarToken.objects.get_or_create(user=request.user)
     context = {
         "page_title": "My Volunteer Shifts",
         "signups": signups,
         "my_hours": total_volunteer_hours(request.user),
         "max_hours": max_volunteer_hours(),
+        "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
     }
     return render(request, "volunteers/my_shifts.html", context)
+
+
+def calendar_feed(request, token):
+    """Per-volunteer iCal feed, reached by unguessable token (no login)."""
+    calendar_token = get_object_or_404(CalendarToken, token=token)
+    signups = (
+        VolunteerSignup.objects.filter(user=calendar_token.user, cancelled=False)
+        .select_related("shift", "shift__role")
+        .order_by("shift__starts_at")
+    )
+    ics = build_calendar(signups, host=request.get_host())
+    return HttpResponse(ics, content_type="text/calendar; charset=utf-8")
 
 
 @login_required

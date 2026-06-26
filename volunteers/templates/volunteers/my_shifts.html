@@ -43,5 +43,16 @@
                 <p class="text-center text-green-300">You haven't signed up for any shifts yet.</p>
             {% endfor %}
         </div>
+
+        {% if signups %}
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="mb-2 text-lg font-semibold text-yellow-300">📅 Subscribe to your shifts</h2>
+                <p class="mb-2 text-sm text-green-200">
+                    Add this private calendar URL to Google Calendar, Apple Calendar, or Outlook to
+                    keep your shifts in sync:
+                </p>
+                <code class="block p-2 text-xs break-all text-green-100 bg-green-900 rounded border border-green-700">{{ calendar_url }}</code>
+            </div>
+        {% endif %}
     </div>
 {% endblock content %}

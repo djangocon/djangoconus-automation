@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -96,6 +98,22 @@ class VolunteerSignup(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.shift}"
+
+
+class CalendarToken(models.Model):
+    """A stable, unguessable token so a volunteer can subscribe to their shifts.
+
+    Calendar clients can't authenticate, so the iCal feed is reached by this
+    per-user token instead of a login.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="volunteer_calendar_token"
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
+    def __str__(self):
+        return f"calendar token for {self.user}"
 
 
 def total_volunteer_hours(user):

@@ -10,4 +10,5 @@ urlpatterns = [
     path("dashboard/", views.dashboard_view, name="dashboard"),
     path("shift/<int:pk>/signup/", views.signup_view, name="signup"),
     path("shift/<int:pk>/cancel/", views.cancel_view, name="cancel"),
+    path("calendar/<uuid:token>.ics", views.calendar_feed, name="calendar"),
 ]
