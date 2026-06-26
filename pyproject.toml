@@ -16,7 +16,7 @@ dependencies = [
     "django-simple-nav",
     "django-tailwind-cli",
     "django-test-plus",
-    "django<5.2",
+    "django<6.2",
     "environs[django]",
     "psycopg[binary]",
     "pytest",
