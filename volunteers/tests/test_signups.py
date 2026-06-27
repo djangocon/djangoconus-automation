@@ -5,7 +5,14 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from volunteers.models import Role, Shift, VolunteerSignup, conflicting_shifts, total_volunteer_hours
+from volunteers.models import (
+    CalendarToken,
+    Role,
+    Shift,
+    VolunteerSignup,
+    conflicting_shifts,
+    total_volunteer_hours,
+)
 
 User = get_user_model()
 
@@ -89,8 +96,6 @@ def test_dashboard_requires_staff(auth_client, client, user):
 
 
 def test_calendar_feed_returns_ics(auth_client, client, user, role):
-    from volunteers.models import CalendarToken
-
     shift = make_shift(role, title="Reg Desk")
     VolunteerSignup.objects.create(shift=shift, user=user)
     token = CalendarToken.objects.create(user=user)
@@ -105,8 +110,6 @@ def test_calendar_feed_returns_ics(auth_client, client, user, role):
 
 
 def test_calendar_feed_excludes_cancelled(client, user, role):
-    from volunteers.models import CalendarToken
-
     shift = make_shift(role, title="Cancelled One")
     VolunteerSignup.objects.create(shift=shift, user=user, cancelled=True)
     token = CalendarToken.objects.create(user=user)
