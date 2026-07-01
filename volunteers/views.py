@@ -25,19 +25,31 @@ def max_volunteer_hours():
     return getattr(settings, "VOLUNTEER_MAX_HOURS", 8)
 
 
-@login_required
 def shift_list_view(request):
-    """Upcoming shifts an attendee can browse and sign up for, grouped by day."""
-    shifts = (
-        Shift.objects.filter(ends_at__gte=timezone.now())
-        .select_related("role")
-        .annotate(filled_count=Count("signups", filter=Q(signups__cancelled=False)))
-        .order_by("starts_at", "title")
-    )
+    """Upcoming shifts anyone can browse; signing up or cancelling still requires login."""
+    all_shifts = Shift.objects.filter(ends_at__gte=timezone.now()).select_related("role")
 
-    my_shift_ids = set(
-        VolunteerSignup.objects.filter(user=request.user, cancelled=False).values_list("shift_id", flat=True)
+    roles = sorted({s.role.name for s in all_shifts})
+
+    role_filter = request.GET.get("role", "")
+    needs_help = request.GET.get("needs_help") == "1"
+
+    shifts = all_shifts.annotate(filled_count=Count("signups", filter=Q(signups__cancelled=False))).order_by(
+        "starts_at", "title"
     )
+    if role_filter:
+        shifts = shifts.filter(role__name=role_filter)
+    if needs_help:
+        shifts = shifts.filter(filled_count=0)
+
+    if request.user.is_authenticated:
+        my_shift_ids = set(
+            VolunteerSignup.objects.filter(user=request.user, cancelled=False).values_list("shift_id", flat=True)
+        )
+        my_hours = total_volunteer_hours(request.user)
+    else:
+        my_shift_ids = set()
+        my_hours = 0
 
     days = defaultdict(list)
     for shift in shifts:
@@ -47,8 +59,11 @@ def shift_list_view(request):
         "page_title": "Volunteer Sign-up",
         "days": sorted(days.items()),
         "my_shift_ids": my_shift_ids,
-        "my_hours": total_volunteer_hours(request.user),
+        "my_hours": my_hours,
         "max_hours": max_volunteer_hours(),
+        "roles": roles,
+        "role_filter": role_filter,
+        "needs_help": needs_help,
     }
     return render(request, "volunteers/shift_list.html", context)
 
@@ -141,12 +156,31 @@ def cancel_view(request, pk):
 
 @staff_member_required
 def dashboard_view(request):
-    """Coordinator view: coverage per shift plus a roster of who's signed up."""
-    shifts = (
-        Shift.objects.select_related("role")
-        .annotate(filled_count=Count("signups", filter=Q(signups__cancelled=False)))
-        .order_by("starts_at", "title")
+    """Coordinator view: coverage per shift plus a roster of who's signed up.
+
+    Filterable by role, location, and whether to include shifts that have already
+    ended, so the chair/co-chair can see just what still needs attention.
+    """
+    all_shifts = Shift.objects.select_related("role")
+    roles = sorted({s.role.name for s in all_shifts})
+    locations = sorted({s.location for s in all_shifts if s.location})
+
+    role_filter = request.GET.get("role", "")
+    location_filter = request.GET.get("location", "")
+    show_past = request.GET.get("show_past") == "1"
+    open_only = request.GET.get("open_only") == "1"
+
+    shifts = all_shifts.annotate(filled_count=Count("signups", filter=Q(signups__cancelled=False))).order_by(
+        "starts_at", "title"
     )
+    if role_filter:
+        shifts = shifts.filter(role__name=role_filter)
+    if location_filter:
+        shifts = shifts.filter(location=location_filter)
+    if not show_past:
+        shifts = shifts.filter(ends_at__gte=timezone.now())
+    if open_only:
+        shifts = shifts.filter(filled_count__lt=1)
 
     rosters = defaultdict(list)
     for signup in (
@@ -171,5 +205,11 @@ def dashboard_view(request):
         "total_filled": total_filled,
         "total_open": max(total_capacity - total_filled, 0),
         "coverage": coverage,
+        "roles": roles,
+        "locations": locations,
+        "role_filter": role_filter,
+        "location_filter": location_filter,
+        "show_past": show_past,
+        "open_only": open_only,
     }
     return render(request, "volunteers/dashboard.html", context)

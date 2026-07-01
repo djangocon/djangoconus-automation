@@ -117,3 +117,85 @@ def test_calendar_feed_excludes_cancelled(client, user, role):
 
     resp = client.get(reverse("volunteers:calendar", args=[token.token]))
     assert "Cancelled One" not in resp.content.decode()
+
+
+def test_shift_list_visible_to_anonymous(client, role):
+    make_shift(role, title="Reg Desk")
+    resp = client.get(reverse("volunteers:shifts"))
+    assert resp.status_code == 200
+    assert "Reg Desk" in resp.content.decode()
+
+
+def test_shift_list_filters_by_role(client, role):
+    other_role = Role.objects.create(name="Room Monitor")
+    make_shift(role, title="Reg Desk Shift")
+    make_shift(other_role, title="Room Monitor Shift")
+
+    resp = client.get(reverse("volunteers:shifts"), {"role": role.name})
+    body = resp.content.decode()
+    assert "Reg Desk Shift" in body
+    assert "Room Monitor Shift" not in body
+
+
+def test_shift_list_needs_help_filter(client, role):
+    open_shift = make_shift(role, title="Needs Help", capacity=2)
+    staffed_shift = make_shift(role, title="Already Staffed", capacity=2, start_offset_hours=48)
+    other = User.objects.create_user(username="other", email="other@example.com", password="pw12345!")
+    VolunteerSignup.objects.create(shift=staffed_shift, user=other)
+
+    resp = client.get(reverse("volunteers:shifts"), {"needs_help": "1"})
+    body = resp.content.decode()
+    assert "Needs Help" in body
+    assert "Already Staffed" not in body
+    assert open_shift.id != staffed_shift.id
+
+
+def test_dashboard_filters_by_role_and_location(auth_client, role):
+    staff = User.objects.create_user(username="staffer", email="staff@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+
+    other_role = Role.objects.create(name="Setup Crew")
+    make_shift(role, title="Front Desk", location="Lobby")
+    make_shift(other_role, title="Setup Shift", location="Ballroom")
+
+    resp = auth_client.get(reverse("volunteers:dashboard"), {"role": role.name})
+    body = resp.content.decode()
+    assert "Front Desk" in body
+    assert "Setup Shift" not in body
+
+    resp = auth_client.get(reverse("volunteers:dashboard"), {"location": "Ballroom"})
+    body = resp.content.decode()
+    assert "Setup Shift" in body
+    assert "Front Desk" not in body
+
+
+def test_dashboard_hides_past_shifts_by_default(auth_client, role):
+    staff = User.objects.create_user(username="staffer2", email="staff2@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+
+    make_shift(role, title="Past Shift", start_offset_hours=-4, length_hours=1)
+    make_shift(role, title="Future Shift", start_offset_hours=24)
+
+    resp = auth_client.get(reverse("volunteers:dashboard"))
+    body = resp.content.decode()
+    assert "Future Shift" in body
+    assert "Past Shift" not in body
+
+    resp = auth_client.get(reverse("volunteers:dashboard"), {"show_past": "1"})
+    body = resp.content.decode()
+    assert "Past Shift" in body
+
+
+def test_dashboard_open_only_filter(auth_client, role):
+    staff = User.objects.create_user(username="staffer3", email="staff3@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+
+    make_shift(role, title="Needs Volunteers", capacity=2)
+    staffed = make_shift(role, title="Fully Covered", capacity=2, start_offset_hours=48)
+    other = User.objects.create_user(username="other2", email="other2@example.com", password="pw12345!")
+    VolunteerSignup.objects.create(shift=staffed, user=other)
+
+    resp = auth_client.get(reverse("volunteers:dashboard"), {"open_only": "1"})
+    body = resp.content.decode()
+    assert "Needs Volunteers" in body
+    assert "Fully Covered" not in body

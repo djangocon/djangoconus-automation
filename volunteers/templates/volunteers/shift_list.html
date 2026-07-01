@@ -6,10 +6,16 @@
     <div class="flex flex-col gap-6 p-8 max-w-4xl text-green-100">
         <div class="text-center">
             <h1 class="mb-2 text-4xl font-bold text-yellow-200">Volunteer Sign-up</h1>
-            <p class="text-green-200">
-                You're signed up for <strong>{{ my_hours|floatformat:1 }}</strong> of {{ max_hours }} volunteer hours.
-                <a href="{% url 'volunteers:my_shifts' %}" class="underline text-yellow-300">View my shifts</a>.
-            </p>
+            {% if user.is_authenticated %}
+                <p class="text-green-200">
+                    You're signed up for <strong>{{ my_hours|floatformat:1 }}</strong> of {{ max_hours }} volunteer hours.
+                    <a href="{% url 'volunteers:my_shifts' %}" class="underline text-yellow-300">View my shifts</a>.
+                </p>
+            {% else %}
+                <p class="text-green-200">
+                    Browsing as a guest — <a href="{% url 'account_login' %}?next={{ request.path }}" class="underline text-yellow-300">sign in</a> to sign up for a shift.
+                </p>
+            {% endif %}
         </div>
 
         {% if messages %}
@@ -19,6 +25,28 @@
                 </div>
             {% endfor %}
         {% endif %}
+
+        <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
+            <div>
+                <label class="block mb-1 text-xs text-green-300" for="role">Role</label>
+                <select name="role" id="role" class="p-2 text-sm text-green-900 rounded-md">
+                    <option value="">All roles</option>
+                    {% for role in roles %}
+                        <option value="{{ role }}" {% if role == role_filter %}selected{% endif %}>{{ role }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <label class="flex gap-2 items-center text-sm text-green-200">
+                <input type="checkbox" name="needs_help" value="1" {% if needs_help %}checked{% endif %}>
+                Where we need help
+            </label>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                Filter
+            </button>
+            {% if role_filter or needs_help %}
+                <a href="{% url 'volunteers:shifts' %}" class="text-sm text-green-300 underline">Clear filters</a>
+            {% endif %}
+        </form>
 
         {% for day, shifts in days %}
             <section class="p-6 bg-green-800 rounded-lg border border-green-700">
@@ -42,7 +70,15 @@
                                 </p>
                             </div>
                             <div class="shrink-0">
-                                {% if shift.id in my_shift_ids %}
+                                {% if not user.is_authenticated %}
+                                    {% if shift.signups_open %}
+                                        <a href="{% url 'account_login' %}?next={{ request.path }}" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                                            Sign in to sign up
+                                        </a>
+                                    {% else %}
+                                        <span class="px-3 py-2 text-sm text-green-400">Signups closed</span>
+                                    {% endif %}
+                                {% elif shift.id in my_shift_ids %}
                                     <form method="post" action="{% url 'volunteers:cancel' shift.id %}">
                                         {% csrf_token %}
                                         <span class="mr-2 text-sm text-green-300">✓ Signed up</span>

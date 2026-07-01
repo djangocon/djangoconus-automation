@@ -8,6 +8,41 @@
     <div class="flex flex-col gap-6 p-8 text-green-100">
         <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
 
+        <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
+            <div>
+                <label class="block mb-1 text-xs text-green-300" for="role">Role</label>
+                <select name="role" id="role" class="p-2 text-sm text-green-900 rounded-md">
+                    <option value="">All roles</option>
+                    {% for role in roles %}
+                        <option value="{{ role }}" {% if role == role_filter %}selected{% endif %}>{{ role }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block mb-1 text-xs text-green-300" for="location">Room / location</label>
+                <select name="location" id="location" class="p-2 text-sm text-green-900 rounded-md">
+                    <option value="">All locations</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}" {% if location == location_filter %}selected{% endif %}>{{ location }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <label class="flex gap-2 items-center text-sm text-green-200">
+                <input type="checkbox" name="open_only" value="1" {% if open_only %}checked{% endif %}>
+                Only unstaffed shifts
+            </label>
+            <label class="flex gap-2 items-center text-sm text-green-200">
+                <input type="checkbox" name="show_past" value="1" {% if show_past %}checked{% endif %}>
+                Include past shifts
+            </label>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                Filter
+            </button>
+            {% if role_filter or location_filter or open_only or show_past %}
+                <a href="{% url 'volunteers:dashboard' %}" class="text-sm text-green-300 underline">Clear filters</a>
+            {% endif %}
+        </form>
+
         <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div class="p-4 bg-green-800 rounded-lg border border-green-700">
                 <p class="text-3xl font-bold text-yellow-200">{{ total_filled }}</p>
