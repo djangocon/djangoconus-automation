@@ -38,6 +38,7 @@
                                 {% endif %}
                                 <p class="mt-1 text-xs text-green-400">
                                     {{ shift.filled_count }}/{{ shift.capacity }} filled
+                                    {% if shift.filled_count >= shift.capacity %}(over capacity is okay){% endif %}
                                 </p>
                             </div>
                             <div class="shrink-0">
@@ -51,8 +52,6 @@
                                     </form>
                                 {% elif not shift.signups_open %}
                                     <span class="px-3 py-2 text-sm text-green-400">Signups closed</span>
-                                {% elif shift.filled_count >= shift.capacity %}
-                                    <span class="px-3 py-2 text-sm text-green-400">Full</span>
                                 {% else %}
                                     <form method="post" action="{% url 'volunteers:signup' shift.id %}">
                                         {% csrf_token %}

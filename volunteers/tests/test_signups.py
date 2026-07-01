@@ -52,12 +52,13 @@ def test_signup_creates_record(auth_client, user, role):
     assert VolunteerSignup.objects.filter(shift=shift, user=user, cancelled=False).count() == 1
 
 
-def test_signup_blocked_when_full(auth_client, user, role):
+def test_signup_allowed_over_capacity(auth_client, user, role):
+    """Capacity is a visual guide for organizers, not a hard cap on signups."""
     shift = make_shift(role, capacity=1)
     other = User.objects.create_user(username="other", email="other@example.com", password="pw12345!")
     VolunteerSignup.objects.create(shift=shift, user=other)
     auth_client.post(reverse("volunteers:signup", args=[shift.id]))
-    assert not VolunteerSignup.objects.filter(shift=shift, user=user, cancelled=False).exists()
+    assert VolunteerSignup.objects.filter(shift=shift, user=user, cancelled=False).exists()
 
 
 def test_signup_blocked_on_time_conflict(auth_client, user, role):

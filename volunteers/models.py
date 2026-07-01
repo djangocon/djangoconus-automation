@@ -68,13 +68,15 @@ class Shift(models.Model):
         return (self.ends_at - self.starts_at).total_seconds() / 3600
 
     def can_sign_up(self):
-        """Return (ok, reason) for whether *anyone* may currently sign up."""
+        """Return (ok, reason) for whether *anyone* may currently sign up.
+
+        Capacity is a visual guide for organizers, not a hard cap — a full shift
+        doesn't block further signups.
+        """
         if not self.signups_open:
             return False, "Signups are closed for this shift."
         if self.is_past:
             return False, "This shift has already ended."
-        if self.is_full:
-            return False, "This shift is full."
         return True, ""
 
     def overlaps(self, other):

@@ -87,7 +87,10 @@ def calendar_feed(request, token):
 @login_required
 @require_POST
 def signup_view(request, pk):
-    """Claim a shift, enforcing capacity, conflicts, and the per-person hours cap."""
+    """Claim a shift, enforcing conflicts and the per-person hours cap.
+
+    Capacity is a visual guide for organizers, not a hard cap.
+    """
     shift = get_object_or_404(Shift.objects.select_related("role"), pk=pk)
 
     ok, reason = shift.can_sign_up()
