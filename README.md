@@ -13,7 +13,7 @@ Django Project to automate tasks for the DjangoCon US.
 
 1. **Clone and setup environment**:
    ```shell
-   just setup
+   just bootstrap
    ```
    This will:
    - Install/upgrade pip and uv
