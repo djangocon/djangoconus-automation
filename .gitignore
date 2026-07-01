@@ -164,3 +164,9 @@ cython_debug/
 *.sqlite3
 .git
 staticfiles
+
+# Local-only preview site, never committed
+/volunteers-guide/
+
+# Kept on disk for local reference, not part of the PR diff
+/docs/screenshots/
