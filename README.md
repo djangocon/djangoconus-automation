@@ -13,7 +13,7 @@ Django Project to automate tasks for the DjangoCon US.
 
 1. **Clone and setup environment**:
    ```shell
-   just setup
+   just bootstrap
    ```
    This will:
    - Install/upgrade pip and uv
@@ -45,7 +45,6 @@ If you don't have Just installed:
 ## Development Commands
 
 ### Setup & Initialization
-- `just setup` - Complete initial setup for new developers (runs bootstrap then migrations)
 - `just bootstrap` - Bootstrap the project: install Python tools, create .env file, and build Docker images
 - `just update` - Update the project: upgrade pip/uv, pull latest images, and rebuild containers
 
