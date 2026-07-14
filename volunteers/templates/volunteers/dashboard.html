@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block main_class %}flex-1 m-auto w-full max-w-6xl text-white{% endblock main_class %}
+
+{% block content %}
+    <div class="flex flex-col gap-6 p-8 text-green-100">
+        <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
+
+        <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
+            <div>
+                <label class="block mb-1 text-xs text-green-300" for="role">Role</label>
+                <select name="role" id="role" class="p-2 text-sm text-green-900 rounded-md">
+                    <option value="">All roles</option>
+                    {% for role in roles %}
+                        <option value="{{ role }}" {% if role == role_filter %}selected{% endif %}>{{ role }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block mb-1 text-xs text-green-300" for="location">Room / location</label>
+                <select name="location" id="location" class="p-2 text-sm text-green-900 rounded-md">
+                    <option value="">All locations</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}" {% if location == location_filter %}selected{% endif %}>{{ location }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <label class="flex gap-2 items-center text-sm text-green-200">
+                <input type="checkbox" name="open_only" value="1" {% if open_only %}checked{% endif %}>
+                Only unstaffed shifts
+            </label>
+            <label class="flex gap-2 items-center text-sm text-green-200">
+                <input type="checkbox" name="show_past" value="1" {% if show_past %}checked{% endif %}>
+                Include past shifts
+            </label>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                Filter
+            </button>
+            {% if role_filter or location_filter or open_only or show_past %}
+                <a href="{% url 'volunteers:dashboard' %}" class="text-sm text-green-300 underline">Clear filters</a>
+            {% endif %}
+        </form>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <p class="text-3xl font-bold text-yellow-200">{{ total_filled }}</p>
+                <p class="text-sm text-green-300">Roles filled</p>
+            </div>
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <p class="text-3xl font-bold text-yellow-200">{{ total_open }}</p>
+                <p class="text-sm text-green-300">Still needed</p>
+            </div>
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <p class="text-3xl font-bold text-yellow-200">{{ total_capacity }}</p>
+                <p class="text-sm text-green-300">Total capacity</p>
+            </div>
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <p class="text-3xl font-bold text-yellow-200">{{ coverage|floatformat:0 }}%</p>
+                <p class="text-sm text-green-300">Coverage</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-yellow-300 border-b border-green-700">
+                        <th class="p-3">Shift</th>
+                        <th class="p-3">Role</th>
+                        <th class="p-3">When</th>
+                        <th class="p-3">Filled</th>
+                        <th class="p-3">Volunteers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shift in shifts %}
+                        <tr class="border-b border-green-800 {% if shift.filled_count < shift.capacity %}bg-green-900/40{% endif %}">
+                            <td class="p-3 font-medium text-yellow-100">
+                                {{ shift.title }}
+                                {% if shift.location %}<span class="block text-xs text-green-400">{{ shift.location }}</span>{% endif %}
+                            </td>
+                            <td class="p-3 text-green-200">{{ shift.role.name }}</td>
+                            <td class="p-3 text-sm text-green-300">{{ shift.starts_at|date:"M j, g:i A" }}–{{ shift.ends_at|date:"g:i A" }}</td>
+                            <td class="p-3 {% if shift.filled_count < shift.capacity %}text-red-300{% else %}text-green-300{% endif %}">
+                                {{ shift.filled_count }}/{{ shift.capacity }}
+                            </td>
+                            <td class="p-3 text-sm text-green-200">
+                                {% for user in shift.roster %}
+                                    {{ user.email }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    <span class="text-green-500">— open —</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5" class="p-3 text-green-300">No shifts created yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock content %}

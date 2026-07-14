@@ -1,0 +1,12 @@
+Hi,
+
+This is a friendly reminder about your upcoming DjangoCon US volunteer shift:
+
+  {{ shift.title }} ({{ shift.role.name }})
+  {{ shift.starts_at|date:"l, F j" }} from {{ shift.starts_at|date:"g:i A" }} to {{ shift.ends_at|date:"g:i A" }}
+{% if shift.location %}  Location: {{ shift.location }}
+{% endif %}
+Thanks so much for helping out! If you can no longer make it, please cancel your
+signup so someone else can fill the spot.
+
+— The DjangoCon US Team
