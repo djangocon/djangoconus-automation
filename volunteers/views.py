@@ -25,6 +25,10 @@ def max_volunteer_hours():
     return getattr(settings, "VOLUNTEER_MAX_HOURS", 8)
 
 
+def volunteer_handbook_url():
+    return getattr(settings, "VOLUNTEER_HANDBOOK_URL", "")
+
+
 def shift_list_view(request):
     """Upcoming shifts anyone can browse; signing up or cancelling still requires login."""
     all_shifts = Shift.objects.filter(ends_at__gte=timezone.now()).select_related("role")
@@ -64,6 +68,7 @@ def shift_list_view(request):
         "roles": roles,
         "role_filter": role_filter,
         "needs_help": needs_help,
+        "handbook_url": volunteer_handbook_url(),
     }
     return render(request, "volunteers/shift_list.html", context)
 
@@ -83,6 +88,7 @@ def my_shifts_view(request):
         "my_hours": total_volunteer_hours(request.user),
         "max_hours": max_volunteer_hours(),
         "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
+        "handbook_url": volunteer_handbook_url(),
     }
     return render(request, "volunteers/my_shifts.html", context)
 

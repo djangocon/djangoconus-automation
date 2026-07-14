@@ -243,6 +243,12 @@ Q_SCHEDULES = {
 
 VOLUNTEER_MAX_HOURS = env.int("VOLUNTEER_MAX_HOURS", default=8)
 
+# General volunteer handbook, shown alongside role-specific docs.
+VOLUNTEER_HANDBOOK_URL = env.str(
+    "VOLUNTEER_HANDBOOK_URL",
+    default="https://docs.google.com/document/d/1jpRr5jUxiQCgeXvnX-RPee1AsB1parzHRzCg3YcLCXA/edit?usp=sharing",
+)
+
 # Slack settings
 
 SLACK_OAUTH_TOKEN = env("SLACK_OAUTH_TOKEN", default="")

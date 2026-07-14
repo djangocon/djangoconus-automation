@@ -16,6 +16,12 @@
                     Browsing as a guest — <a href="{% url 'account_login' %}?next={{ request.path }}" class="underline text-yellow-300">sign in</a> to sign up for a shift.
                 </p>
             {% endif %}
+            {% if handbook_url %}
+                <p class="mt-2 text-sm text-green-300">
+                    📗 New to volunteering? Read the
+                    <a href="{{ handbook_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">volunteer handbook</a>.
+                </p>
+            {% endif %}
         </div>
 
         {% if messages %}
@@ -63,6 +69,13 @@
                                 </p>
                                 {% if shift.description %}
                                     <p class="mt-1 text-sm text-green-200">{{ shift.description }}</p>
+                                {% endif %}
+                                {% if shift.role.documentation_url %}
+                                    <p class="mt-1 text-xs">
+                                        <a href="{{ shift.role.documentation_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">
+                                            📄 {{ shift.role.name }} documentation
+                                        </a>
+                                    </p>
                                 {% endif %}
                                 <p class="mt-1 text-xs text-green-400">
                                     {{ shift.filled_count }}/{{ shift.capacity }} filled

@@ -10,6 +10,9 @@ class Role(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
+    documentation_url = models.URLField(
+        blank=True, help_text="Link to this role's volunteer documentation, shown to volunteers."
+    )
 
     class Meta:
         ordering = ["name"]

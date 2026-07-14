@@ -19,7 +19,7 @@ class VolunteerSignupInline(admin.TabularInline):
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ["name", "description"]
+    list_display = ["name", "description", "documentation_url"]
     search_fields = ["name"]
 
 

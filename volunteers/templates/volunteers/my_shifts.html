@@ -10,6 +10,11 @@
                 Total: <strong>{{ my_hours|floatformat:1 }}</strong> of {{ max_hours }} hours.
                 <a href="{% url 'volunteers:shifts' %}" class="underline text-yellow-300">Browse more shifts</a>.
             </p>
+            {% if handbook_url %}
+                <p class="mt-2 text-sm text-green-300">
+                    📗 <a href="{{ handbook_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">Volunteer handbook</a>
+                </p>
+            {% endif %}
         </div>
 
         {% if messages %}
@@ -30,6 +35,13 @@
                             {{ signup.shift.starts_at|date:"l, F j, g:i A" }}–{{ signup.shift.ends_at|date:"g:i A" }}
                             {% if signup.shift.location %} · {{ signup.shift.location }}{% endif %}
                         </p>
+                        {% if signup.shift.role.documentation_url %}
+                            <p class="mt-1 text-xs">
+                                <a href="{{ signup.shift.role.documentation_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">
+                                    📄 {{ signup.shift.role.name }} documentation
+                                </a>
+                            </p>
+                        {% endif %}
                     </div>
                     <form method="post" action="{% url 'volunteers:cancel' signup.shift.id %}" class="shrink-0">
                         {% csrf_token %}

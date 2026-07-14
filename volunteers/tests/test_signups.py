@@ -126,6 +126,23 @@ def test_shift_list_visible_to_anonymous(client, role):
     assert "Reg Desk" in resp.content.decode()
 
 
+def test_shift_list_shows_role_documentation(client, role):
+    role.documentation_url = "https://docs.example.com/reg-desk/"
+    role.save()
+    make_shift(role, title="Reg Desk")
+    resp = client.get(reverse("volunteers:shifts"))
+    assert "https://docs.example.com/reg-desk/" in resp.content.decode()
+
+
+def test_my_shifts_shows_role_documentation(auth_client, user, role):
+    role.documentation_url = "https://docs.example.com/reg-desk/"
+    role.save()
+    shift = make_shift(role, title="Reg Desk")
+    VolunteerSignup.objects.create(shift=shift, user=user)
+    resp = auth_client.get(reverse("volunteers:my_shifts"))
+    assert "https://docs.example.com/reg-desk/" in resp.content.decode()
+
+
 def test_shift_list_filters_by_role(client, role):
     other_role = Role.objects.create(name="Room Monitor")
     make_shift(role, title="Reg Desk Shift")
