@@ -63,10 +63,10 @@ def _shift_specs():
     for day in TALK_DAYS:
         specs += list(_hourly("Registration Desk", "Registration Desk", day, 8, 17, capacity=2))
 
-    # Health & Safety Check-in: mirrors registration hours.
-    specs += list(_hourly("Health & Safety Check-in", "Health & Safety Desk", SUN, 14, 18, capacity=2))
+    # Health & Safety Check-in: mirrors registration hours, single-person desk.
+    specs += list(_hourly("Health & Safety Check-in", "Health & Safety Desk", SUN, 14, 18, capacity=1))
     for day in TALK_DAYS:
-        specs += list(_hourly("Health & Safety Check-in", "Health & Safety Desk", day, 8, 17, capacity=2))
+        specs += list(_hourly("Health & Safety Check-in", "Health & Safety Desk", day, 8, 17, capacity=1))
 
     # Swag Bag Stuffing: one group session Sunday afternoon.
     specs.append(
