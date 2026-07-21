@@ -1,4 +1,5 @@
 import datetime
+from unittest import mock
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -216,3 +217,31 @@ def test_dashboard_open_only_filter(auth_client, role):
     body = resp.content.decode()
     assert "Needs Volunteers" in body
     assert "Fully Covered" not in body
+
+
+def test_sync_schedule_requires_staff(auth_client):
+    resp = auth_client.post(reverse("volunteers:sync_schedule"))
+    assert resp.status_code in (302, 403)
+
+
+def test_sync_schedule_runs_import(auth_client):
+    staff = User.objects.create_user(username="synner", email="sync@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+
+    with mock.patch("volunteers.views.call_command") as mock_call:
+        resp = auth_client.post(reverse("volunteers:sync_schedule"))
+
+    assert resp.status_code == 302
+    mock_call.assert_called_once()
+    assert mock_call.call_args.kwargs.get("dry_run") is False
+
+
+def test_sync_schedule_dry_run(auth_client):
+    staff = User.objects.create_user(username="synner2", email="sync2@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+
+    with mock.patch("volunteers.views.call_command") as mock_call:
+        resp = auth_client.post(reverse("volunteers:sync_schedule"), {"dry_run": "1"})
+
+    assert resp.status_code == 302
+    assert mock_call.call_args.kwargs.get("dry_run") is True

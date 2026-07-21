@@ -63,8 +63,21 @@ def test_import_schedule_dry_run(mock_ics_response):
     assert "Found 2 event(s)" in output
     assert "Opening Keynote" in output
     assert "Building Better APIs" in output
-    assert "Would import 2 shift(s)" in output
+    assert "Would create 2 new, update 0 existing shift(s)" in output
+    assert "[NEW]" in output
     assert Shift.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_import_schedule_dry_run_reports_updates(mock_ics_response):
+    # First import for real, then dry-run should report both as updates, not new.
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", stdout=StringIO())
+
+    out = StringIO()
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--dry-run", stdout=out)
+    output = out.getvalue()
+    assert "Would create 0 new, update 2 existing shift(s)" in output
+    assert "[update]" in output
 
 
 @pytest.mark.django_db

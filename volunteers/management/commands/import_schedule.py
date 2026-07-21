@@ -53,11 +53,20 @@ class Command(BaseCommand):
         self.stdout.write(f"Found {len(events)} event(s)")
 
         if dry_run:
+            existing = set(Shift.objects.values_list("external_uid", flat=True))
+            new_count = 0
+            update_count = 0
             for ev in events:
-                self.stdout.write(
-                    f"  [dry-run] {ev['summary']} | {ev['dtstart']} – {ev['dtend']} | {ev.get('location', '')}"
-                )
-            self.stdout.write(self.style.SUCCESS(f"Would import {len(events)} shift(s)."))
+                is_new = ev["uid"] not in existing
+                if is_new:
+                    new_count += 1
+                else:
+                    update_count += 1
+                label = "NEW" if is_new else "update"
+                self.stdout.write(f"  [dry-run] [{label}] {ev['summary']} | {ev['dtstart']} – {ev.get('location', '')}")
+            self.stdout.write(
+                self.style.SUCCESS(f"Would create {new_count} new, update {update_count} existing shift(s).")
+            )
             return
 
         role, _ = Role.objects.get_or_create(name=role_name)

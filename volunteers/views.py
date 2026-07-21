@@ -1,9 +1,11 @@
 from collections import defaultdict
+from io import StringIO
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
+from django.core.management import call_command
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -219,3 +221,30 @@ def dashboard_view(request):
         "open_only": open_only,
     }
     return render(request, "volunteers/dashboard.html", context)
+
+
+@staff_member_required
+@require_POST
+def sync_schedule_view(request):
+    """Re-import shifts from the conference schedule ICS feed.
+
+    Idempotent: shifts are matched by their schedule UID, so existing slots
+    (and any signups on them) are updated in place rather than duplicated.
+
+    With ``dry_run`` set, reports what would be created/updated without writing.
+    """
+    dry_run = request.POST.get("dry_run") == "1"
+    out = StringIO()
+    try:
+        call_command("import_schedule", dry_run=dry_run, stdout=out)
+    except Exception as exc:  # surface the failure to the coordinator, don't 500
+        messages.error(request, f"Schedule sync failed: {exc}")
+        return redirect("volunteers:dashboard")
+
+    summary = out.getvalue().strip().splitlines()
+    result = summary[-1] if summary else "Schedule synced."
+    if dry_run:
+        messages.info(request, f"Dry run — no changes made. {result}")
+    else:
+        messages.success(request, result)
+    return redirect("volunteers:dashboard")
