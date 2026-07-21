@@ -198,8 +198,13 @@ def dashboard_view(request):
     ):
         rosters[signup.shift_id].append(signup.user)
 
+    shifts = list(shifts)
     for shift in shifts:
         shift.roster = rosters.get(shift.id, [])
+
+    days = defaultdict(list)
+    for shift in shifts:
+        days[shift.starts_at.date()].append(shift)
 
     total_capacity = sum(s.capacity for s in shifts)
     total_filled = sum(s.filled_count for s in shifts)
@@ -208,6 +213,7 @@ def dashboard_view(request):
     context = {
         "page_title": "Volunteer Dashboard",
         "shifts": shifts,
+        "days": sorted(days.items()),
         "rosters": rosters,
         "total_capacity": total_capacity,
         "total_filled": total_filled,
