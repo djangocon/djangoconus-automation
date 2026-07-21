@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block extra_head %}{% include "volunteers/_print_styles.html" %}{% endblock extra_head %}
+
+{% block main_class %}flex-1 m-auto w-full max-w-5xl text-white{% endblock main_class %}
+
+{% block content %}
+    <div class="flex flex-col gap-6 p-8 text-green-100">
+        <div class="flex flex-wrap gap-3 justify-between items-center">
+            <h1 class="text-4xl font-bold text-yellow-200">Volunteers</h1>
+            <a href="{% url 'volunteers:dashboard' %}" class="print-hide text-sm text-green-300 underline">← Shift dashboard</a>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <p class="text-3xl font-bold text-yellow-200">{{ total_volunteers }}</p>
+                <p class="text-sm text-green-300">Volunteers signed up</p>
+            </div>
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <p class="text-3xl font-bold text-yellow-200">{{ total_hours|floatformat:1 }}</p>
+                <p class="text-sm text-green-300">Total volunteer hours</p>
+            </div>
+        </div>
+
+        <div class="print-hide flex flex-wrap gap-2 items-center text-sm">
+            <span class="text-green-300">Sort by:</span>
+            {% for key, label in sorts %}
+                <a href="?sort={{ key }}"
+                   class="px-3 py-1 rounded-md border {% if sort == key %}text-green-900 bg-yellow-300 border-yellow-300 font-semibold{% else %}text-green-100 bg-green-800 border-green-700 hover:bg-green-700{% endif %}">
+                    {{ label }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-yellow-300 border-b border-green-700">
+                        <th class="p-3">Volunteer</th>
+                        <th class="p-3">Email</th>
+                        <th class="p-3">Roles</th>
+                        <th class="p-3">Shifts</th>
+                        <th class="p-3">Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in volunteers %}
+                        <tr class="border-b border-green-800">
+                            <td class="p-3 font-medium text-yellow-100">{{ person.user.get_full_name|default:person.user.get_username }}</td>
+                            <td class="p-3 text-sm text-green-200">{{ person.user.email }}</td>
+                            <td class="p-3 text-sm text-green-300">{{ person.roles }}</td>
+                            <td class="p-3 text-green-200">{{ person.shifts }}</td>
+                            <td class="p-3 text-green-200">{{ person.hours|floatformat:1 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5" class="p-3 text-green-300">No one has signed up for a shift yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock content %}

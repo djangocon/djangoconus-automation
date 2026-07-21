@@ -275,3 +275,52 @@ def test_cancel_preserves_filters_via_next(auth_client, user, role):
     resp = auth_client.post(reverse("volunteers:cancel", args=[shift.id]), {"next": filtered})
     assert resp.status_code == 302
     assert resp.url == filtered
+
+
+def _staff(auth_client, username):
+    User = get_user_model()
+    staff = User.objects.create_user(username=username, email=f"{username}@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+    return staff
+
+
+def test_dashboard_date_filter(auth_client, role):
+    _staff(auth_client, "dstaff")
+    make_shift(role, title="Day One", start_offset_hours=24)
+    make_shift(role, title="Day Two", start_offset_hours=24 + 48)
+
+    d1 = (timezone.now() + datetime.timedelta(hours=24)).date().isoformat()
+    resp = auth_client.get(reverse("volunteers:dashboard"), {"date": d1})
+    body = resp.content.decode()
+    assert "Day One" in body
+    assert "Day Two" not in body
+
+
+def test_volunteers_list_shows_hours(auth_client, user, role):
+    _staff(auth_client, "vstaff")
+    shift = make_shift(role, length_hours=3, title="Long Shift")
+    VolunteerSignup.objects.create(shift=shift, user=user)
+
+    resp = auth_client.get(reverse("volunteers:volunteers_list"))
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert user.email in body
+    assert "3.0" in body
+
+
+def test_volunteers_list_requires_staff(auth_client):
+    resp = auth_client.get(reverse("volunteers:volunteers_list"))
+    assert resp.status_code in (302, 403)
+
+
+def test_volunteers_list_sort_by_hours(auth_client, role):
+    User = get_user_model()
+    _staff(auth_client, "sortstaff")
+    big = User.objects.create_user(username="big", email="big@example.com", password="pw12345!")
+    small = User.objects.create_user(username="small", email="small@example.com", password="pw12345!")
+    VolunteerSignup.objects.create(shift=make_shift(role, length_hours=4, title="Big"), user=big)
+    VolunteerSignup.objects.create(shift=make_shift(role, length_hours=1, title="Small", start_offset_hours=48), user=small)
+
+    resp = auth_client.get(reverse("volunteers:volunteers_list"), {"sort": "hours"})
+    body = resp.content.decode()
+    assert body.index("big@example.com") < body.index("small@example.com")
