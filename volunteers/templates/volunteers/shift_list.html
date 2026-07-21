@@ -70,6 +70,13 @@
                                 {% if shift.description %}
                                     <p class="mt-1 text-sm text-green-200">{{ shift.description }}</p>
                                 {% endif %}
+                                {% if shift.talk_url %}
+                                    <p class="mt-1 text-xs">
+                                        <a href="{{ shift.talk_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">
+                                            🔗 View talk on the schedule
+                                        </a>
+                                    </p>
+                                {% endif %}
                                 {% if shift.role.documentation_url %}
                                     <p class="mt-1 text-xs">
                                         <a href="{{ shift.role.documentation_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">

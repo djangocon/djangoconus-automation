@@ -135,6 +135,12 @@ def test_shift_list_shows_role_documentation(client, role):
     assert "https://docs.example.com/reg-desk/" in resp.content.decode()
 
 
+def test_shift_list_shows_talk_url(client, role):
+    make_shift(role, title="A Talk", talk_url="https://2026.djangocon.us/talks/a-talk/")
+    resp = client.get(reverse("volunteers:shifts"))
+    assert "https://2026.djangocon.us/talks/a-talk/" in resp.content.decode()
+
+
 def test_my_shifts_shows_role_documentation(auth_client, user, role):
     role.documentation_url = "https://docs.example.com/reg-desk/"
     role.save()
