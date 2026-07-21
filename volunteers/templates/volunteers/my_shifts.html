@@ -45,7 +45,7 @@
                     </div>
                     <form method="post" action="{% url 'volunteers:cancel' signup.shift.id %}" class="shrink-0">
                         {% csrf_token %}
-                        <input type="hidden" name="next" value="volunteers:my_shifts">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
                         <button type="submit" class="px-3 py-2 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
                             Cancel
                         </button>

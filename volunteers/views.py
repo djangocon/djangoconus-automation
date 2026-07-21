@@ -11,6 +11,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .ical import build_calendar
@@ -30,6 +31,21 @@ def max_volunteer_hours():
 
 def volunteer_handbook_url():
     return getattr(settings, "VOLUNTEER_HANDBOOK_URL", "")
+
+
+def _return_url(request):
+    """Where to send the user back to after signing up or cancelling.
+
+    Honors a ``next`` field (so filters on the sign-up list are preserved and you
+    can keep signing up), but only if it's a safe same-site URL. Falls back to the
+    unfiltered sign-up list.
+    """
+    nxt = request.POST.get("next") or request.GET.get("next")
+    if nxt and url_has_allowed_host_and_scheme(
+        nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return nxt
+    return reverse("volunteers:shifts")
 
 
 def shift_list_view(request):
@@ -116,21 +132,22 @@ def signup_view(request, pk):
     Capacity is a visual guide for organizers, not a hard cap.
     """
     shift = get_object_or_404(Shift.objects.select_related("role"), pk=pk)
+    return_url = _return_url(request)
 
     ok, reason = shift.can_sign_up()
     if not ok:
         messages.error(request, reason)
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     if VolunteerSignup.objects.filter(shift=shift, user=request.user, cancelled=False).exists():
         messages.info(request, "You're already signed up for this shift.")
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     conflicts = conflicting_shifts(request.user, shift)
     if conflicts:
         names = ", ".join(c.title for c in conflicts)
         messages.error(request, f"This overlaps a shift you're already on: {names}.")
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     projected = total_volunteer_hours(request.user) + shift.duration_hours
     if projected > max_volunteer_hours():
@@ -138,7 +155,7 @@ def signup_view(request, pk):
             request,
             f"That would put you at {projected:.1f} volunteer hours; the limit is {max_volunteer_hours()}.",
         )
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     # Reuse a cancelled row if one exists, otherwise create a fresh signup.
     signup, created = VolunteerSignup.objects.get_or_create(shift=shift, user=request.user)
@@ -148,7 +165,7 @@ def signup_view(request, pk):
         signup.save(update_fields=["cancelled", "reminded"])
 
     messages.success(request, f"You're signed up for “{shift.title}.” Thank you!")
-    return redirect("volunteers:shifts")
+    return redirect(return_url)
 
 
 @login_required
@@ -159,8 +176,7 @@ def cancel_view(request, pk):
     signup.cancelled = True
     signup.save(update_fields=["cancelled"])
     messages.success(request, f"You've been removed from “{signup.shift.title}.”")
-    next_url = request.POST.get("next") or "volunteers:shifts"
-    return redirect(next_url)
+    return redirect(_return_url(request))
 
 
 @staff_member_required

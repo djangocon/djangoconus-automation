@@ -251,3 +251,27 @@ def test_sync_schedule_dry_run(auth_client):
 
     assert resp.status_code == 302
     assert mock_call.call_args.kwargs.get("dry_run") is True
+
+
+def test_signup_preserves_filters_via_next(auth_client, user, role):
+    shift = make_shift(role)
+    filtered = reverse("volunteers:shifts") + "?needs_help=1"
+    resp = auth_client.post(reverse("volunteers:signup", args=[shift.id]), {"next": filtered})
+    assert resp.status_code == 302
+    assert resp.url == filtered
+
+
+def test_signup_rejects_offsite_next(auth_client, user, role):
+    shift = make_shift(role)
+    resp = auth_client.post(reverse("volunteers:signup", args=[shift.id]), {"next": "https://evil.example.com/"})
+    assert resp.status_code == 302
+    assert resp.url == reverse("volunteers:shifts")
+
+
+def test_cancel_preserves_filters_via_next(auth_client, user, role):
+    shift = make_shift(role)
+    VolunteerSignup.objects.create(shift=shift, user=user)
+    filtered = reverse("volunteers:shifts") + "?needs_help=1"
+    resp = auth_client.post(reverse("volunteers:cancel", args=[shift.id]), {"next": filtered})
+    assert resp.status_code == 302
+    assert resp.url == filtered

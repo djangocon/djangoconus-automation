@@ -101,6 +101,7 @@
                                 {% elif shift.id in my_shift_ids %}
                                     <form method="post" action="{% url 'volunteers:cancel' shift.id %}">
                                         {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                         <span class="mr-2 text-sm text-green-300">✓ Signed up</span>
                                         <button type="submit" class="px-3 py-2 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
                                             Cancel
@@ -111,6 +112,7 @@
                                 {% else %}
                                     <form method="post" action="{% url 'volunteers:signup' shift.id %}">
                                         {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                         <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                                             Sign up
                                         </button>
