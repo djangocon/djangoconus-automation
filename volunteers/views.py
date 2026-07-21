@@ -11,6 +11,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
@@ -183,15 +184,19 @@ def cancel_view(request, pk):
 def dashboard_view(request):
     """Coordinator view: coverage per shift plus a roster of who's signed up.
 
-    Filterable by role, location, and whether to include shifts that have already
-    ended, so the chair/co-chair can see just what still needs attention.
+    Filterable by conference day, role, location, and whether to include shifts
+    that have already ended, so the chair/co-chair can see coverage for a given
+    day or just what still needs attention.
     """
     all_shifts = Shift.objects.select_related("role")
     roles = list(Role.objects.order_by("name").values_list("name", flat=True))
     locations = sorted({s.location for s in all_shifts if s.location})
+    dates = sorted({s.starts_at.date() for s in all_shifts})
 
     role_filter = request.GET.get("role", "")
     location_filter = request.GET.get("location", "")
+    date_filter = request.GET.get("date", "")
+    selected_date = parse_date(date_filter) if date_filter else None
     show_past = request.GET.get("show_past") == "1"
     open_only = request.GET.get("open_only") == "1"
 
@@ -202,7 +207,10 @@ def dashboard_view(request):
         shifts = shifts.filter(role__name=role_filter)
     if location_filter:
         shifts = shifts.filter(location=location_filter)
-    if not show_past:
+    if selected_date:
+        # An explicit day is shown in full, even if it's already in the past.
+        shifts = shifts.filter(starts_at__date=selected_date)
+    elif not show_past:
         shifts = shifts.filter(ends_at__gte=timezone.now())
     if open_only:
         shifts = shifts.filter(filled_count__lt=1)
@@ -238,12 +246,64 @@ def dashboard_view(request):
         "coverage": coverage,
         "roles": roles,
         "locations": locations,
+        "dates": dates,
         "role_filter": role_filter,
         "location_filter": location_filter,
+        "date_filter": date_filter,
+        "selected_date": selected_date,
         "show_past": show_past,
         "open_only": open_only,
     }
     return render(request, "volunteers/dashboard.html", context)
+
+
+VOLUNTEER_SORTS = {"name", "hours", "shifts"}
+
+
+@staff_member_required
+def volunteers_list_view(request):
+    """Roster of everyone signed up, with how many shifts/hours each has taken."""
+    sort = request.GET.get("sort", "name")
+    if sort not in VOLUNTEER_SORTS:
+        sort = "name"
+
+    people = {}
+    for signup in (
+        VolunteerSignup.objects.filter(cancelled=False)
+        .select_related("user", "shift", "shift__role")
+        .order_by("shift__starts_at")
+    ):
+        person = people.setdefault(
+            signup.user_id, {"user": signup.user, "shifts": 0, "hours": 0.0, "roles": set()}
+        )
+        person["shifts"] += 1
+        person["hours"] += signup.shift.duration_hours
+        person["roles"].add(signup.shift.role.name)
+
+    volunteers = list(people.values())
+    for person in volunteers:
+        person["roles"] = ", ".join(sorted(person["roles"]))
+
+    def _name(person):
+        user = person["user"]
+        return (user.get_full_name() or user.get_username() or getattr(user, "email", "") or "").lower()
+
+    if sort == "hours":
+        volunteers.sort(key=lambda p: (-p["hours"], _name(p)))
+    elif sort == "shifts":
+        volunteers.sort(key=lambda p: (-p["shifts"], _name(p)))
+    else:
+        volunteers.sort(key=_name)
+
+    context = {
+        "page_title": "Volunteers",
+        "volunteers": volunteers,
+        "sort": sort,
+        "sorts": [("name", "Name"), ("hours", "Hours"), ("shifts", "Shifts")],
+        "total_volunteers": len(volunteers),
+        "total_hours": sum(p["hours"] for p in volunteers),
+    }
+    return render(request, "volunteers/volunteers_list.html", context)
 
 
 @staff_member_required

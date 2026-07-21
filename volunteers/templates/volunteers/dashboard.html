@@ -38,6 +38,15 @@
 
         <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
             <div>
+                <label class="block mb-1 text-xs text-green-300" for="date">Day</label>
+                <select name="date" id="date" class="p-2 text-sm text-green-900 rounded-md">
+                    <option value="">All days</option>
+                    {% for d in dates %}
+                        <option value="{{ d|date:'Y-m-d' }}" {% if d == selected_date %}selected{% endif %}>{{ d|date:"l, M j" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
                 <label class="block mb-1 text-xs text-green-300" for="role">Role</label>
                 <select name="role" id="role" class="p-2 text-sm text-green-900 rounded-md">
                     <option value="">All roles</option>
@@ -66,10 +75,17 @@
             <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                 Filter
             </button>
-            {% if role_filter or location_filter or open_only or show_past %}
+            {% if role_filter or location_filter or date_filter or open_only or show_past %}
                 <a href="{% url 'volunteers:dashboard' %}" class="text-sm text-green-300 underline">Clear filters</a>
             {% endif %}
         </form>
+
+        <p class="text-sm text-green-300">
+            Coverage for
+            {% if selected_date %}<strong class="text-yellow-200">{{ selected_date|date:"l, F j" }}</strong>{% else %}<strong class="text-yellow-200">all {% if show_past %}shifts{% else %}upcoming shifts{% endif %}</strong>{% endif %}
+            {% if role_filter %} · {{ role_filter }}{% endif %}
+            {% if location_filter %} · {{ location_filter }}{% endif %}
+        </p>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div class="p-4 bg-green-800 rounded-lg border border-green-700">
