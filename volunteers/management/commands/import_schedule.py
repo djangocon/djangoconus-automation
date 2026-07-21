@@ -8,6 +8,20 @@ from volunteers.models import Role, Shift
 
 DEFAULT_URL = "https://2026.djangocon.us/schedule.ics"
 
+# Schedule entries that aren't talks and so don't need a volunteer session chair.
+# Matched case-insensitively against the event title.
+DEFAULT_SKIP_KEYWORDS = [
+    "orientation",
+    "opening remarks",
+    "closing remarks",
+    "keynote",
+    "lightning talks",
+    "break",
+    "lunch",
+    "registration",
+    "reception",
+]
+
 
 class Command(BaseCommand):
     help = (
@@ -32,11 +46,28 @@ class Command(BaseCommand):
             action="store_true",
             help="Parse and show what would be imported without writing to the database.",
         )
+        parser.add_argument(
+            "--no-skip",
+            action="store_true",
+            help="Import every event, including non-talk entries (keynotes, breaks, remarks).",
+        )
+        parser.add_argument(
+            "--skip-keyword",
+            action="append",
+            dest="skip_keywords",
+            metavar="KEYWORD",
+            help="Title keyword to skip (case-insensitive). Repeatable; overrides the defaults.",
+        )
 
     def handle(self, *args, **options):
         url = options["url"]
         role_name = options["role"]
         dry_run = options["dry_run"]
+
+        if options["no_skip"]:
+            skip_keywords = []
+        else:
+            skip_keywords = [k.lower() for k in (options["skip_keywords"] or DEFAULT_SKIP_KEYWORDS)]
 
         self.stdout.write(f"Fetching {url}")
         try:
@@ -51,6 +82,13 @@ class Command(BaseCommand):
             return
 
         self.stdout.write(f"Found {len(events)} event(s)")
+
+        if skip_keywords:
+            kept = [ev for ev in events if not self._should_skip(ev["summary"], skip_keywords)]
+            skipped = len(events) - len(kept)
+            if skipped:
+                self.stdout.write(f"Skipping {skipped} non-talk event(s) (keynotes, breaks, remarks, etc.)")
+            events = kept
 
         if dry_run:
             existing = set(Shift.objects.values_list("external_uid", flat=True))
@@ -94,6 +132,10 @@ class Command(BaseCommand):
                 updated += 1
 
         self.stdout.write(self.style.SUCCESS(f"Created {created}, updated {updated} shift(s)."))
+
+    def _should_skip(self, summary, skip_keywords):
+        title = (summary or "").lower()
+        return any(keyword in title for keyword in skip_keywords)
 
     def _parse_ics(self, raw):
         """Minimal ICS parser — handles TZID datetimes and line unfolding."""
