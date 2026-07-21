@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 from .ical import build_calendar
 from .models import (
     CalendarToken,
+    Role,
     Shift,
     VolunteerSignup,
     conflicting_shifts,
@@ -35,7 +36,7 @@ def shift_list_view(request):
     """Upcoming shifts anyone can browse; signing up or cancelling still requires login."""
     all_shifts = Shift.objects.filter(ends_at__gte=timezone.now()).select_related("role")
 
-    roles = sorted({s.role.name for s in all_shifts})
+    roles = list(Role.objects.order_by("name").values_list("name", flat=True))
 
     role_filter = request.GET.get("role", "")
     needs_help = request.GET.get("needs_help") == "1"
@@ -170,7 +171,7 @@ def dashboard_view(request):
     ended, so the chair/co-chair can see just what still needs attention.
     """
     all_shifts = Shift.objects.select_related("role")
-    roles = sorted({s.role.name for s in all_shifts})
+    roles = list(Role.objects.order_by("name").values_list("name", flat=True))
     locations = sorted({s.location for s in all_shifts if s.location})
 
     role_filter = request.GET.get("role", "")
