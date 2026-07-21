@@ -2,6 +2,8 @@
 
 {% block title %}{{ page_title }}{% endblock title %}
 
+{% block extra_head %}{% include "volunteers/_print_styles.html" %}{% endblock extra_head %}
+
 {% block main_class %}flex-1 m-auto w-full max-w-6xl text-white{% endblock main_class %}
 
 {% block content %}
@@ -28,7 +30,7 @@
 
         {% if messages %}
             {% for message in messages %}
-                <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-700 border border-green-600 text-green-100{% elif message.tags == 'error' %}bg-red-700 border border-red-600 text-red-100{% else %}bg-blue-800 border border-blue-600 text-blue-100{% endif %}">
+                <div class="print-hide p-4 rounded-md {% if message.tags == 'success' %}bg-green-700 border border-green-600 text-green-100{% elif message.tags == 'error' %}bg-red-700 border border-red-600 text-red-100{% else %}bg-blue-800 border border-blue-600 text-blue-100{% endif %}">
                     {{ message }}
                 </div>
             {% endfor %}
