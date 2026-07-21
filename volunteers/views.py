@@ -243,7 +243,7 @@ def sync_schedule_view(request):
     dry_run = request.POST.get("dry_run") == "1"
     out = StringIO()
     try:
-        call_command("import_schedule", dry_run=dry_run, stdout=out)
+        call_command("import_schedule", dry_run=dry_run, stdout=out, no_color=True)
     except Exception as exc:  # surface the failure to the coordinator, don't 500
         messages.error(request, f"Schedule sync failed: {exc}")
         return redirect("volunteers:dashboard")
