@@ -57,20 +57,33 @@ def mock_ics_response():
 @pytest.mark.django_db
 def test_import_schedule_dry_run(mock_ics_response):
     out = StringIO()
-    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--dry-run", stdout=out)
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--dry-run", stdout=out)
 
     output = out.getvalue()
     assert "Found 2 event(s)" in output
     assert "Opening Keynote" in output
     assert "Building Better APIs" in output
-    assert "Would import 2 shift(s)" in output
+    assert "Would create 2 new, update 0 existing shift(s)" in output
+    assert "[NEW]" in output
     assert Shift.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_import_schedule_dry_run_reports_updates(mock_ics_response):
+    # First import for real, then dry-run should report both as updates, not new.
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", stdout=StringIO())
+
+    out = StringIO()
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--dry-run", stdout=out)
+    output = out.getvalue()
+    assert "Would create 0 new, update 2 existing shift(s)" in output
+    assert "[update]" in output
 
 
 @pytest.mark.django_db
 def test_import_schedule_creates_shifts(mock_ics_response):
     out = StringIO()
-    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--role=Session Chair", stdout=out)
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--role=Session Chair", stdout=out)
 
     output = out.getvalue()
     assert "Created 2" in output
@@ -87,13 +100,35 @@ def test_import_schedule_creates_shifts(mock_ics_response):
 
 @pytest.mark.django_db
 def test_import_schedule_idempotent(mock_ics_response):
-    call_command("import_schedule", "--url=https://example.com/schedule.ics", stdout=StringIO())
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", stdout=StringIO())
     assert Shift.objects.count() == 2
 
     out = StringIO()
-    call_command("import_schedule", "--url=https://example.com/schedule.ics", stdout=out)
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", stdout=out)
     output = out.getvalue()
 
     assert "Created 0" in output
     assert "updated 2" in output
     assert Shift.objects.count() == 2
+
+
+@pytest.mark.django_db
+def test_import_schedule_skips_non_talks_by_default(mock_ics_response):
+    # "Opening Keynote" matches the default skip list; "Building Better APIs" doesn't.
+    out = StringIO()
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", stdout=out)
+
+    assert "Skipping 1 non-talk event(s)" in out.getvalue()
+    assert Shift.objects.count() == 1
+    assert Shift.objects.filter(title="Building Better APIs").exists()
+    assert not Shift.objects.filter(title="Opening Keynote").exists()
+
+
+@pytest.mark.django_db
+def test_import_schedule_custom_skip_keyword(mock_ics_response):
+    out = StringIO()
+    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--skip-keyword=api", stdout=out)
+
+    # Only "Building Better APIs" matches "api"; the keynote is kept (defaults overridden).
+    assert Shift.objects.filter(title="Opening Keynote").exists()
+    assert not Shift.objects.filter(title="Building Better APIs").exists()

@@ -1,4 +1,5 @@
 import datetime
+from unittest import mock
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -134,6 +135,12 @@ def test_shift_list_shows_role_documentation(client, role):
     assert "https://docs.example.com/reg-desk/" in resp.content.decode()
 
 
+def test_shift_list_shows_talk_url(client, role):
+    make_shift(role, title="A Talk", talk_url="https://2026.djangocon.us/talks/a-talk/")
+    resp = client.get(reverse("volunteers:shifts"))
+    assert "https://2026.djangocon.us/talks/a-talk/" in resp.content.decode()
+
+
 def test_my_shifts_shows_role_documentation(auth_client, user, role):
     role.documentation_url = "https://docs.example.com/reg-desk/"
     role.save()
@@ -216,3 +223,31 @@ def test_dashboard_open_only_filter(auth_client, role):
     body = resp.content.decode()
     assert "Needs Volunteers" in body
     assert "Fully Covered" not in body
+
+
+def test_sync_schedule_requires_staff(auth_client):
+    resp = auth_client.post(reverse("volunteers:sync_schedule"))
+    assert resp.status_code in (302, 403)
+
+
+def test_sync_schedule_runs_import(auth_client):
+    staff = User.objects.create_user(username="synner", email="sync@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+
+    with mock.patch("volunteers.views.call_command") as mock_call:
+        resp = auth_client.post(reverse("volunteers:sync_schedule"))
+
+    assert resp.status_code == 302
+    mock_call.assert_called_once()
+    assert mock_call.call_args.kwargs.get("dry_run") is False
+
+
+def test_sync_schedule_dry_run(auth_client):
+    staff = User.objects.create_user(username="synner2", email="sync2@example.com", password="pw12345!", is_staff=True)
+    auth_client.force_login(staff)
+
+    with mock.patch("volunteers.views.call_command") as mock_call:
+        resp = auth_client.post(reverse("volunteers:sync_schedule"), {"dry_run": "1"})
+
+    assert resp.status_code == 302
+    assert mock_call.call_args.kwargs.get("dry_run") is True

@@ -1,9 +1,11 @@
 from collections import defaultdict
+from io import StringIO
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
+from django.core.management import call_command
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,6 +16,7 @@ from django.views.decorators.http import require_POST
 from .ical import build_calendar
 from .models import (
     CalendarToken,
+    Role,
     Shift,
     VolunteerSignup,
     conflicting_shifts,
@@ -33,7 +36,7 @@ def shift_list_view(request):
     """Upcoming shifts anyone can browse; signing up or cancelling still requires login."""
     all_shifts = Shift.objects.filter(ends_at__gte=timezone.now()).select_related("role")
 
-    roles = sorted({s.role.name for s in all_shifts})
+    roles = list(Role.objects.order_by("name").values_list("name", flat=True))
 
     role_filter = request.GET.get("role", "")
     needs_help = request.GET.get("needs_help") == "1"
@@ -168,7 +171,7 @@ def dashboard_view(request):
     ended, so the chair/co-chair can see just what still needs attention.
     """
     all_shifts = Shift.objects.select_related("role")
-    roles = sorted({s.role.name for s in all_shifts})
+    roles = list(Role.objects.order_by("name").values_list("name", flat=True))
     locations = sorted({s.location for s in all_shifts if s.location})
 
     role_filter = request.GET.get("role", "")
@@ -196,8 +199,13 @@ def dashboard_view(request):
     ):
         rosters[signup.shift_id].append(signup.user)
 
+    shifts = list(shifts)
     for shift in shifts:
         shift.roster = rosters.get(shift.id, [])
+
+    days = defaultdict(list)
+    for shift in shifts:
+        days[shift.starts_at.date()].append(shift)
 
     total_capacity = sum(s.capacity for s in shifts)
     total_filled = sum(s.filled_count for s in shifts)
@@ -206,6 +214,7 @@ def dashboard_view(request):
     context = {
         "page_title": "Volunteer Dashboard",
         "shifts": shifts,
+        "days": sorted(days.items()),
         "rosters": rosters,
         "total_capacity": total_capacity,
         "total_filled": total_filled,
@@ -219,3 +228,30 @@ def dashboard_view(request):
         "open_only": open_only,
     }
     return render(request, "volunteers/dashboard.html", context)
+
+
+@staff_member_required
+@require_POST
+def sync_schedule_view(request):
+    """Re-import shifts from the conference schedule ICS feed.
+
+    Idempotent: shifts are matched by their schedule UID, so existing slots
+    (and any signups on them) are updated in place rather than duplicated.
+
+    With ``dry_run`` set, reports what would be created/updated without writing.
+    """
+    dry_run = request.POST.get("dry_run") == "1"
+    out = StringIO()
+    try:
+        call_command("import_schedule", dry_run=dry_run, stdout=out, no_color=True)
+    except Exception as exc:  # surface the failure to the coordinator, don't 500
+        messages.error(request, f"Schedule sync failed: {exc}")
+        return redirect("volunteers:dashboard")
+
+    summary = out.getvalue().strip().splitlines()
+    result = summary[-1] if summary else "Schedule synced."
+    if dry_run:
+        messages.info(request, f"Dry run — no changes made. {result}")
+    else:
+        messages.success(request, result)
+    return redirect("volunteers:dashboard")

@@ -6,7 +6,33 @@
 
 {% block content %}
     <div class="flex flex-col gap-6 p-8 text-green-100">
-        <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
+        <div class="flex flex-wrap gap-3 justify-between items-center">
+            <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
+            <div class="flex gap-2">
+                <form method="post" action="{% url 'volunteers:sync_schedule' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="dry_run" value="1">
+                    <button type="submit" class="px-3 py-2 text-sm font-medium text-green-100 bg-green-700 rounded-md border border-green-600 hover:bg-green-600">
+                        Preview schedule sync
+                    </button>
+                </form>
+                <form method="post" action="{% url 'volunteers:sync_schedule' %}"
+                      onsubmit="return confirm('Sync shifts from the conference schedule? Existing slots and signups are kept.');">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                        Sync schedule now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-700 border border-green-600 text-green-100{% elif message.tags == 'error' %}bg-red-700 border border-red-600 text-red-100{% else %}bg-blue-800 border border-blue-600 text-blue-100{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
 
         <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
             <div>
@@ -62,42 +88,49 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="text-yellow-300 border-b border-green-700">
-                        <th class="p-3">Shift</th>
-                        <th class="p-3">Role</th>
-                        <th class="p-3">When</th>
-                        <th class="p-3">Filled</th>
-                        <th class="p-3">Volunteers</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for shift in shifts %}
-                        <tr class="border-b border-green-800 {% if shift.filled_count < shift.capacity %}bg-green-900/40{% endif %}">
-                            <td class="p-3 font-medium text-yellow-100">
-                                {{ shift.title }}
-                                {% if shift.location %}<span class="block text-xs text-green-400">{{ shift.location }}</span>{% endif %}
-                            </td>
-                            <td class="p-3 text-green-200">{{ shift.role.name }}</td>
-                            <td class="p-3 text-sm text-green-300">{{ shift.starts_at|date:"M j, g:i A" }}–{{ shift.ends_at|date:"g:i A" }}</td>
-                            <td class="p-3 {% if shift.filled_count < shift.capacity %}text-red-300{% else %}text-green-300{% endif %}">
-                                {{ shift.filled_count }}/{{ shift.capacity }}
-                            </td>
-                            <td class="p-3 text-sm text-green-200">
-                                {% for user in shift.roster %}
-                                    {{ user.email }}{% if not forloop.last %}, {% endif %}
-                                {% empty %}
-                                    <span class="text-green-500">— open —</span>
-                                {% endfor %}
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="5" class="p-3 text-green-300">No shifts created yet.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        {% for day, day_shifts in days %}
+            <section class="flex flex-col gap-2">
+                <h2 class="text-2xl font-semibold text-yellow-300">{{ day|date:"l, F j" }}</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-yellow-300 border-b border-green-700">
+                                <th class="p-3">Shift</th>
+                                <th class="p-3">Role</th>
+                                <th class="p-3">When</th>
+                                <th class="p-3">Filled</th>
+                                <th class="p-3">Volunteers</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shift in day_shifts %}
+                                <tr class="border-b border-green-800 {% if shift.filled_count < shift.capacity %}bg-green-900/40{% endif %}">
+                                    <td class="p-3 font-medium text-yellow-100">
+                                        {{ shift.title }}
+                                        {% if shift.location %}<span class="block text-xs text-green-400">{{ shift.location }}</span>{% endif %}
+                                    </td>
+                                    <td class="p-3 text-green-200">{{ shift.role.name }}</td>
+                                    <td class="p-3 text-sm text-green-300">
+                                        <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
+                                    </td>
+                                    <td class="p-3 {% if shift.filled_count < shift.capacity %}text-red-300{% else %}text-green-300{% endif %}">
+                                        {{ shift.filled_count }}/{{ shift.capacity }}
+                                    </td>
+                                    <td class="p-3 text-sm text-green-200">
+                                        {% for user in shift.roster %}
+                                            {{ user.email }}{% if not forloop.last %}, {% endif %}
+                                        {% empty %}
+                                            <span class="text-green-500">— open —</span>
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% empty %}
+            <p class="text-green-300">No shifts created yet.</p>
+        {% endfor %}
     </div>
 {% endblock content %}
