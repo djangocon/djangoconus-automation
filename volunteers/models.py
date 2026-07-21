@@ -37,6 +37,14 @@ class Shift(models.Model):
     ends_at = models.DateTimeField()
     capacity = models.PositiveIntegerField(default=1, help_text="How many volunteers are needed.")
     signups_open = models.BooleanField(default=True, help_text="Uncheck to close signups for this shift.")
+    external_uid = models.CharField(
+        max_length=255,
+        blank=True,
+        unique=True,
+        null=True,
+        help_text="UID from external source (e.g. ICS feed) for idempotent syncing.",
+    )
+    talk_url = models.URLField(blank=True, help_text="Link to the talk on the conference website.")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
