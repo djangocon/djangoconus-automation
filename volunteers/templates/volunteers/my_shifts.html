@@ -32,7 +32,7 @@
                         <p class="text-lg font-semibold text-yellow-100">{{ signup.shift.title }}</p>
                         <p class="text-sm text-green-300">
                             {{ signup.shift.role.name }} ·
-                            {{ signup.shift.starts_at|date:"l, F j, g:i A" }}–{{ signup.shift.ends_at|date:"g:i A" }}
+                            <time datetime="{{ signup.shift.starts_at|date:'c' }}">{{ signup.shift.starts_at|date:"l, F j," }} <span class="whitespace-nowrap">{{ signup.shift.starts_at|date:"g:i A" }}</span></time>–<time datetime="{{ signup.shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ signup.shift.ends_at|date:"g:i A" }}</time>
                             {% if signup.shift.location %} · {{ signup.shift.location }}{% endif %}
                         </p>
                         {% if signup.shift.role.documentation_url %}

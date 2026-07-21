@@ -64,7 +64,7 @@
                                 <p class="text-lg font-semibold text-yellow-100">{{ shift.title }}</p>
                                 <p class="text-sm text-green-300">
                                     {{ shift.role.name }} ·
-                                    {{ shift.starts_at|date:"g:i A" }}–{{ shift.ends_at|date:"g:i A" }}
+                                    <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
                                     {% if shift.location %} · {{ shift.location }}{% endif %}
                                 </p>
                                 {% if shift.description %}

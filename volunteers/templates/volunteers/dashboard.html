@@ -110,7 +110,9 @@
                                         {% if shift.location %}<span class="block text-xs text-green-400">{{ shift.location }}</span>{% endif %}
                                     </td>
                                     <td class="p-3 text-green-200">{{ shift.role.name }}</td>
-                                    <td class="p-3 text-sm text-green-300">{{ shift.starts_at|date:"g:i A" }}–{{ shift.ends_at|date:"g:i A" }}</td>
+                                    <td class="p-3 text-sm text-green-300">
+                                        <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
+                                    </td>
                                     <td class="p-3 {% if shift.filled_count < shift.capacity %}text-red-300{% else %}text-green-300{% endif %}">
                                         {{ shift.filled_count }}/{{ shift.capacity }}
                                     </td>
