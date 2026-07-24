@@ -98,7 +98,8 @@ If you don't have Just installed:
 
 ## Deployment
 
-Deployments happen automatically when changes are pushed to the `main` branch via GitHub Actions.
+Deployments are managed by [Coolify](https://coolify.io/) and happen automatically
+whenever something is merged into the `main` branch.
 
 Production URL: https://automation.defna.org
 
