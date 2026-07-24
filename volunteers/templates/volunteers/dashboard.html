@@ -110,14 +110,13 @@
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <span class="text-sm text-green-200">
-                <strong class="text-yellow-200">Merge talks into a block:</strong>
-                tick the <span class="text-yellow-200">Merge</span> box on two or more schedule shifts in the
-                same room that run back-to-back, then
+                <strong class="text-yellow-200">Merge into a block:</strong>
+                tick the <span class="text-yellow-200">Merge</span> box on two or more shifts with the same role,
+                in the same room, that run back-to-back, then
             </span>
             <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                 Merge selected into a block
             </button>
-            <span class="text-xs text-green-400">(desk shifts can't be merged — only scheduled talks)</span>
         </form>
 
         {% for day, day_shifts in days %}
@@ -140,9 +139,7 @@
                             {% for shift in day_shifts %}
                                 <tr class="border-b border-green-800 {% if shift.filled_count < shift.capacity %}bg-green-900/40{% endif %}">
                                     <td class="p-3 text-center print-hide">
-                                        {% if shift.covers_talks %}
-                                            <input type="checkbox" name="shift" value="{{ shift.id }}" form="merge-form" class="w-4 h-4 align-middle accent-yellow-400">
-                                        {% endif %}
+                                        <input type="checkbox" name="shift" value="{{ shift.id }}" form="merge-form" class="w-4 h-4 align-middle accent-yellow-400">
                                     </td>
                                     <td class="p-3 font-medium text-yellow-100">
                                         {{ shift.title }}

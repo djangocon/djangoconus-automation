@@ -78,7 +78,7 @@ class Shift(models.Model):
         if len(talks) == 1:
             self.title = talks[0].title
         else:
-            self.title = f"{self.role.name} · {len(talks)} talks"
+            self.title = f"{self.role.name} · {len(talks)} slots"
         if save:
             self.save(update_fields=["starts_at", "ends_at", "title"])
 
@@ -211,22 +211,38 @@ def conflicting_shifts(user, shift):
 
 @transaction.atomic
 def merge_shifts(shifts):
-    """Merge several talk-covering shifts into one block. Returns (shift, error).
+    """Merge several consecutive shifts into one block. Returns (shift, error).
 
-    Only talk-covering shifts in the same room that are consecutive (no gap over
-    MERGE_MAX_GAP) can merge. The earliest becomes the block; the others' talks
-    and sign-ups move onto it, then they're deleted.
+    Works for any shifts of the same role in the same room that run back-to-back
+    (no gap over MERGE_MAX_GAP) — scheduled talks or desk/coverage slots. The
+    earliest becomes the block; each shift is first recorded as a segment so the
+    block can be split apart again, then the others' segments and sign-ups move
+    onto the target and they're deleted.
     """
-    shifts = [s for s in shifts if s.talks.exists()]
     if len(shifts) < 2:
-        return None, "Pick at least two schedule shifts to merge."
+        return None, "Pick at least two shifts to merge."
 
-    shifts.sort(key=lambda s: s.starts_at)
+    shifts = sorted(shifts, key=lambda s: s.starts_at)
+    if len({s.role_id for s in shifts}) > 1:
+        return None, "Shifts must have the same role to merge."
     if len({s.location for s in shifts}) > 1:
         return None, "Shifts must be in the same room to merge."
     for prev, nxt in zip(shifts, shifts[1:], strict=False):
         if nxt.starts_at > prev.ends_at + MERGE_MAX_GAP:
             return None, "Shifts must be consecutive (no long gaps) to merge into a block."
+
+    # Record each shift as a segment (talks already do this) so a later split can
+    # reconstruct the individual slots.
+    for shift in shifts:
+        if not shift.talks.exists():
+            Talk.objects.create(
+                shift=shift,
+                title=shift.title,
+                description=shift.description,
+                location=shift.location,
+                starts_at=shift.starts_at,
+                ends_at=shift.ends_at,
+            )
 
     target, others = shifts[0], shifts[1:]
     for other in others:

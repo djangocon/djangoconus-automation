@@ -36,9 +36,9 @@ def build_calendar(signups, host="djangocon.us"):
         description = f"Role: {shift.role.name}"
         talks = list(shift.talks.order_by("starts_at", "title"))
         if len(talks) > 1:
-            # A merged block: list the talks it covers so the volunteer sees each one.
+            # A merged block: list the slots it covers so the volunteer sees each one.
             lines_out = "\n".join(f"• {t.starts_at:%-I:%M %p} {t.title}" for t in talks)
-            description += f"\nCovers {len(talks)} talks:\n{lines_out}"
+            description += f"\nCovers {len(talks)} slots:\n{lines_out}"
         elif shift.description:
             description += f"\n{shift.description}"
         lines += [

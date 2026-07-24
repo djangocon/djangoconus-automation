@@ -13,6 +13,7 @@ from volunteers.models import (
     VolunteerSignup,
     conflicting_shifts,
     merge_shifts,
+    split_shift,
     total_volunteer_hours,
 )
 
@@ -380,3 +381,30 @@ def test_split_block_restores_per_talk_shifts(auth_client, user, role):
     assert Shift.objects.filter(talks__title="Talk B").exists()
     other = Shift.objects.get(talks__title="Talk B")
     assert VolunteerSignup.objects.filter(shift=other, user=user, cancelled=False).exists()
+
+
+def test_merge_desk_shifts_without_talks(auth_client, role):
+    _staff(auth_client, "deskstaff")
+    # Two back-to-back Registration Desk hourly slots (no talks).
+    a = make_shift(role, title="Reg 8am", start_offset_hours=24, length_hours=1, location="Lobby")
+    b = make_shift(role, title="Reg 9am", start_offset_hours=25, length_hours=1, location="Lobby")
+    resp = auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert resp.status_code == 302
+    a.refresh_from_db()
+    assert a.is_block  # became a 2-slot block
+    assert a.talks.count() == 2
+    assert not Shift.objects.filter(id=b.id).exists()
+    # ...and it can be split back apart.
+    split_shift(a)
+    a.refresh_from_db()
+    assert a.talks.count() == 1
+    assert Shift.objects.filter(role=role, location="Lobby").count() == 2
+
+
+def test_merge_rejects_different_roles(auth_client, role):
+    _staff(auth_client, "rolestaff")
+    other_role = Role.objects.create(name="Setup Crew")
+    a = make_shift(role, title="A", start_offset_hours=24, length_hours=1, location="Lobby")
+    b = make_shift(other_role, title="B", start_offset_hours=25, length_hours=1, location="Lobby")
+    auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert Shift.objects.filter(id=b.id).exists()  # not merged
