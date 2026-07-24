@@ -22,6 +22,8 @@ from .models import (
     Shift,
     VolunteerSignup,
     conflicting_shifts,
+    merge_shifts,
+    split_shift,
     total_volunteer_hours,
 )
 
@@ -255,6 +257,33 @@ def dashboard_view(request):
         "open_only": open_only,
     }
     return render(request, "volunteers/dashboard.html", context)
+
+
+@staff_member_required
+@require_POST
+def merge_shifts_view(request):
+    """Merge the selected schedule shifts into one sign-up block."""
+    ids = request.POST.getlist("shift")
+    shifts = list(Shift.objects.filter(id__in=ids))
+    _, error = merge_shifts(shifts)
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, "Merged into one block.")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
+
+
+@staff_member_required
+@require_POST
+def split_shift_view(request, pk):
+    """Split a block back into one shift per talk."""
+    shift = get_object_or_404(Shift, pk=pk)
+    _, error = split_shift(shift)
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, "Split back into per-talk shifts.")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
 
 
 VOLUNTEER_SORTS = {"name", "hours", "shifts"}

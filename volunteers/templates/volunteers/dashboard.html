@@ -106,6 +106,15 @@
             </div>
         </div>
 
+        <form id="merge-form" method="post" action="{% url 'volunteers:merge_shifts' %}" class="print-hide flex flex-wrap gap-2 items-center text-sm">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <span class="text-green-300">Check schedule shifts in the same room, back-to-back, then</span>
+            <button type="submit" class="px-3 py-1 font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                Merge into a block
+            </button>
+        </form>
+
         {% for day, day_shifts in days %}
             <section class="flex flex-col gap-2">
                 <h2 class="text-2xl font-semibold text-yellow-300">{{ day|date:"l, F j" }}</h2>
@@ -113,19 +122,37 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="text-yellow-300 border-b border-green-700">
+                                <th class="p-3 print-hide"></th>
                                 <th class="p-3">Shift</th>
                                 <th class="p-3">Role</th>
                                 <th class="p-3">When</th>
                                 <th class="p-3">Filled</th>
                                 <th class="p-3">Volunteers</th>
+                                <th class="p-3 print-hide"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for shift in day_shifts %}
                                 <tr class="border-b border-green-800 {% if shift.filled_count < shift.capacity %}bg-green-900/40{% endif %}">
+                                    <td class="p-3 print-hide">
+                                        {% if shift.covers_talks %}
+                                            <input type="checkbox" name="shift" value="{{ shift.id }}" form="merge-form">
+                                        {% endif %}
+                                    </td>
                                     <td class="p-3 font-medium text-yellow-100">
                                         {{ shift.title }}
+                                        {% if shift.is_block %}<span class="inline-block py-0.5 px-2 ml-1 text-xs text-green-900 bg-yellow-300 rounded-full">block</span>{% endif %}
                                         {% if shift.location %}<span class="block text-xs text-green-400">{{ shift.location }}</span>{% endif %}
+                                        {% if shift.is_block %}
+                                            <ul class="mt-1 ml-1 text-xs text-green-300 list-disc list-inside">
+                                                {% for talk in shift.covered_talks %}
+                                                    <li>
+                                                        <time datetime="{{ talk.starts_at|date:'c' }}" class="whitespace-nowrap">{{ talk.starts_at|date:"g:i A" }}</time>
+                                                        {% if talk.talk_url %}<a href="{{ talk.talk_url }}" target="_blank" rel="noopener" class="underline">{{ talk.title }}</a>{% else %}{{ talk.title }}{% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% endif %}
                                     </td>
                                     <td class="p-3 text-green-200">{{ shift.role.name }}</td>
                                     <td class="p-3 text-sm text-green-300">
@@ -140,6 +167,15 @@
                                         {% empty %}
                                             <span class="text-green-500">— open —</span>
                                         {% endfor %}
+                                    </td>
+                                    <td class="p-3 print-hide">
+                                        {% if shift.is_block %}
+                                            <form method="post" action="{% url 'volunteers:split_shift' shift.id %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                <button type="submit" class="px-2 py-1 text-xs text-green-100 bg-green-700 rounded border border-green-600 hover:bg-green-600">Split</button>
+                                            </form>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}

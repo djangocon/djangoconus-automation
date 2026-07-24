@@ -69,16 +69,15 @@
                                     <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
                                     {% if shift.location %} · {{ shift.location }}{% endif %}
                                 </p>
-                                {% if shift.description %}
+                                {% if shift.description and not shift.covers_talks %}
                                     <p class="mt-1 text-sm text-green-200">{{ shift.description }}</p>
                                 {% endif %}
-                                {% if shift.talk_url %}
-                                    <p class="mt-1 text-xs">
-                                        <a href="{{ shift.talk_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">
-                                            🔗 View talk on the schedule
-                                        </a>
+                                {% for talk in shift.covered_talks %}
+                                    <p class="mt-1 text-xs text-green-300">
+                                        {% if shift.is_block %}<time datetime="{{ talk.starts_at|date:'c' }}" class="whitespace-nowrap">{{ talk.starts_at|date:"g:i A" }}</time> {% endif %}
+                                        {% if talk.talk_url %}<a href="{{ talk.talk_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">🔗 {{ talk.title }}</a>{% else %}{{ talk.title }}{% endif %}
                                     </p>
-                                {% endif %}
+                                {% endfor %}
                                 {% if shift.role.documentation_url %}
                                     <p class="mt-1 text-xs">
                                         <a href="{{ shift.role.documentation_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">

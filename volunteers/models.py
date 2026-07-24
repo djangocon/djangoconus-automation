@@ -1,8 +1,13 @@
+import datetime
 import uuid
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
+
+# How large a gap between consecutive talks may be and still count as "adjacent"
+# for merging into one block (talks in a room are usually back-to-back).
+MERGE_MAX_GAP = datetime.timedelta(minutes=30)
 
 
 class Role(models.Model):
@@ -37,14 +42,6 @@ class Shift(models.Model):
     ends_at = models.DateTimeField()
     capacity = models.PositiveIntegerField(default=1, help_text="How many volunteers are needed.")
     signups_open = models.BooleanField(default=True, help_text="Uncheck to close signups for this shift.")
-    external_uid = models.CharField(
-        max_length=255,
-        blank=True,
-        unique=True,
-        null=True,
-        help_text="UID from external source (e.g. ICS feed) for idempotent syncing.",
-    )
-    talk_url = models.URLField(blank=True, help_text="Link to the talk on the conference website.")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -53,6 +50,37 @@ class Shift(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.starts_at:%a %b %d %H:%M})"
+
+    @property
+    def covered_talks(self):
+        return self.talks.order_by("starts_at", "title")
+
+    @property
+    def covers_talks(self):
+        return self.talks.exists()
+
+    @property
+    def is_block(self):
+        """True when this shift covers more than one talk (a merged block)."""
+        return self.talks.count() > 1
+
+    def recompute_span(self, save=True):
+        """Set start/end (and a summary title) from the talks this shift covers.
+
+        No-op for shifts that don't cover talks (e.g. desk/manager shifts, which
+        carry their own times).
+        """
+        talks = list(self.talks.order_by("starts_at", "ends_at"))
+        if not talks:
+            return
+        self.starts_at = talks[0].starts_at
+        self.ends_at = max(t.ends_at for t in talks)
+        if len(talks) == 1:
+            self.title = talks[0].title
+        else:
+            self.title = f"{self.role.name} · {len(talks)} talks"
+        if save:
+            self.save(update_fields=["starts_at", "ends_at", "title"])
 
     @property
     def active_signups(self):
@@ -92,6 +120,38 @@ class Shift(models.Model):
 
     def overlaps(self, other):
         return self.starts_at < other.ends_at and other.starts_at < self.ends_at
+
+
+class Talk(models.Model):
+    """A single scheduled talk/session from the conference schedule feed.
+
+    Talks are pure schedule data, imported by UID from the ICS feed. A Shift is
+    the volunteer sign-up unit and covers one or more consecutive talks; merging
+    just re-points several talks at one Shift while each talk keeps its own data.
+    """
+
+    shift = models.ForeignKey(
+        "Shift", on_delete=models.SET_NULL, null=True, blank=True, related_name="talks"
+    )
+    external_uid = models.CharField(
+        max_length=255,
+        blank=True,
+        unique=True,
+        null=True,
+        help_text="UID from the schedule ICS feed, for idempotent syncing.",
+    )
+    title = models.CharField(max_length=300)
+    description = models.TextField(blank=True)
+    talk_url = models.URLField(blank=True, help_text="Link to the talk on the conference website.")
+    location = models.CharField(max_length=200, blank=True)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["starts_at", "title"]
+
+    def __str__(self):
+        return self.title
 
 
 class VolunteerSignup(models.Model):
@@ -147,3 +207,70 @@ def conflicting_shifts(user, shift):
         .select_related("shift")
     )
     return [s.shift for s in candidates]
+
+
+@transaction.atomic
+def merge_shifts(shifts):
+    """Merge several talk-covering shifts into one block. Returns (shift, error).
+
+    Only talk-covering shifts in the same room that are consecutive (no gap over
+    MERGE_MAX_GAP) can merge. The earliest becomes the block; the others' talks
+    and sign-ups move onto it, then they're deleted.
+    """
+    shifts = [s for s in shifts if s.talks.exists()]
+    if len(shifts) < 2:
+        return None, "Pick at least two schedule shifts to merge."
+
+    shifts.sort(key=lambda s: s.starts_at)
+    if len({s.location for s in shifts}) > 1:
+        return None, "Shifts must be in the same room to merge."
+    for prev, nxt in zip(shifts, shifts[1:], strict=False):
+        if nxt.starts_at > prev.ends_at + MERGE_MAX_GAP:
+            return None, "Shifts must be consecutive (no long gaps) to merge into a block."
+
+    target, others = shifts[0], shifts[1:]
+    for other in others:
+        other.talks.update(shift=target)
+        for signup in list(other.signups.all()):
+            if VolunteerSignup.objects.filter(shift=target, user_id=signup.user_id).exists():
+                signup.delete()  # already signed up on the target; drop the duplicate
+            else:
+                signup.shift = target
+                signup.save(update_fields=["shift"])
+        other.delete()
+
+    target.recompute_span()
+    return target, None
+
+
+@transaction.atomic
+def split_shift(shift):
+    """Split a block back into one shift per talk. Returns (shift, error).
+
+    Each talk gets its own single-talk shift; the block's volunteers are copied
+    onto every resulting shift (they'd signed up to cover the whole block).
+    """
+    talks = list(shift.talks.order_by("starts_at", "ends_at"))
+    if len(talks) < 2:
+        return None, "This shift only covers one talk; there's nothing to split."
+
+    active_users = list(shift.signups.filter(cancelled=False).values_list("user_id", flat=True))
+    for talk in talks[1:]:
+        new_shift = Shift.objects.create(
+            role=shift.role,
+            title=talk.title,
+            description=talk.description,
+            location=talk.location,
+            starts_at=talk.starts_at,
+            ends_at=talk.ends_at,
+            capacity=shift.capacity,
+            signups_open=shift.signups_open,
+        )
+        talk.shift = new_shift
+        talk.save(update_fields=["shift"])
+        for user_id in active_users:
+            VolunteerSignup.objects.create(shift=new_shift, user_id=user_id)
+        new_shift.recompute_span()
+
+    shift.recompute_span()
+    return shift, None

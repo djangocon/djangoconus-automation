@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CalendarToken, Role, Shift, VolunteerSignup
+from .models import CalendarToken, Role, Shift, Talk, VolunteerSignup
 
 
 @admin.register(CalendarToken)
@@ -17,6 +17,21 @@ class VolunteerSignupInline(admin.TabularInline):
     readonly_fields = ["created_at"]
 
 
+class TalkInline(admin.TabularInline):
+    model = Talk
+    extra = 0
+    fields = ["title", "starts_at", "ends_at", "location", "talk_url"]
+
+
+@admin.register(Talk)
+class TalkAdmin(admin.ModelAdmin):
+    list_display = ["title", "starts_at", "ends_at", "location", "shift"]
+    list_filter = ["location", "starts_at"]
+    search_fields = ["title", "external_uid"]
+    autocomplete_fields = ["shift"]
+    date_hierarchy = "starts_at"
+
+
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
     list_display = ["name", "description", "documentation_url"]
@@ -29,7 +44,7 @@ class ShiftAdmin(admin.ModelAdmin):
     list_filter = ["signups_open", "role", "starts_at"]
     search_fields = ["title", "location"]
     date_hierarchy = "starts_at"
-    inlines = [VolunteerSignupInline]
+    inlines = [TalkInline, VolunteerSignupInline]
 
 
 @admin.register(VolunteerSignup)

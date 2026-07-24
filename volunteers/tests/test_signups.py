@@ -12,6 +12,7 @@ from volunteers.models import (
     Shift,
     VolunteerSignup,
     conflicting_shifts,
+    merge_shifts,
     total_volunteer_hours,
 )
 
@@ -136,7 +137,17 @@ def test_shift_list_shows_role_documentation(client, role):
 
 
 def test_shift_list_shows_talk_url(client, role):
-    make_shift(role, title="A Talk", talk_url="https://2026.djangocon.us/talks/a-talk/")
+    from volunteers.models import Talk
+
+    shift = make_shift(role, title="A Talk")
+    Talk.objects.create(
+        shift=shift,
+        external_uid="a-talk@x",
+        title="A Talk",
+        talk_url="https://2026.djangocon.us/talks/a-talk/",
+        starts_at=shift.starts_at,
+        ends_at=shift.ends_at,
+    )
     resp = client.get(reverse("volunteers:shifts"))
     assert "https://2026.djangocon.us/talks/a-talk/" in resp.content.decode()
 
@@ -324,3 +335,48 @@ def test_volunteers_list_sort_by_hours(auth_client, role):
     resp = auth_client.get(reverse("volunteers:volunteers_list"), {"sort": "hours"})
     body = resp.content.decode()
     assert body.index("big@example.com") < body.index("small@example.com")
+
+
+def _talk_shift(role, title, start_offset_hours, length_hours=1, location="Room A"):
+    from volunteers.models import Talk
+    shift = make_shift(role, title=title, start_offset_hours=start_offset_hours, length_hours=length_hours, location=location)
+    Talk.objects.create(shift=shift, external_uid=f"{title}@x", title=title, location=location,
+                        starts_at=shift.starts_at, ends_at=shift.ends_at)
+    return shift
+
+
+def test_merge_shifts_combines_talks(auth_client, role):
+    _staff(auth_client, "mstaff")
+    a = _talk_shift(role, "Talk A", 24)
+    b = _talk_shift(role, "Talk B", 25)
+    resp = auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert resp.status_code == 302
+    a.refresh_from_db()
+    assert a.talks.count() == 2
+    assert not Shift.objects.filter(id=b.id).exists()
+    assert a.is_block
+
+
+def test_merge_rejects_different_rooms(auth_client, role):
+    _staff(auth_client, "mstaff2")
+    a = _talk_shift(role, "Talk A", 24, location="Room A")
+    b = _talk_shift(role, "Talk B", 25, location="Room B")
+    auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert Shift.objects.filter(id=b.id).exists()  # not merged
+
+
+def test_split_block_restores_per_talk_shifts(auth_client, user, role):
+    _staff(auth_client, "sstaff")
+    a = _talk_shift(role, "Talk A", 24)
+    b = _talk_shift(role, "Talk B", 25)
+    merge_shifts([a, b])
+    VolunteerSignup.objects.create(shift=a, user=user)
+
+    resp = auth_client.post(reverse("volunteers:split_shift", args=[a.id]))
+    assert resp.status_code == 302
+    a.refresh_from_db()
+    assert a.talks.count() == 1
+    # a new shift now covers the second talk, and the volunteer rides along
+    assert Shift.objects.filter(talks__title="Talk B").exists()
+    other = Shift.objects.get(talks__title="Talk B")
+    assert VolunteerSignup.objects.filter(shift=other, user=user, cancelled=False).exists()
