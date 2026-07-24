@@ -1,0 +1,131 @@
+<style>
+    @media print {
+    /* Ink-friendly: drop the dark theme for black-on-white. */
+        html,
+        body {
+            background: #fff !important;
+            background-image: none !important;
+            color: #000 !important;
+        }
+
+        body {
+            padding: 0 !important;
+            font-size: 11pt;
+        }
+
+        main {
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            color: #000 !important;
+        }
+
+    /* Neutralize the green/gold theme colors and glows. */
+        *,
+        *::before,
+        *::after {
+            color: #000 !important;
+            text-shadow: none !important;
+            box-shadow: none !important;
+        }
+
+        a {
+            color: #000 !important;
+            text-decoration: underline;
+        }
+
+    /* Flatten the themed panel/card backgrounds to white so we don't waste ink. */
+        [class*="bg-green"],
+        [class*="bg-blue"],
+        [class*="bg-red"],
+        [class*="bg-yellow"] {
+            background: #fff !important;
+            background-image: none !important;
+        }
+
+    /* Hide anything you can't act on from paper (incl. button-styled links). */
+        form,
+        button,
+        footer,
+        nav,
+        a[class*="bg-yellow"],
+        a[class*="bg-green"],
+        .print-hide {
+            display: none !important;
+        }
+
+    /* Headings sized for a printed page; keep them with their content. */
+        h1 {
+            font-size: 20pt;
+            margin: 0 0 10pt;
+        }
+
+        h2 {
+            font-size: 14pt;
+            margin: 14pt 0 4pt;
+            break-after: avoid;
+            page-break-after: avoid;
+        }
+
+    /* Summary tiles collapse to a compact inline row. */
+        .grid {
+            display: flex !important;
+            flex-wrap: wrap;
+            gap: 12pt !important;
+            border-bottom: 1px solid #000;
+            padding-bottom: 6pt;
+            margin-bottom: 8pt;
+        }
+
+        .grid > div {
+            border: 0 !important;
+            background: #fff !important;
+            padding: 0 !important;
+        }
+
+    /* Roster tables: visible rules, repeated header, no mid-row page breaks. */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        th,
+        td {
+            border: 1px solid #666 !important;
+            padding: 3pt 6pt;
+            text-align: left;
+            background: #fff !important;
+            vertical-align: top;
+        }
+
+        tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+    /* Day groups flow across pages; only individual cards stay whole. */
+        section {
+            border: 0 !important;
+            padding: 0 !important;
+            margin-bottom: 10pt;
+        }
+
+        .shift-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            border: 1px solid #666 !important;
+            background: #fff !important;
+            padding: 6pt !important;
+            margin-bottom: 6pt !important;
+        }
+
+        @page {
+            margin: 1.5cm;
+        }
+    }
+</style>

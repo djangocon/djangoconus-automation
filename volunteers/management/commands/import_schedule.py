@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 
-from volunteers.models import Role, Shift
+from volunteers.models import Role, Shift, Talk
 
 DEFAULT_URL = "https://2026.djangocon.us/schedule.ics"
 
@@ -91,7 +91,7 @@ class Command(BaseCommand):
             events = kept
 
         if dry_run:
-            existing = set(Shift.objects.values_list("external_uid", flat=True))
+            existing = set(Talk.objects.values_list("external_uid", flat=True))
             new_count = 0
             update_count = 0
             for ev in events:
@@ -103,35 +103,55 @@ class Command(BaseCommand):
                 label = "NEW" if is_new else "update"
                 self.stdout.write(f"  [dry-run] [{label}] {ev['summary']} | {ev['dtstart']} – {ev.get('location', '')}")
             self.stdout.write(
-                self.style.SUCCESS(f"Would create {new_count} new, update {update_count} existing shift(s).")
+                self.style.SUCCESS(f"Would create {new_count} new talk(s), update {update_count} existing.")
             )
             return
 
         role, _ = Role.objects.get_or_create(name=role_name)
         created = 0
         updated = 0
+        touched_shifts = set()
 
         for ev in events:
-            uid = ev["uid"]
-            defaults = {
-                "role": role,
-                "title": ev["summary"],
-                "description": ev.get("description", ""),
-                "location": ev.get("location", ""),
-                "starts_at": ev["dtstart"],
-                "ends_at": ev["dtend"],
-                "talk_url": ev.get("url", ""),
-            }
-            shift, was_created = Shift.objects.update_or_create(
-                external_uid=uid,
-                defaults=defaults,
+            talk, was_created = Talk.objects.update_or_create(
+                external_uid=ev["uid"],
+                defaults={
+                    "title": ev["summary"],
+                    "description": ev.get("description", ""),
+                    "talk_url": ev.get("url", ""),
+                    "location": ev.get("location", ""),
+                    "starts_at": ev["dtstart"],
+                    "ends_at": ev["dtend"],
+                },
             )
             if was_created:
                 created += 1
             else:
                 updated += 1
 
-        self.stdout.write(self.style.SUCCESS(f"Created {created}, updated {updated} shift(s)."))
+            # New talks get their own single-talk sign-up shift. Talks already
+            # attached to a shift (merged or not) keep that linkage.
+            if talk.shift_id is None:
+                shift = Shift.objects.create(
+                    role=role,
+                    title=talk.title,
+                    description=talk.description,
+                    location=talk.location,
+                    starts_at=talk.starts_at,
+                    ends_at=talk.ends_at,
+                    capacity=1,
+                )
+                talk.shift = shift
+                talk.save(update_fields=["shift"])
+            touched_shifts.add(talk.shift_id)
+
+        # Refresh each affected shift's span/title from its (possibly updated) talks.
+        for shift in Shift.objects.filter(id__in=touched_shifts):
+            shift.recompute_span()
+
+        self.stdout.write(
+            self.style.SUCCESS(f"Imported {created} new talk(s), updated {updated}; refreshed their shifts.")
+        )
 
     def _should_skip(self, summary, skip_keywords):
         title = (summary or "").lower()

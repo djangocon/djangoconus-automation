@@ -12,6 +12,8 @@ from volunteers.models import (
     Shift,
     VolunteerSignup,
     conflicting_shifts,
+    merge_shifts,
+    split_shift,
     total_volunteer_hours,
 )
 
@@ -136,7 +138,17 @@ def test_shift_list_shows_role_documentation(client, role):
 
 
 def test_shift_list_shows_talk_url(client, role):
-    make_shift(role, title="A Talk", talk_url="https://2026.djangocon.us/talks/a-talk/")
+    from volunteers.models import Talk
+
+    shift = make_shift(role, title="A Talk")
+    Talk.objects.create(
+        shift=shift,
+        external_uid="a-talk@x",
+        title="A Talk",
+        talk_url="https://2026.djangocon.us/talks/a-talk/",
+        starts_at=shift.starts_at,
+        ends_at=shift.ends_at,
+    )
     resp = client.get(reverse("volunteers:shifts"))
     assert "https://2026.djangocon.us/talks/a-talk/" in resp.content.decode()
 
@@ -194,7 +206,9 @@ def test_dashboard_filters_by_role_and_location(auth_client, role):
 
 
 def test_dashboard_hides_past_shifts_by_default(auth_client, role):
-    staff = User.objects.create_user(username="staffer2", email="staff2@example.com", password="pw12345!", is_staff=True)
+    staff = User.objects.create_user(
+        username="staffer2", email="staff2@example.com", password="pw12345!", is_staff=True
+    )
     auth_client.force_login(staff)
 
     make_shift(role, title="Past Shift", start_offset_hours=-4, length_hours=1)
@@ -211,7 +225,9 @@ def test_dashboard_hides_past_shifts_by_default(auth_client, role):
 
 
 def test_dashboard_open_only_filter(auth_client, role):
-    staff = User.objects.create_user(username="staffer3", email="staff3@example.com", password="pw12345!", is_staff=True)
+    staff = User.objects.create_user(
+        username="staffer3", email="staff3@example.com", password="pw12345!", is_staff=True
+    )
     auth_client.force_login(staff)
 
     make_shift(role, title="Needs Volunteers", capacity=2)
@@ -251,3 +267,198 @@ def test_sync_schedule_dry_run(auth_client):
 
     assert resp.status_code == 302
     assert mock_call.call_args.kwargs.get("dry_run") is True
+
+
+def test_signup_preserves_filters_via_next(auth_client, user, role):
+    shift = make_shift(role)
+    filtered = reverse("volunteers:shifts") + "?needs_help=1"
+    resp = auth_client.post(reverse("volunteers:signup", args=[shift.id]), {"next": filtered})
+    assert resp.status_code == 302
+    assert resp.url == filtered
+
+
+def test_signup_rejects_offsite_next(auth_client, user, role):
+    shift = make_shift(role)
+    resp = auth_client.post(reverse("volunteers:signup", args=[shift.id]), {"next": "https://evil.example.com/"})
+    assert resp.status_code == 302
+    assert resp.url == reverse("volunteers:shifts")
+
+
+def test_cancel_preserves_filters_via_next(auth_client, user, role):
+    shift = make_shift(role)
+    VolunteerSignup.objects.create(shift=shift, user=user)
+    filtered = reverse("volunteers:shifts") + "?needs_help=1"
+    resp = auth_client.post(reverse("volunteers:cancel", args=[shift.id]), {"next": filtered})
+    assert resp.status_code == 302
+    assert resp.url == filtered
+
+
+def _staff(auth_client, username):
+    User = get_user_model()
+    staff = User.objects.create_user(
+        username=username, email=f"{username}@example.com", password="pw12345!", is_staff=True
+    )
+    auth_client.force_login(staff)
+    return staff
+
+
+def test_dashboard_date_filter(auth_client, role):
+    _staff(auth_client, "dstaff")
+    make_shift(role, title="Day One", start_offset_hours=24)
+    make_shift(role, title="Day Two", start_offset_hours=24 + 48)
+
+    d1 = (timezone.now() + datetime.timedelta(hours=24)).date().isoformat()
+    resp = auth_client.get(reverse("volunteers:dashboard"), {"date": d1})
+    body = resp.content.decode()
+    assert "Day One" in body
+    assert "Day Two" not in body
+
+
+def test_volunteers_list_shows_hours(auth_client, user, role):
+    _staff(auth_client, "vstaff")
+    shift = make_shift(role, length_hours=3, title="Long Shift")
+    VolunteerSignup.objects.create(shift=shift, user=user)
+
+    resp = auth_client.get(reverse("volunteers:volunteers_list"))
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert user.email in body
+    assert "3.0" in body
+
+
+def test_volunteers_list_requires_staff(auth_client):
+    resp = auth_client.get(reverse("volunteers:volunteers_list"))
+    assert resp.status_code in (302, 403)
+
+
+def test_volunteers_list_sort_by_hours(auth_client, role):
+    User = get_user_model()
+    _staff(auth_client, "sortstaff")
+    big = User.objects.create_user(username="big", email="big@example.com", password="pw12345!")
+    small = User.objects.create_user(username="small", email="small@example.com", password="pw12345!")
+    VolunteerSignup.objects.create(shift=make_shift(role, length_hours=4, title="Big"), user=big)
+    VolunteerSignup.objects.create(
+        shift=make_shift(role, length_hours=1, title="Small", start_offset_hours=48), user=small
+    )
+
+    resp = auth_client.get(reverse("volunteers:volunteers_list"), {"sort": "hours"})
+    body = resp.content.decode()
+    assert body.index("big@example.com") < body.index("small@example.com")
+
+
+def _talk_shift(role, title, start_offset_hours, length_hours=1, location="Room A"):
+    from volunteers.models import Talk
+
+    shift = make_shift(
+        role, title=title, start_offset_hours=start_offset_hours, length_hours=length_hours, location=location
+    )
+    Talk.objects.create(
+        shift=shift,
+        external_uid=f"{title}@x",
+        title=title,
+        location=location,
+        starts_at=shift.starts_at,
+        ends_at=shift.ends_at,
+    )
+    return shift
+
+
+def test_merge_shifts_combines_talks(auth_client, role):
+    _staff(auth_client, "mstaff")
+    a = _talk_shift(role, "Talk A", 24)
+    b = _talk_shift(role, "Talk B", 25)
+    resp = auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert resp.status_code == 302
+    a.refresh_from_db()
+    assert a.talks.count() == 2
+    assert not Shift.objects.filter(id=b.id).exists()
+    assert a.is_block
+
+
+def test_merge_rejects_different_rooms(auth_client, role):
+    _staff(auth_client, "mstaff2")
+    a = _talk_shift(role, "Talk A", 24, location="Room A")
+    b = _talk_shift(role, "Talk B", 25, location="Room B")
+    auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert Shift.objects.filter(id=b.id).exists()  # not merged
+
+
+def test_split_block_restores_per_talk_shifts(auth_client, user, role):
+    _staff(auth_client, "sstaff")
+    a = _talk_shift(role, "Talk A", 24)
+    b = _talk_shift(role, "Talk B", 25)
+    merge_shifts([a, b])
+    VolunteerSignup.objects.create(shift=a, user=user)
+
+    resp = auth_client.post(reverse("volunteers:split_shift", args=[a.id]))
+    assert resp.status_code == 302
+    a.refresh_from_db()
+    assert a.talks.count() == 1
+    # a new shift now covers the second talk, and the volunteer rides along
+    assert Shift.objects.filter(talks__title="Talk B").exists()
+    other = Shift.objects.get(talks__title="Talk B")
+    assert VolunteerSignup.objects.filter(shift=other, user=user, cancelled=False).exists()
+
+
+def test_merge_desk_shifts_without_talks(auth_client, role):
+    _staff(auth_client, "deskstaff")
+    # Two back-to-back Registration Desk hourly slots (no talks).
+    a = make_shift(role, title="Reg 8am", start_offset_hours=24, length_hours=1, location="Lobby")
+    b = make_shift(role, title="Reg 9am", start_offset_hours=25, length_hours=1, location="Lobby")
+    resp = auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert resp.status_code == 302
+    a.refresh_from_db()
+    assert a.is_block  # became a 2-slot block
+    assert a.talks.count() == 2
+    assert not Shift.objects.filter(id=b.id).exists()
+    # ...and it can be split back apart.
+    split_shift(a)
+    a.refresh_from_db()
+    assert a.talks.count() == 1
+    assert Shift.objects.filter(role=role, location="Lobby").count() == 2
+
+
+def test_merge_rejects_different_roles(auth_client, role):
+    _staff(auth_client, "rolestaff")
+    other_role = Role.objects.create(name="Setup Crew")
+    a = make_shift(role, title="A", start_offset_hours=24, length_hours=1, location="Lobby")
+    b = make_shift(other_role, title="B", start_offset_hours=25, length_hours=1, location="Lobby")
+    auth_client.post(reverse("volunteers:merge_shifts"), {"shift": [a.id, b.id]})
+    assert Shift.objects.filter(id=b.id).exists()  # not merged
+
+
+def test_update_contact_info_requires_staff(auth_client):
+    # A plain volunteer can't edit the site-wide contact info.
+    resp = auth_client.post(reverse("volunteers:update_contact"), {"contact_info": "hax"})
+    assert resp.status_code in (302, 403)
+    from volunteers.models import SiteContactInfo
+
+    assert SiteContactInfo.objects.first() is None or SiteContactInfo.objects.first().contact_info != "hax"
+
+
+def test_staff_updates_site_contact_info(auth_client):
+    _staff(auth_client, "coordinator")
+    resp = auth_client.post(reverse("volunteers:update_contact"), {"contact_info": "**Slack:** #volunteers"})
+    assert resp.status_code == 302
+    from volunteers.models import SiteContactInfo
+
+    assert SiteContactInfo.get_solo().contact_info == "**Slack:** #volunteers"
+
+
+def test_my_shifts_shows_contact_info_readonly(auth_client, user):
+    from volunteers.models import SiteContactInfo
+
+    SiteContactInfo.objects.create(contact_info="reach the chairs on **Slack**")
+    resp = auth_client.get(reverse("volunteers:my_shifts"))
+    body = resp.content.decode()
+    assert "reach the chairs on **Slack**" in body
+    # ...but no edit form for a plain volunteer.
+    assert 'action="/volunteers/mine/contact/"' not in body
+
+
+def test_delete_shift_from_dashboard(auth_client, role):
+    _staff(auth_client, "delstaff")
+    shift = make_shift(role, title="Doomed")
+    resp = auth_client.post(reverse("volunteers:delete_shift", args=[shift.id]))
+    assert resp.status_code == 302
+    assert not Shift.objects.filter(id=shift.id).exists()

@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from django.core.management import call_command
 
-from volunteers.models import Role, Shift
+from volunteers.models import Role, Shift, Talk
 
 SAMPLE_ICS = """\
 BEGIN:VCALENDAR
@@ -63,9 +63,9 @@ def test_import_schedule_dry_run(mock_ics_response):
     assert "Found 2 event(s)" in output
     assert "Opening Keynote" in output
     assert "Building Better APIs" in output
-    assert "Would create 2 new, update 0 existing shift(s)" in output
+    assert "Would create 2 new talk(s), update 0 existing" in output
     assert "[NEW]" in output
-    assert Shift.objects.count() == 0
+    assert Talk.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -76,39 +76,48 @@ def test_import_schedule_dry_run_reports_updates(mock_ics_response):
     out = StringIO()
     call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--dry-run", stdout=out)
     output = out.getvalue()
-    assert "Would create 0 new, update 2 existing shift(s)" in output
+    assert "Would create 0 new talk(s), update 2 existing" in output
     assert "[update]" in output
 
 
 @pytest.mark.django_db
-def test_import_schedule_creates_shifts(mock_ics_response):
+def test_import_schedule_creates_talks_and_shifts(mock_ics_response):
     out = StringIO()
-    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--role=Session Chair", stdout=out)
+    call_command(
+        "import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--role=Session Chair", stdout=out
+    )
 
-    output = out.getvalue()
-    assert "Created 2" in output
+    assert "Imported 2 new talk(s)" in out.getvalue()
 
+    # Each talk gets its own single-talk sign-up shift.
+    assert Talk.objects.count() == 2
     assert Shift.objects.count() == 2
     assert Role.objects.filter(name="Session Chair").exists()
 
-    keynote = Shift.objects.get(external_uid="keynote@example.com")
+    keynote = Talk.objects.get(external_uid="keynote@example.com")
     assert keynote.title == "Opening Keynote"
     assert keynote.location == "Main Hall"
     assert "Welcome to the conference!" in keynote.description
     assert keynote.talk_url == "https://example.com/talks/keynote/"
+    # ...covered by a shift that mirrors the talk.
+    assert keynote.shift is not None
+    assert keynote.shift.title == "Opening Keynote"
+    assert keynote.shift.starts_at == keynote.starts_at
 
 
 @pytest.mark.django_db
 def test_import_schedule_idempotent(mock_ics_response):
     call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", stdout=StringIO())
+    assert Talk.objects.count() == 2
     assert Shift.objects.count() == 2
 
     out = StringIO()
     call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", stdout=out)
     output = out.getvalue()
 
-    assert "Created 0" in output
-    assert "updated 2" in output
+    assert "Imported 0 new talk(s), updated 2" in output
+    # No duplicate talks or shifts on re-run.
+    assert Talk.objects.count() == 2
     assert Shift.objects.count() == 2
 
 
@@ -119,9 +128,9 @@ def test_import_schedule_skips_non_talks_by_default(mock_ics_response):
     call_command("import_schedule", "--url=https://example.com/schedule.ics", stdout=out)
 
     assert "Skipping 1 non-talk event(s)" in out.getvalue()
-    assert Shift.objects.count() == 1
-    assert Shift.objects.filter(title="Building Better APIs").exists()
-    assert not Shift.objects.filter(title="Opening Keynote").exists()
+    assert Talk.objects.count() == 1
+    assert Talk.objects.filter(title="Building Better APIs").exists()
+    assert not Talk.objects.filter(title="Opening Keynote").exists()
 
 
 @pytest.mark.django_db
@@ -130,5 +139,5 @@ def test_import_schedule_custom_skip_keyword(mock_ics_response):
     call_command("import_schedule", "--url=https://example.com/schedule.ics", "--skip-keyword=api", stdout=out)
 
     # Only "Building Better APIs" matches "api"; the keynote is kept (defaults overridden).
-    assert Shift.objects.filter(title="Opening Keynote").exists()
-    assert not Shift.objects.filter(title="Building Better APIs").exists()
+    assert Talk.objects.filter(title="Opening Keynote").exists()
+    assert not Talk.objects.filter(title="Building Better APIs").exists()

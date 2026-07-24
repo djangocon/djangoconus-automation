@@ -11,6 +11,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .ical import build_calendar
@@ -18,8 +20,11 @@ from .models import (
     CalendarToken,
     Role,
     Shift,
+    SiteContactInfo,
     VolunteerSignup,
     conflicting_shifts,
+    merge_shifts,
+    split_shift,
     total_volunteer_hours,
 )
 
@@ -30,6 +35,21 @@ def max_volunteer_hours():
 
 def volunteer_handbook_url():
     return getattr(settings, "VOLUNTEER_HANDBOOK_URL", "")
+
+
+def _return_url(request):
+    """Where to send the user back to after signing up or cancelling.
+
+    Honors a ``next`` field (so filters on the sign-up list are preserved and you
+    can keep signing up), but only if it's a safe same-site URL. Falls back to the
+    unfiltered sign-up list.
+    """
+    nxt = request.POST.get("next") or request.GET.get("next")
+    if nxt and url_has_allowed_host_and_scheme(
+        nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return nxt
+    return reverse("volunteers:shifts")
 
 
 def shift_list_view(request):
@@ -92,8 +112,20 @@ def my_shifts_view(request):
         "max_hours": max_volunteer_hours(),
         "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
         "handbook_url": volunteer_handbook_url(),
+        "contact_info": SiteContactInfo.get_solo().contact_info,
     }
     return render(request, "volunteers/my_shifts.html", context)
+
+
+@staff_member_required
+@require_POST
+def update_contact_view(request):
+    """Save the site-wide volunteer coordinator contact info (staff only)."""
+    contact = SiteContactInfo.get_solo()
+    contact.contact_info = request.POST.get("contact_info", "").strip()
+    contact.save(update_fields=["contact_info", "updated_at"])
+    messages.success(request, "Volunteer contact info was saved.")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
 
 
 def calendar_feed(request, token):
@@ -116,21 +148,22 @@ def signup_view(request, pk):
     Capacity is a visual guide for organizers, not a hard cap.
     """
     shift = get_object_or_404(Shift.objects.select_related("role"), pk=pk)
+    return_url = _return_url(request)
 
     ok, reason = shift.can_sign_up()
     if not ok:
         messages.error(request, reason)
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     if VolunteerSignup.objects.filter(shift=shift, user=request.user, cancelled=False).exists():
         messages.info(request, "You're already signed up for this shift.")
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     conflicts = conflicting_shifts(request.user, shift)
     if conflicts:
         names = ", ".join(c.title for c in conflicts)
         messages.error(request, f"This overlaps a shift you're already on: {names}.")
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     projected = total_volunteer_hours(request.user) + shift.duration_hours
     if projected > max_volunteer_hours():
@@ -138,7 +171,7 @@ def signup_view(request, pk):
             request,
             f"That would put you at {projected:.1f} volunteer hours; the limit is {max_volunteer_hours()}.",
         )
-        return redirect("volunteers:shifts")
+        return redirect(return_url)
 
     # Reuse a cancelled row if one exists, otherwise create a fresh signup.
     signup, created = VolunteerSignup.objects.get_or_create(shift=shift, user=request.user)
@@ -148,7 +181,7 @@ def signup_view(request, pk):
         signup.save(update_fields=["cancelled", "reminded"])
 
     messages.success(request, f"You're signed up for “{shift.title}.” Thank you!")
-    return redirect("volunteers:shifts")
+    return redirect(return_url)
 
 
 @login_required
@@ -159,23 +192,26 @@ def cancel_view(request, pk):
     signup.cancelled = True
     signup.save(update_fields=["cancelled"])
     messages.success(request, f"You've been removed from “{signup.shift.title}.”")
-    next_url = request.POST.get("next") or "volunteers:shifts"
-    return redirect(next_url)
+    return redirect(_return_url(request))
 
 
 @staff_member_required
 def dashboard_view(request):
     """Coordinator view: coverage per shift plus a roster of who's signed up.
 
-    Filterable by role, location, and whether to include shifts that have already
-    ended, so the chair/co-chair can see just what still needs attention.
+    Filterable by conference day, role, location, and whether to include shifts
+    that have already ended, so the chair/co-chair can see coverage for a given
+    day or just what still needs attention.
     """
     all_shifts = Shift.objects.select_related("role")
     roles = list(Role.objects.order_by("name").values_list("name", flat=True))
     locations = sorted({s.location for s in all_shifts if s.location})
+    dates = sorted({s.starts_at.date() for s in all_shifts})
 
     role_filter = request.GET.get("role", "")
     location_filter = request.GET.get("location", "")
+    date_filter = request.GET.get("date", "")
+    selected_date = parse_date(date_filter) if date_filter else None
     show_past = request.GET.get("show_past") == "1"
     open_only = request.GET.get("open_only") == "1"
 
@@ -186,7 +222,10 @@ def dashboard_view(request):
         shifts = shifts.filter(role__name=role_filter)
     if location_filter:
         shifts = shifts.filter(location=location_filter)
-    if not show_past:
+    if selected_date:
+        # An explicit day is shown in full, even if it's already in the past.
+        shifts = shifts.filter(starts_at__date=selected_date)
+    elif not show_past:
         shifts = shifts.filter(ends_at__gte=timezone.now())
     if open_only:
         shifts = shifts.filter(filled_count__lt=1)
@@ -222,12 +261,101 @@ def dashboard_view(request):
         "coverage": coverage,
         "roles": roles,
         "locations": locations,
+        "dates": dates,
         "role_filter": role_filter,
         "location_filter": location_filter,
+        "date_filter": date_filter,
+        "selected_date": selected_date,
         "show_past": show_past,
         "open_only": open_only,
+        "contact_info": SiteContactInfo.get_solo().contact_info,
     }
     return render(request, "volunteers/dashboard.html", context)
+
+
+@staff_member_required
+@require_POST
+def merge_shifts_view(request):
+    """Merge the selected schedule shifts into one sign-up block."""
+    ids = request.POST.getlist("shift")
+    shifts = list(Shift.objects.filter(id__in=ids))
+    _, error = merge_shifts(shifts)
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, "Merged into one block.")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
+
+
+@staff_member_required
+@require_POST
+def delete_shift_view(request, pk):
+    """Delete a shift (and its sign-ups). Its talks are detached, not deleted."""
+    shift = get_object_or_404(Shift, pk=pk)
+    title = shift.title
+    shift.delete()
+    messages.success(request, f"Deleted “{title}.”")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
+
+
+@staff_member_required
+@require_POST
+def split_shift_view(request, pk):
+    """Split a block back into one shift per talk."""
+    shift = get_object_or_404(Shift, pk=pk)
+    _, error = split_shift(shift)
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, "Split back into per-talk shifts.")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
+
+
+VOLUNTEER_SORTS = {"name", "hours", "shifts"}
+
+
+@staff_member_required
+def volunteers_list_view(request):
+    """Roster of everyone signed up, with how many shifts/hours each has taken."""
+    sort = request.GET.get("sort", "name")
+    if sort not in VOLUNTEER_SORTS:
+        sort = "name"
+
+    people = {}
+    for signup in (
+        VolunteerSignup.objects.filter(cancelled=False)
+        .select_related("user", "shift", "shift__role")
+        .order_by("shift__starts_at")
+    ):
+        person = people.setdefault(signup.user_id, {"user": signup.user, "shifts": 0, "hours": 0.0, "roles": set()})
+        person["shifts"] += 1
+        person["hours"] += signup.shift.duration_hours
+        person["roles"].add(signup.shift.role.name)
+
+    volunteers = list(people.values())
+    for person in volunteers:
+        person["roles"] = ", ".join(sorted(person["roles"]))
+
+    def _name(person):
+        user = person["user"]
+        return (user.get_full_name() or user.get_username() or getattr(user, "email", "") or "").lower()
+
+    if sort == "hours":
+        volunteers.sort(key=lambda p: (-p["hours"], _name(p)))
+    elif sort == "shifts":
+        volunteers.sort(key=lambda p: (-p["shifts"], _name(p)))
+    else:
+        volunteers.sort(key=_name)
+
+    context = {
+        "page_title": "Volunteers",
+        "volunteers": volunteers,
+        "sort": sort,
+        "sorts": [("name", "Name"), ("hours", "Hours"), ("shifts", "Shifts")],
+        "total_volunteers": len(volunteers),
+        "total_hours": sum(p["hours"] for p in volunteers),
+    }
+    return render(request, "volunteers/volunteers_list.html", context)
 
 
 @staff_member_required

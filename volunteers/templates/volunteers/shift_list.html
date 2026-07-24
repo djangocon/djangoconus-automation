@@ -2,6 +2,8 @@
 
 {% block title %}{{ page_title }}{% endblock title %}
 
+{% block extra_head %}{% include "volunteers/_print_styles.html" %}{% endblock extra_head %}
+
 {% block content %}
     <div class="flex flex-col gap-6 p-8 max-w-4xl text-green-100">
         <div class="text-center">
@@ -9,24 +11,24 @@
             {% if user.is_authenticated %}
                 <p class="text-green-200">
                     You're signed up for <strong>{{ my_hours|floatformat:1 }}</strong> of {{ max_hours }} volunteer hours.
-                    <a href="{% url 'volunteers:my_shifts' %}" class="underline text-yellow-300">View my shifts</a>.
+                    <a href="{% url 'volunteers:my_shifts' %}" class="text-yellow-300 underline">View my shifts</a>.
                 </p>
             {% else %}
                 <p class="text-green-200">
-                    Browsing as a guest — <a href="{% url 'account_login' %}?next={{ request.path }}" class="underline text-yellow-300">sign in</a> to sign up for a shift.
+                    Browsing as a guest — <a href="{% url 'account_login' %}?next={{ request.path }}" class="text-yellow-300 underline">sign in</a> to sign up for a shift.
                 </p>
             {% endif %}
             {% if handbook_url %}
                 <p class="mt-2 text-sm text-green-300">
                     📗 New to volunteering? Read the
-                    <a href="{{ handbook_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">volunteer handbook</a>.
+                    <a href="{{ handbook_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">volunteer handbook</a>.
                 </p>
             {% endif %}
         </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-700 border border-green-600 text-green-100{% elif message.tags == 'error' %}bg-red-700 border border-red-600 text-red-100{% else %}bg-blue-800 border border-blue-600 text-blue-100{% endif %}">
+                <div class="print-hide p-4 rounded-md {% if message.tags == 'success' %}bg-green-700 border border-green-600 text-green-100{% elif message.tags == 'error' %}bg-red-700 border border-red-600 text-red-100{% else %}bg-blue-800 border border-blue-600 text-blue-100{% endif %}">
                     {{ message }}
                 </div>
             {% endfor %}
@@ -46,7 +48,7 @@
                 <input type="checkbox" name="needs_help" value="1" {% if needs_help %}checked{% endif %}>
                 Where we need help
             </label>
-            <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+            <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                 Filter
             </button>
             {% if role_filter or needs_help %}
@@ -57,65 +59,83 @@
         {% for day, shifts in days %}
             <section class="p-6 bg-green-800 rounded-lg border border-green-700">
                 <h2 class="mb-4 text-2xl font-semibold text-yellow-300">{{ day|date:"l, F j" }}</h2>
-                <div class="flex flex-col gap-3">
-                    {% for shift in shifts %}
-                        <div class="flex flex-col gap-2 p-4 bg-green-900 rounded-lg border border-green-700 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <p class="text-lg font-semibold text-yellow-100">{{ shift.title }}</p>
-                                <p class="text-sm text-green-300">
-                                    {{ shift.role.name }} ·
-                                    <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
-                                    {% if shift.location %} · {{ shift.location }}{% endif %}
-                                </p>
-                                {% if shift.description %}
-                                    <p class="mt-1 text-sm text-green-200">{{ shift.description }}</p>
+                {% regroup shifts by starts_at as time_groups %}
+                <div class="flex flex-col gap-6">
+                    {% for slot in time_groups %}
+                        <div class="flex flex-col gap-2 pl-4 border-l-2 border-green-600">
+                            <div class="flex flex-wrap gap-2 items-baseline">
+                                <h3 class="text-lg font-semibold text-yellow-100">
+                                    <time datetime="{{ slot.grouper|date:'c' }}" class="whitespace-nowrap">{{ slot.grouper|date:"g:i A" }}</time>
+                                </h3>
+                                {% if slot.list|length > 1 %}
+                                    <span class="py-0.5 px-2 text-xs font-semibold text-green-900 bg-yellow-300 rounded-full">
+                                        {{ slot.list|length }} shifts at this time — sign up for any
+                                    </span>
                                 {% endif %}
-                                {% if shift.talk_url %}
-                                    <p class="mt-1 text-xs">
-                                        <a href="{{ shift.talk_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">
-                                            🔗 View talk on the schedule
-                                        </a>
-                                    </p>
-                                {% endif %}
-                                {% if shift.role.documentation_url %}
-                                    <p class="mt-1 text-xs">
-                                        <a href="{{ shift.role.documentation_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">
-                                            📄 {{ shift.role.name }} documentation
-                                        </a>
-                                    </p>
-                                {% endif %}
-                                <p class="mt-1 text-xs text-green-400">
-                                    {{ shift.filled_count }}/{{ shift.capacity }} filled
-                                    {% if shift.filled_count >= shift.capacity %}(over capacity is okay){% endif %}
-                                </p>
                             </div>
-                            <div class="shrink-0">
-                                {% if not user.is_authenticated %}
-                                    {% if shift.signups_open %}
-                                        <a href="{% url 'account_login' %}?next={{ request.path }}" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
-                                            Sign in to sign up
-                                        </a>
-                                    {% else %}
-                                        <span class="px-3 py-2 text-sm text-green-400">Signups closed</span>
-                                    {% endif %}
-                                {% elif shift.id in my_shift_ids %}
-                                    <form method="post" action="{% url 'volunteers:cancel' shift.id %}">
-                                        {% csrf_token %}
-                                        <span class="mr-2 text-sm text-green-300">✓ Signed up</span>
-                                        <button type="submit" class="px-3 py-2 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
-                                            Cancel
-                                        </button>
-                                    </form>
-                                {% elif not shift.signups_open %}
-                                    <span class="px-3 py-2 text-sm text-green-400">Signups closed</span>
-                                {% else %}
-                                    <form method="post" action="{% url 'volunteers:signup' shift.id %}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
-                                            Sign up
-                                        </button>
-                                    </form>
-                                {% endif %}
+                            <div class="grid gap-3 {% if slot.list|length > 1 %}md:grid-cols-2{% endif %}">
+                                {% for shift in slot.list %}
+                                    <div class="flex flex-col gap-2 p-4 bg-green-900 rounded-lg border border-green-700 shift-card">
+                                        <div>
+                                            <p class="text-lg font-semibold text-yellow-100">{{ shift.title }}</p>
+                                            <p class="text-sm text-green-300">
+                                                {{ shift.role.name }} ·
+                                                <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
+                                                {% if shift.location %} · {{ shift.location }}{% endif %}
+                                            </p>
+                                            {% if shift.description and not shift.covers_talks %}
+                                                <p class="mt-1 text-sm text-green-200">{{ shift.description }}</p>
+                                            {% endif %}
+                                            {% for talk in shift.covered_talks %}
+                                                <p class="mt-1 text-xs text-green-300">
+                                                    {% if shift.is_block %}<time datetime="{{ talk.starts_at|date:'c' }}" class="whitespace-nowrap">{{ talk.starts_at|date:"g:i A" }}</time> {% endif %}
+                                                    {% if talk.talk_url %}<a href="{{ talk.talk_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">🔗 {{ talk.title }}</a>{% else %}{{ talk.title }}{% endif %}
+                                                </p>
+                                            {% endfor %}
+                                            {% if shift.role.documentation_url %}
+                                                <p class="mt-1 text-xs">
+                                                    <a href="{{ shift.role.documentation_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">
+                                                        📄 {{ shift.role.name }} documentation
+                                                    </a>
+                                                </p>
+                                            {% endif %}
+                                            <p class="mt-1 text-xs text-green-400">
+                                                {{ shift.filled_count }}/{{ shift.capacity }} filled
+                                                {% if shift.filled_count >= shift.capacity %}(over capacity is okay){% endif %}
+                                            </p>
+                                        </div>
+                                        <div class="mt-auto">
+                                            {% if not user.is_authenticated %}
+                                                {% if shift.signups_open %}
+                                                    <a href="{% url 'account_login' %}?next={{ request.path }}" class="inline-block py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                                                        Sign in to sign up
+                                                    </a>
+                                                {% else %}
+                                                    <span class="py-2 px-3 text-sm text-green-400">Signups closed</span>
+                                                {% endif %}
+                                            {% elif shift.id in my_shift_ids %}
+                                                <form method="post" action="{% url 'volunteers:cancel' shift.id %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                    <span class="mr-2 text-sm text-green-300">✓ Signed up</span>
+                                                    <button type="submit" class="py-2 px-3 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
+                                                        Cancel
+                                                    </button>
+                                                </form>
+                                            {% elif not shift.signups_open %}
+                                                <span class="py-2 px-3 text-sm text-green-400">Signups closed</span>
+                                            {% else %}
+                                                <form method="post" action="{% url 'volunteers:signup' shift.id %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                    <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                                                        Sign up
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
                     {% endfor %}
