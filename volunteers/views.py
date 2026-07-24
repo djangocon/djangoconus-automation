@@ -20,7 +20,7 @@ from .models import (
     CalendarToken,
     Role,
     Shift,
-    VolunteerProfile,
+    SiteContactInfo,
     VolunteerSignup,
     conflicting_shifts,
     merge_shifts,
@@ -105,7 +105,6 @@ def my_shifts_view(request):
         .order_by("shift__starts_at")
     )
     token, _ = CalendarToken.objects.get_or_create(user=request.user)
-    profile, _ = VolunteerProfile.objects.get_or_create(user=request.user)
     context = {
         "page_title": "My Volunteer Shifts",
         "signups": signups,
@@ -113,20 +112,20 @@ def my_shifts_view(request):
         "max_hours": max_volunteer_hours(),
         "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
         "handbook_url": volunteer_handbook_url(),
-        "profile": profile,
+        "contact_info": SiteContactInfo.get_solo().contact_info,
     }
     return render(request, "volunteers/my_shifts.html", context)
 
 
-@login_required
+@staff_member_required
 @require_POST
 def update_contact_view(request):
-    """Save the signed-in volunteer's Markdown contact info."""
-    profile, _ = VolunteerProfile.objects.get_or_create(user=request.user)
-    profile.contact_info = request.POST.get("contact_info", "").strip()
-    profile.save(update_fields=["contact_info", "updated_at"])
-    messages.success(request, "Your contact info was saved.")
-    return redirect("volunteers:my_shifts")
+    """Save the site-wide volunteer coordinator contact info (staff only)."""
+    contact = SiteContactInfo.get_solo()
+    contact.contact_info = request.POST.get("contact_info", "").strip()
+    contact.save(update_fields=["contact_info", "updated_at"])
+    messages.success(request, "Volunteer contact info was saved.")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
 
 
 def calendar_feed(request, token):
@@ -269,6 +268,7 @@ def dashboard_view(request):
         "selected_date": selected_date,
         "show_past": show_past,
         "open_only": open_only,
+        "contact_info": SiteContactInfo.get_solo().contact_info,
     }
     return render(request, "volunteers/dashboard.html", context)
 
@@ -284,6 +284,17 @@ def merge_shifts_view(request):
         messages.error(request, error)
     else:
         messages.success(request, "Merged into one block.")
+    return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
+
+
+@staff_member_required
+@require_POST
+def delete_shift_view(request, pk):
+    """Delete a shift (and its sign-ups). Its talks are detached, not deleted."""
+    shift = get_object_or_404(Shift, pk=pk)
+    title = shift.title
+    shift.delete()
+    messages.success(request, f"Deleted “{title}.”")
     return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
 
 
@@ -313,7 +324,7 @@ def volunteers_list_view(request):
     people = {}
     for signup in (
         VolunteerSignup.objects.filter(cancelled=False)
-        .select_related("user", "shift", "shift__role", "user__volunteer_profile")
+        .select_related("user", "shift", "shift__role")
         .order_by("shift__starts_at")
     ):
         person = people.setdefault(
@@ -326,8 +337,6 @@ def volunteers_list_view(request):
     volunteers = list(people.values())
     for person in volunteers:
         person["roles"] = ", ".join(sorted(person["roles"]))
-        profile = getattr(person["user"], "volunteer_profile", None)
-        person["contact_info"] = profile.contact_info if profile else ""
 
     def _name(person):
         user = person["user"]

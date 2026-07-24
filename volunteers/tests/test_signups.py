@@ -410,29 +410,35 @@ def test_merge_rejects_different_roles(auth_client, role):
     assert Shift.objects.filter(id=b.id).exists()  # not merged
 
 
-def test_update_contact_info(auth_client, user):
-    resp = auth_client.post(reverse("volunteers:update_contact"), {"contact_info": "**Slack:** @me"})
+def test_update_contact_info_requires_staff(auth_client):
+    # A plain volunteer can't edit the site-wide contact info.
+    resp = auth_client.post(reverse("volunteers:update_contact"), {"contact_info": "hax"})
+    assert resp.status_code in (302, 403)
+    from volunteers.models import SiteContactInfo
+    assert SiteContactInfo.objects.first() is None or SiteContactInfo.objects.first().contact_info != "hax"
+
+
+def test_staff_updates_site_contact_info(auth_client):
+    _staff(auth_client, "coordinator")
+    resp = auth_client.post(reverse("volunteers:update_contact"), {"contact_info": "**Slack:** #volunteers"})
     assert resp.status_code == 302
-    from volunteers.models import VolunteerProfile
-    profile = VolunteerProfile.objects.get(user=user)
-    assert profile.contact_info == "**Slack:** @me"
+    from volunteers.models import SiteContactInfo
+    assert SiteContactInfo.get_solo().contact_info == "**Slack:** #volunteers"
 
 
-def test_my_shifts_shows_contact_form_and_value(auth_client, user):
-    from volunteers.models import VolunteerProfile
-    VolunteerProfile.objects.create(user=user, contact_info="reach me on **Slack**")
+def test_my_shifts_shows_contact_info_readonly(auth_client, user):
+    from volunteers.models import SiteContactInfo
+    SiteContactInfo.objects.create(contact_info="reach the chairs on **Slack**")
     resp = auth_client.get(reverse("volunteers:my_shifts"))
     body = resp.content.decode()
-    assert "My contact info" in body
-    assert "reach me on **Slack**" in body
+    assert "reach the chairs on **Slack**" in body
+    # ...but no edit form for a plain volunteer.
+    assert 'action="/volunteers/mine/contact/"' not in body
 
 
-def test_roster_shows_contact_info(auth_client, user, role):
-    from volunteers.models import VolunteerProfile
-    _staff(auth_client, "coordinator")
-    VolunteerProfile.objects.create(user=user, contact_info="ping @user on slack")
-    shift = make_shift(role, title="Reg")
-    VolunteerSignup.objects.create(shift=shift, user=user)
-
-    resp = auth_client.get(reverse("volunteers:volunteers_list"))
-    assert "ping @user on slack" in resp.content.decode()
+def test_delete_shift_from_dashboard(auth_client, role):
+    _staff(auth_client, "delstaff")
+    shift = make_shift(role, title="Doomed")
+    resp = auth_client.post(reverse("volunteers:delete_shift", args=[shift.id]))
+    assert resp.status_code == 302
+    assert not Shift.objects.filter(id=shift.id).exists()

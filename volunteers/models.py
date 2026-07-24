@@ -173,25 +173,32 @@ class VolunteerSignup(models.Model):
         return f"{self.user} → {self.shift}"
 
 
-class VolunteerProfile(models.Model):
-    """A volunteer's own contact card, kept as free-form Markdown.
+class SiteContactInfo(models.Model):
+    """Site-wide 'who to contact' note for volunteers (a singleton).
 
-    Volunteers edit this on their "my shifts" page — email, Slack handle, phone,
-    whatever they want coordinators to reach them by — and it's rendered to HTML
-    for coordinators to read.
+    Coordinators edit this on the dashboard — the volunteer chairs' email, Slack,
+    etc. — as Markdown, and every volunteer sees it (read-only) on their page.
     """
 
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="volunteer_profile"
-    )
     contact_info = models.TextField(
         blank=True,
-        help_text="Markdown. How coordinators can reach you — email, Slack, phone, etc.",
+        help_text="Markdown. How volunteers can reach the coordinators — email, Slack, etc.",
     )
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name = "Volunteer contact info"
+        verbose_name_plural = "Volunteer contact info"
+
     def __str__(self):
-        return f"contact info for {self.user}"
+        return "Volunteer coordinator contact info"
+
+    @classmethod
+    def get_solo(cls):
+        obj = cls.objects.first()
+        if obj is None:
+            obj = cls.objects.create()
+        return obj
 
 
 class CalendarToken(models.Model):

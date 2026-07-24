@@ -40,7 +40,6 @@
                     <tr class="text-yellow-300 border-b border-green-700">
                         <th class="p-3">Volunteer</th>
                         <th class="p-3">Email</th>
-                        <th class="p-3">Contact</th>
                         <th class="p-3">Roles</th>
                         <th class="p-3">Shifts</th>
                         <th class="p-3">Hours</th>
@@ -51,28 +50,15 @@
                         <tr class="border-b border-green-800">
                             <td class="p-3 font-medium text-yellow-100">{{ person.user.get_full_name|default:person.user.get_username }}</td>
                             <td class="p-3 text-sm text-green-200">{{ person.user.email }}</td>
-                            <td class="p-3 text-sm text-green-200">
-                                {% if person.contact_info %}
-                                    <div class="prose prose-invert prose-sm max-w-none" data-markdown>{{ person.contact_info }}</div>
-                                {% else %}
-                                    <span class="text-green-600">—</span>
-                                {% endif %}
-                            </td>
                             <td class="p-3 text-sm text-green-300">{{ person.roles }}</td>
                             <td class="p-3 text-green-200">{{ person.shifts }}</td>
                             <td class="p-3 text-green-200">{{ person.hours|floatformat:1 }}</td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="6" class="p-3 text-green-300">No one has signed up for a shift yet.</td></tr>
+                        <tr><td colspan="5" class="p-3 text-green-300">No one has signed up for a shift yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-
-    <script>
-        document.querySelectorAll("[data-markdown]").forEach(function (el) {
-            el.innerHTML = marked.parse(el.textContent.trim());
-        });
-    </script>
 {% endblock content %}

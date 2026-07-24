@@ -58,30 +58,12 @@
             {% endfor %}
         </div>
 
-        <div class="p-4 bg-green-800 rounded-lg border border-green-700">
-            <h2 class="mb-2 text-lg font-semibold text-yellow-300">📇 My contact info</h2>
-            <p class="mb-3 text-sm text-green-200">
-                How should coordinators reach you during the conference? Add your email, Slack handle,
-                phone — whatever works. Markdown is supported.
-            </p>
-
-            {% if profile.contact_info %}
-                <div class="p-3 mb-3 rounded border prose prose-invert max-w-none bg-green-900 border-green-700"
-                     data-markdown>{{ profile.contact_info }}</div>
-            {% endif %}
-
-            <form method="post" action="{% url 'volunteers:update_contact' %}" class="print-hide flex flex-col gap-2">
-                {% csrf_token %}
-                <textarea name="contact_info" rows="5"
-                          placeholder="e.g. **Slack:** @myhandle · **Phone:** 555-123-4567"
-                          class="p-2 w-full text-sm text-green-900 rounded-md">{{ profile.contact_info }}</textarea>
-                <div>
-                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
-                        Save contact info
-                    </button>
-                </div>
-            </form>
-        </div>
+        {% if contact_info %}
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="mb-2 text-lg font-semibold text-yellow-300">📇 Volunteer contacts</h2>
+                <div class="prose prose-invert max-w-none" data-markdown>{{ contact_info }}</div>
+            </div>
+        {% endif %}
 
         {% if signups %}
             <div class="print-hide p-4 bg-green-800 rounded-lg border border-green-700">

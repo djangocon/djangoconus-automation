@@ -36,6 +36,30 @@
             {% endfor %}
         {% endif %}
 
+        <details class="print-hide p-4 bg-green-800 rounded-lg border border-green-700">
+            <summary class="text-lg font-semibold text-yellow-300 cursor-pointer">📇 Volunteer contact info (shown to all volunteers)</summary>
+            <p class="mt-2 mb-3 text-sm text-green-200">
+                How volunteers can reach the coordinators — email, Slack, etc. Markdown supported;
+                appears on every volunteer's page.
+            </p>
+            {% if contact_info %}
+                <div class="p-3 mb-3 rounded border prose prose-invert max-w-none bg-green-900 border-green-700"
+                     data-markdown>{{ contact_info }}</div>
+            {% endif %}
+            <form method="post" action="{% url 'volunteers:update_contact' %}" class="flex flex-col gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <textarea name="contact_info" rows="4"
+                          placeholder="e.g. **Volunteer chairs:** Rachell & Monica · **Slack:** #volunteers"
+                          class="p-2 w-full text-sm text-green-900 rounded-md">{{ contact_info }}</textarea>
+                <div>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                        Save contact info
+                    </button>
+                </div>
+            </form>
+        </details>
+
         <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
             <div>
                 <label class="block mb-1 text-xs text-green-300" for="date">Day</label>
@@ -171,13 +195,21 @@
                                         {% endfor %}
                                     </td>
                                     <td class="p-3 print-hide">
-                                        {% if shift.is_block %}
-                                            <form method="post" action="{% url 'volunteers:split_shift' shift.id %}">
+                                        <div class="flex gap-1">
+                                            {% if shift.is_block %}
+                                                <form method="post" action="{% url 'volunteers:split_shift' shift.id %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                    <button type="submit" class="px-2 py-1 text-xs text-green-100 bg-green-700 rounded border border-green-600 hover:bg-green-600">Split</button>
+                                                </form>
+                                            {% endif %}
+                                            <form method="post" action="{% url 'volunteers:delete_shift' shift.id %}"
+                                                  onsubmit="return confirm('Delete “{{ shift.title|escapejs }}”? Any sign-ups on it are removed.');">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                                <button type="submit" class="px-2 py-1 text-xs text-green-100 bg-green-700 rounded border border-green-600 hover:bg-green-600">Split</button>
+                                                <button type="submit" class="px-2 py-1 text-xs text-red-100 bg-red-700 rounded border border-red-600 hover:bg-red-600">Delete</button>
                                             </form>
-                                        {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -189,4 +221,10 @@
             <p class="text-green-300">No shifts created yet.</p>
         {% endfor %}
     </div>
+
+    <script>
+        document.querySelectorAll("[data-markdown]").forEach(function (el) {
+            el.innerHTML = marked.parse(el.textContent.trim());
+        });
+    </script>
 {% endblock content %}

@@ -12,6 +12,7 @@ urlpatterns = [
     path("dashboard/sync/", views.sync_schedule_view, name="sync_schedule"),
     path("dashboard/merge/", views.merge_shifts_view, name="merge_shifts"),
     path("dashboard/split/<int:pk>/", views.split_shift_view, name="split_shift"),
+    path("dashboard/delete/<int:pk>/", views.delete_shift_view, name="delete_shift"),
     path("volunteers/", views.volunteers_list_view, name="volunteers_list"),
     path("shift/<int:pk>/signup/", views.signup_view, name="signup"),
     path("shift/<int:pk>/cancel/", views.cancel_view, name="cancel"),
