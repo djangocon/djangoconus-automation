@@ -106,13 +106,18 @@
             </div>
         </div>
 
-        <form id="merge-form" method="post" action="{% url 'volunteers:merge_shifts' %}" class="print-hide flex flex-wrap gap-2 items-center text-sm">
+        <form id="merge-form" method="post" action="{% url 'volunteers:merge_shifts' %}" class="print-hide flex flex-wrap gap-3 items-center p-4 bg-green-800 rounded-lg border border-green-700">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <span class="text-green-300">Check schedule shifts in the same room, back-to-back, then</span>
-            <button type="submit" class="px-3 py-1 font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
-                Merge into a block
+            <span class="text-sm text-green-200">
+                <strong class="text-yellow-200">Merge talks into a block:</strong>
+                tick the <span class="text-yellow-200">Merge</span> box on two or more schedule shifts in the
+                same room that run back-to-back, then
+            </span>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                Merge selected into a block
             </button>
+            <span class="text-xs text-green-400">(desk shifts can't be merged — only scheduled talks)</span>
         </form>
 
         {% for day, day_shifts in days %}
@@ -122,7 +127,7 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="text-yellow-300 border-b border-green-700">
-                                <th class="p-3 print-hide"></th>
+                                <th class="p-3 text-xs print-hide">Merge</th>
                                 <th class="p-3">Shift</th>
                                 <th class="p-3">Role</th>
                                 <th class="p-3">When</th>
@@ -134,9 +139,9 @@
                         <tbody>
                             {% for shift in day_shifts %}
                                 <tr class="border-b border-green-800 {% if shift.filled_count < shift.capacity %}bg-green-900/40{% endif %}">
-                                    <td class="p-3 print-hide">
+                                    <td class="p-3 text-center print-hide">
                                         {% if shift.covers_talks %}
-                                            <input type="checkbox" name="shift" value="{{ shift.id }}" form="merge-form">
+                                            <input type="checkbox" name="shift" value="{{ shift.id }}" form="merge-form" class="w-4 h-4 align-middle accent-yellow-400">
                                         {% endif %}
                                     </td>
                                     <td class="p-3 font-medium text-yellow-100">
