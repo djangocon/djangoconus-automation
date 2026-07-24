@@ -85,13 +85,18 @@ If you don't have Just installed:
 ### Django Applications
 
 - **tickets/** - Ticket link distribution system for event access
-- **emailoctopus/** - Email marketing integration with Email Octopus API
-- **titowebhooks/** - Webhook receiver for Tito event platform
+- **titowebhooks/** - Webhook receiver and sales dashboards for the Tito event platform
+- **emailoctopus/** - Email marketing integration with the Email Octopus API
+- **volunteers/** - Attendee volunteer shift sign-ups, coordinator dashboard, and schedule sync
+- **thunderdome/** - Talk/program review and scoring
+- **travel_safety/** - Travel safety check-in registration
+- **social_monitor/** - Social media monitoring
 
 ### Key Features
 
 - **Email-based ticket claiming** - Attendees can claim unique ticket links
 - **Admin ticket management** - Bulk creation and monitoring of tickets
+- **Volunteer scheduling** - Shift sign-ups, coverage dashboard, and iCal sync from the conference schedule
 - **GitHub OAuth authentication** - Staff login via GitHub
 - **Email subscription management** - Integration with Email Octopus for marketing
 - **Webhook processing** - Handle Tito purchase events
@@ -145,9 +150,12 @@ In Django Admin → Sites, ensure the site with ID 1 has:
 
 ## Architecture
 
-- **Backend**: Django 4.2.11 LTS with Python 3.12
-- **Database**: PostgreSQL with atomic transactions
-- **Task Queue**: django-q2 for background processing
-- **Frontend**: Tailwind CSS with minimal JavaScript
+- **Backend**: Django 6.0 with Python 3.13
+- **Database**: PostgreSQL (via `psycopg`) with atomic transactions
+- **Task Queue**: django-q2 for background processing (`qcluster` worker)
+- **Frontend**: Tailwind CSS (django-tailwind-cli) with minimal JavaScript (htmx)
+- **Navigation**: django-simple-nav
 - **Authentication**: django-allauth with GitHub OAuth
-- **Deployment**: Gunicorn WSGI server
+- **App server**: Gunicorn, run via django-prodserver
+- **Containerization**: Docker / Docker Compose (web, worker, db, utility services)
+- **Hosting**: Coolify, auto-deploying on merge to `main` (https://automation.defna.org)
