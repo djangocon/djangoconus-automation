@@ -14,14 +14,14 @@
                 <form method="post" action="{% url 'volunteers:sync_schedule' %}">
                     {% csrf_token %}
                     <input type="hidden" name="dry_run" value="1">
-                    <button type="submit" class="px-3 py-2 text-sm font-medium text-green-100 bg-green-700 rounded-md border border-green-600 hover:bg-green-600">
+                    <button type="submit" class="py-2 px-3 text-sm font-medium text-green-100 bg-green-700 rounded-md border border-green-600 hover:bg-green-600">
                         Preview schedule sync
                     </button>
                 </form>
                 <form method="post" action="{% url 'volunteers:sync_schedule' %}"
                       onsubmit="return confirm('Sync shifts from the conference schedule? Existing slots and signups are kept.');">
                     {% csrf_token %}
-                    <button type="submit" class="px-3 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                    <button type="submit" class="py-2 px-3 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                         Sync schedule now
                     </button>
                 </form>
@@ -36,14 +36,14 @@
             {% endfor %}
         {% endif %}
 
-        <details class="print-hide p-4 bg-green-800 rounded-lg border border-green-700">
+        <details class="p-4 bg-green-800 rounded-lg border border-green-700 print-hide">
             <summary class="text-lg font-semibold text-yellow-300 cursor-pointer">📇 Volunteer contact info (shown to all volunteers)</summary>
             <p class="mt-2 mb-3 text-sm text-green-200">
                 How volunteers can reach the coordinators — email, Slack, etc. Markdown supported;
                 appears on every volunteer's page.
             </p>
             {% if contact_info %}
-                <div class="p-3 mb-3 rounded border prose prose-invert max-w-none bg-green-900 border-green-700"
+                <div class="p-3 mb-3 max-w-none bg-green-900 rounded border border-green-700 prose prose-invert"
                      data-markdown>{{ contact_info }}</div>
             {% endif %}
             <form method="post" action="{% url 'volunteers:update_contact' %}" class="flex flex-col gap-2">
@@ -53,7 +53,7 @@
                           placeholder="e.g. **Volunteer chairs:** Rachell & Monica · **Slack:** #volunteers"
                           class="p-2 w-full text-sm text-green-900 rounded-md">{{ contact_info }}</textarea>
                 <div>
-                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                    <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                         Save contact info
                     </button>
                 </div>
@@ -96,7 +96,7 @@
                 <input type="checkbox" name="show_past" value="1" {% if show_past %}checked{% endif %}>
                 Include past shifts
             </label>
-            <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+            <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                 Filter
             </button>
             {% if role_filter or location_filter or date_filter or open_only or show_past %}
@@ -130,7 +130,7 @@
             </div>
         </div>
 
-        <form id="merge-form" method="post" action="{% url 'volunteers:merge_shifts' %}" class="print-hide flex flex-wrap gap-3 items-center p-4 bg-green-800 rounded-lg border border-green-700">
+        <form id="merge-form" method="post" action="{% url 'volunteers:merge_shifts' %}" class="flex flex-wrap gap-3 items-center p-4 bg-green-800 rounded-lg border border-green-700 print-hide">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <span class="text-sm text-green-200">
@@ -138,7 +138,7 @@
                 tick the <span class="text-yellow-200">Merge</span> box on two or more shifts with the same role,
                 in the same room, that run back-to-back, then
             </span>
-            <button type="submit" class="px-4 py-2 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+            <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                 Merge selected into a block
             </button>
         </form>
@@ -170,7 +170,7 @@
                                         {% if shift.is_block %}<span class="inline-block py-0.5 px-2 ml-1 text-xs text-green-900 bg-yellow-300 rounded-full">block</span>{% endif %}
                                         {% if shift.location %}<span class="block text-xs text-green-400">{{ shift.location }}</span>{% endif %}
                                         {% if shift.is_block %}
-                                            <ul class="mt-1 ml-1 text-xs text-green-300 list-disc list-inside">
+                                            <ul class="mt-1 ml-1 text-xs list-disc list-inside text-green-300">
                                                 {% for talk in shift.covered_talks %}
                                                     <li>
                                                         <time datetime="{{ talk.starts_at|date:'c' }}" class="whitespace-nowrap">{{ talk.starts_at|date:"g:i A" }}</time>
@@ -200,14 +200,14 @@
                                                 <form method="post" action="{% url 'volunteers:split_shift' shift.id %}">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                                    <button type="submit" class="px-2 py-1 text-xs text-green-100 bg-green-700 rounded border border-green-600 hover:bg-green-600">Split</button>
+                                                    <button type="submit" class="py-1 px-2 text-xs text-green-100 bg-green-700 rounded border border-green-600 hover:bg-green-600">Split</button>
                                                 </form>
                                             {% endif %}
                                             <form method="post" action="{% url 'volunteers:delete_shift' shift.id %}"
                                                   onsubmit="return confirm('Delete “{{ shift.title|escapejs }}”? Any sign-ups on it are removed.');">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                                <button type="submit" class="px-2 py-1 text-xs text-red-100 bg-red-700 rounded border border-red-600 hover:bg-red-600">Delete</button>
+                                                <button type="submit" class="py-1 px-2 text-xs text-red-100 bg-red-700 rounded border border-red-600 hover:bg-red-600">Delete</button>
                                             </form>
                                         </div>
                                     </td>

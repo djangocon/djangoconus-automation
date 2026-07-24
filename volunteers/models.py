@@ -130,9 +130,7 @@ class Talk(models.Model):
     just re-points several talks at one Shift while each talk keeps its own data.
     """
 
-    shift = models.ForeignKey(
-        "Shift", on_delete=models.SET_NULL, null=True, blank=True, related_name="talks"
-    )
+    shift = models.ForeignKey("Shift", on_delete=models.SET_NULL, null=True, blank=True, related_name="talks")
     external_uid = models.CharField(
         max_length=255,
         blank=True,

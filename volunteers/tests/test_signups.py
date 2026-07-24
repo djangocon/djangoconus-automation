@@ -206,7 +206,9 @@ def test_dashboard_filters_by_role_and_location(auth_client, role):
 
 
 def test_dashboard_hides_past_shifts_by_default(auth_client, role):
-    staff = User.objects.create_user(username="staffer2", email="staff2@example.com", password="pw12345!", is_staff=True)
+    staff = User.objects.create_user(
+        username="staffer2", email="staff2@example.com", password="pw12345!", is_staff=True
+    )
     auth_client.force_login(staff)
 
     make_shift(role, title="Past Shift", start_offset_hours=-4, length_hours=1)
@@ -223,7 +225,9 @@ def test_dashboard_hides_past_shifts_by_default(auth_client, role):
 
 
 def test_dashboard_open_only_filter(auth_client, role):
-    staff = User.objects.create_user(username="staffer3", email="staff3@example.com", password="pw12345!", is_staff=True)
+    staff = User.objects.create_user(
+        username="staffer3", email="staff3@example.com", password="pw12345!", is_staff=True
+    )
     auth_client.force_login(staff)
 
     make_shift(role, title="Needs Volunteers", capacity=2)
@@ -291,7 +295,9 @@ def test_cancel_preserves_filters_via_next(auth_client, user, role):
 
 def _staff(auth_client, username):
     User = get_user_model()
-    staff = User.objects.create_user(username=username, email=f"{username}@example.com", password="pw12345!", is_staff=True)
+    staff = User.objects.create_user(
+        username=username, email=f"{username}@example.com", password="pw12345!", is_staff=True
+    )
     auth_client.force_login(staff)
     return staff
 
@@ -331,7 +337,9 @@ def test_volunteers_list_sort_by_hours(auth_client, role):
     big = User.objects.create_user(username="big", email="big@example.com", password="pw12345!")
     small = User.objects.create_user(username="small", email="small@example.com", password="pw12345!")
     VolunteerSignup.objects.create(shift=make_shift(role, length_hours=4, title="Big"), user=big)
-    VolunteerSignup.objects.create(shift=make_shift(role, length_hours=1, title="Small", start_offset_hours=48), user=small)
+    VolunteerSignup.objects.create(
+        shift=make_shift(role, length_hours=1, title="Small", start_offset_hours=48), user=small
+    )
 
     resp = auth_client.get(reverse("volunteers:volunteers_list"), {"sort": "hours"})
     body = resp.content.decode()
@@ -340,9 +348,18 @@ def test_volunteers_list_sort_by_hours(auth_client, role):
 
 def _talk_shift(role, title, start_offset_hours, length_hours=1, location="Room A"):
     from volunteers.models import Talk
-    shift = make_shift(role, title=title, start_offset_hours=start_offset_hours, length_hours=length_hours, location=location)
-    Talk.objects.create(shift=shift, external_uid=f"{title}@x", title=title, location=location,
-                        starts_at=shift.starts_at, ends_at=shift.ends_at)
+
+    shift = make_shift(
+        role, title=title, start_offset_hours=start_offset_hours, length_hours=length_hours, location=location
+    )
+    Talk.objects.create(
+        shift=shift,
+        external_uid=f"{title}@x",
+        title=title,
+        location=location,
+        starts_at=shift.starts_at,
+        ends_at=shift.ends_at,
+    )
     return shift
 
 
@@ -415,6 +432,7 @@ def test_update_contact_info_requires_staff(auth_client):
     resp = auth_client.post(reverse("volunteers:update_contact"), {"contact_info": "hax"})
     assert resp.status_code in (302, 403)
     from volunteers.models import SiteContactInfo
+
     assert SiteContactInfo.objects.first() is None or SiteContactInfo.objects.first().contact_info != "hax"
 
 
@@ -423,11 +441,13 @@ def test_staff_updates_site_contact_info(auth_client):
     resp = auth_client.post(reverse("volunteers:update_contact"), {"contact_info": "**Slack:** #volunteers"})
     assert resp.status_code == 302
     from volunteers.models import SiteContactInfo
+
     assert SiteContactInfo.get_solo().contact_info == "**Slack:** #volunteers"
 
 
 def test_my_shifts_shows_contact_info_readonly(auth_client, user):
     from volunteers.models import SiteContactInfo
+
     SiteContactInfo.objects.create(contact_info="reach the chairs on **Slack**")
     resp = auth_client.get(reverse("volunteers:my_shifts"))
     body = resp.content.decode()

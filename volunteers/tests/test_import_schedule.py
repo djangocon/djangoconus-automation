@@ -83,7 +83,9 @@ def test_import_schedule_dry_run_reports_updates(mock_ics_response):
 @pytest.mark.django_db
 def test_import_schedule_creates_talks_and_shifts(mock_ics_response):
     out = StringIO()
-    call_command("import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--role=Session Chair", stdout=out)
+    call_command(
+        "import_schedule", "--url=https://example.com/schedule.ics", "--no-skip", "--role=Session Chair", stdout=out
+    )
 
     assert "Imported 2 new talk(s)" in out.getvalue()
 

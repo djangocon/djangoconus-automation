@@ -327,9 +327,7 @@ def volunteers_list_view(request):
         .select_related("user", "shift", "shift__role")
         .order_by("shift__starts_at")
     ):
-        person = people.setdefault(
-            signup.user_id, {"user": signup.user, "shifts": 0, "hours": 0.0, "roles": set()}
-        )
+        person = people.setdefault(signup.user_id, {"user": signup.user, "shifts": 0, "hours": 0.0, "roles": set()})
         person["shifts"] += 1
         person["hours"] += signup.shift.duration_hours
         person["roles"].add(signup.shift.role.name)

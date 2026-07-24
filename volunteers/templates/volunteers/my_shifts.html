@@ -10,11 +10,11 @@
             <h1 class="mb-2 text-4xl font-bold text-yellow-200">My Volunteer Shifts</h1>
             <p class="text-green-200">
                 Total: <strong>{{ my_hours|floatformat:1 }}</strong> of {{ max_hours }} hours.
-                <a href="{% url 'volunteers:shifts' %}" class="underline text-yellow-300">Browse more shifts</a>.
+                <a href="{% url 'volunteers:shifts' %}" class="text-yellow-300 underline">Browse more shifts</a>.
             </p>
             {% if handbook_url %}
                 <p class="mt-2 text-sm text-green-300">
-                    📗 <a href="{{ handbook_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">Volunteer handbook</a>
+                    📗 <a href="{{ handbook_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">Volunteer handbook</a>
                 </p>
             {% endif %}
         </div>
@@ -29,7 +29,7 @@
 
         <div class="flex flex-col gap-3">
             {% for signup in signups %}
-                <div class="shift-card flex flex-col gap-2 p-4 bg-green-800 rounded-lg border border-green-700 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col gap-2 p-4 bg-green-800 rounded-lg border border-green-700 md:flex-row md:justify-between md:items-center shift-card">
                     <div>
                         <p class="text-lg font-semibold text-yellow-100">{{ signup.shift.title }}</p>
                         <p class="text-sm text-green-300">
@@ -39,7 +39,7 @@
                         </p>
                         {% if signup.shift.role.documentation_url %}
                             <p class="mt-1 text-xs">
-                                <a href="{{ signup.shift.role.documentation_url }}" target="_blank" rel="noopener" class="underline text-yellow-300">
+                                <a href="{{ signup.shift.role.documentation_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">
                                     📄 {{ signup.shift.role.name }} documentation
                                 </a>
                             </p>
@@ -48,7 +48,7 @@
                     <form method="post" action="{% url 'volunteers:cancel' signup.shift.id %}" class="shrink-0">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button type="submit" class="px-3 py-2 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
+                        <button type="submit" class="py-2 px-3 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
                             Cancel
                         </button>
                     </form>
@@ -61,18 +61,18 @@
         {% if contact_info %}
             <div class="p-4 bg-green-800 rounded-lg border border-green-700">
                 <h2 class="mb-2 text-lg font-semibold text-yellow-300">📇 Volunteer contacts</h2>
-                <div class="prose prose-invert max-w-none" data-markdown>{{ contact_info }}</div>
+                <div class="max-w-none prose prose-invert" data-markdown>{{ contact_info }}</div>
             </div>
         {% endif %}
 
         {% if signups %}
-            <div class="print-hide p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="p-4 bg-green-800 rounded-lg border border-green-700 print-hide">
                 <h2 class="mb-2 text-lg font-semibold text-yellow-300">📅 Subscribe to your shifts</h2>
                 <p class="mb-2 text-sm text-green-200">
                     Add this private calendar URL to Google Calendar, Apple Calendar, or Outlook to
                     keep your shifts in sync:
                 </p>
-                <code class="block p-2 text-xs break-all text-green-100 bg-green-900 rounded border border-green-700">{{ calendar_url }}</code>
+                <code class="block p-2 text-xs text-green-100 break-all bg-green-900 rounded border border-green-700">{{ calendar_url }}</code>
             </div>
         {% endif %}
     </div>

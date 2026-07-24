@@ -10,7 +10,7 @@
     <div class="flex flex-col gap-6 p-8 text-green-100">
         <div class="flex flex-wrap gap-3 justify-between items-center">
             <h1 class="text-4xl font-bold text-yellow-200">Volunteers</h1>
-            <a href="{% url 'volunteers:dashboard' %}" class="print-hide text-sm text-green-300 underline">← Shift dashboard</a>
+            <a href="{% url 'volunteers:dashboard' %}" class="text-sm text-green-300 underline print-hide">← Shift dashboard</a>
         </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -24,7 +24,7 @@
             </div>
         </div>
 
-        <div class="print-hide flex flex-wrap gap-2 items-center text-sm">
+        <div class="flex flex-wrap gap-2 items-center text-sm print-hide">
             <span class="text-green-300">Sort by:</span>
             {% for key, label in sorts %}
                 <a href="?sort={{ key }}"
