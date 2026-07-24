@@ -7,6 +7,7 @@ app_name = "volunteers"
 urlpatterns = [
     path("", views.shift_list_view, name="shifts"),
     path("mine/", views.my_shifts_view, name="my_shifts"),
+    path("mine/contact/", views.update_contact_view, name="update_contact"),
     path("dashboard/", views.dashboard_view, name="dashboard"),
     path("dashboard/sync/", views.sync_schedule_view, name="sync_schedule"),
     path("dashboard/merge/", views.merge_shifts_view, name="merge_shifts"),

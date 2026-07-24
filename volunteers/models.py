@@ -173,6 +173,27 @@ class VolunteerSignup(models.Model):
         return f"{self.user} → {self.shift}"
 
 
+class VolunteerProfile(models.Model):
+    """A volunteer's own contact card, kept as free-form Markdown.
+
+    Volunteers edit this on their "my shifts" page — email, Slack handle, phone,
+    whatever they want coordinators to reach them by — and it's rendered to HTML
+    for coordinators to read.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="volunteer_profile"
+    )
+    contact_info = models.TextField(
+        blank=True,
+        help_text="Markdown. How coordinators can reach you — email, Slack, phone, etc.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"contact info for {self.user}"
+
+
 class CalendarToken(models.Model):
     """A stable, unguessable token so a volunteer can subscribe to their shifts.
 

@@ -20,6 +20,7 @@ from .models import (
     CalendarToken,
     Role,
     Shift,
+    VolunteerProfile,
     VolunteerSignup,
     conflicting_shifts,
     merge_shifts,
@@ -104,6 +105,7 @@ def my_shifts_view(request):
         .order_by("shift__starts_at")
     )
     token, _ = CalendarToken.objects.get_or_create(user=request.user)
+    profile, _ = VolunteerProfile.objects.get_or_create(user=request.user)
     context = {
         "page_title": "My Volunteer Shifts",
         "signups": signups,
@@ -111,8 +113,20 @@ def my_shifts_view(request):
         "max_hours": max_volunteer_hours(),
         "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
         "handbook_url": volunteer_handbook_url(),
+        "profile": profile,
     }
     return render(request, "volunteers/my_shifts.html", context)
+
+
+@login_required
+@require_POST
+def update_contact_view(request):
+    """Save the signed-in volunteer's Markdown contact info."""
+    profile, _ = VolunteerProfile.objects.get_or_create(user=request.user)
+    profile.contact_info = request.POST.get("contact_info", "").strip()
+    profile.save(update_fields=["contact_info", "updated_at"])
+    messages.success(request, "Your contact info was saved.")
+    return redirect("volunteers:my_shifts")
 
 
 def calendar_feed(request, token):
@@ -299,7 +313,7 @@ def volunteers_list_view(request):
     people = {}
     for signup in (
         VolunteerSignup.objects.filter(cancelled=False)
-        .select_related("user", "shift", "shift__role")
+        .select_related("user", "shift", "shift__role", "user__volunteer_profile")
         .order_by("shift__starts_at")
     ):
         person = people.setdefault(
@@ -312,6 +326,8 @@ def volunteers_list_view(request):
     volunteers = list(people.values())
     for person in volunteers:
         person["roles"] = ", ".join(sorted(person["roles"]))
+        profile = getattr(person["user"], "volunteer_profile", None)
+        person["contact_info"] = profile.contact_info if profile else ""
 
     def _name(person):
         user = person["user"]

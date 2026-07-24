@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import CalendarToken, Role, Shift, Talk, VolunteerSignup
+from .models import CalendarToken, Role, Shift, Talk, VolunteerProfile, VolunteerSignup
+
+
+@admin.register(VolunteerProfile)
+class VolunteerProfileAdmin(admin.ModelAdmin):
+    list_display = ["user", "updated_at"]
+    search_fields = ["user__email", "contact_info"]
+    autocomplete_fields = ["user"]
 
 
 @admin.register(CalendarToken)
