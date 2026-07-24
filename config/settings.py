@@ -187,7 +187,10 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# NOTE: do not set ACCOUNT_USER_MODEL_USERNAME_FIELD = None. We use the stock
+# auth.User, which has a UNIQUE username column. Setting this to None makes
+# allauth's populate_username() a no-op, so users are saved with username="";
+# the second such signup then dies on a UniqueViolation. See #89.
 LOGIN_REDIRECT_URL = "/"
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
