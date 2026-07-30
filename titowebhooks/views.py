@@ -19,12 +19,20 @@ from rich import print
 
 from emailoctopus.models import Campaign
 from titowebhooks.models import TitoHistoricalEvent, TitoWebhookEvent
+from volunteers.models import VolunteerSignup
 
 superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser)
 
 LEADER_QUESTION_ID = 1216404
 JOINER_QUESTION_ID = 1216405
 EVENT_SLUG = "djangocon-us-2026"
+
+# Ti.to stores question answers twice: an "answers" list keyed by question id, and a
+# "responses" object keyed by the question slug. The slug is truncated by Ti.to, hence
+# the cut-off "-th". Querying "responses" lets Postgres do the filtering for us.
+VOLUNTEER_QUESTION_SLUG = "are-you-interested-in-volunteering-at-th"
+VOLUNTEER_RESPONSE_LOOKUP = f"payload__responses__{VOLUNTEER_QUESTION_SLUG}"
+VOLUNTEER_YES = "Yes!"
 
 # How many conference years the "Download Historical" export reaches back, counting
 # from the most recent year present in the data (e.g. 3 -> current + two prior years).
@@ -417,3 +425,82 @@ def tito_sync_view(request: HttpRequest) -> HttpResponse:
     async_task("titowebhooks.sync.sync_tito_events")
     messages.success(request, "Tito sync queued. Refresh in a moment to see updated data.")
     return redirect("tito_sales_dashboard")
+
+
+def _extract_volunteer_interest() -> list[dict]:
+    """Attendees who answered "Yes!" to the volunteering question on their ticket.
+
+    Ti.to fires several webhooks per ticket (completed, updated, voided...), so the
+    same person shows up many times. We keep only the most recent event per email
+    address, then drop anyone whose latest event voided their ticket - they should
+    not land on an outreach list.
+    """
+    events = TitoWebhookEvent.objects.filter(**{VOLUNTEER_RESPONSE_LOOKUP: VOLUNTEER_YES}).order_by("timestamp")
+
+    latest_by_email: dict[str, TitoWebhookEvent] = {}
+    for event in events:
+        email = ((event.payload or {}).get("email") or "").strip().lower()
+        if email:
+            latest_by_email[email] = event  # ascending order, so the last write wins
+
+    people = []
+    for email, event in latest_by_email.items():
+        if event.trigger == "ticket.voided":
+            continue
+        payload = event.payload or {}
+        people.append(
+            {
+                "name": payload.get("name") or "",
+                "email": email,
+                "company_name": payload.get("company_name") or "",
+                "reference": payload.get("reference") or "",
+                "release_title": (payload.get("release") or {}).get("title") or "",
+                "created_at": _parse_created_at(payload.get("created_at")),
+                "trigger": event.trigger,
+            }
+        )
+
+    return sorted(people, key=lambda p: p["name"].lower())
+
+
+def _volunteer_interest_csv(people: list[dict]) -> HttpResponse:
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="volunteer_interest.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Name", "Email", "Company", "Ticket Reference", "Ticket Type", "Ticket Date"])
+    for person in people:
+        writer.writerow(
+            [
+                person["name"],
+                person["email"],
+                person["company_name"],
+                person["reference"],
+                person["release_title"],
+                person["created_at"].isoformat() if person["created_at"] else "",
+            ]
+        )
+    return response
+
+
+@superuser_required
+def volunteer_interest_view(request: HttpRequest) -> HttpResponse:
+    people = _extract_volunteer_interest()
+
+    if request.GET.get("format") == "csv":
+        return _volunteer_interest_csv(people)
+
+    signed_up_emails = set(
+        VolunteerSignup.objects.filter(cancelled=False).exclude(user__email="").values_list("user__email", flat=True)
+    )
+    signed_up_emails = {email.strip().lower() for email in signed_up_emails}
+
+    for person in people:
+        person["has_signed_up"] = person["email"] in signed_up_emails
+
+    context = {
+        "people": people,
+        "total_count": len(people),
+        "signed_up_count": sum(1 for p in people if p["has_signed_up"]),
+        "not_signed_up_count": sum(1 for p in people if not p["has_signed_up"]),
+    }
+    return render(request, "titowebhooks/volunteer_interest.html", context)
