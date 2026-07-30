@@ -11,6 +11,22 @@
             <div class="text-green-300">Automations</div>
         </div>
 
+        <div class="flex flex-col gap-2">
+            <a href="{% url 'volunteers:shifts' %}"
+               class="block py-4 px-6 text-2xl font-bold text-green-900 bg-yellow-300 rounded-lg shadow hover:bg-yellow-200">
+                🙋 Volunteer at DjangoCon US
+            </a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'volunteers:my_shifts' %}" class="text-sm text-yellow-300 underline hover:text-yellow-200">
+                    View my shifts
+                </a>
+            {% else %}
+                <p class="text-sm text-green-300">
+                    Browse open shifts — sign in when you're ready to claim one.
+                </p>
+            {% endif %}
+        </div>
+
         {% django_simple_nav "config.nav.MainNav" %}
 
         <div class="text-xl">version {{ app_version }}</div>
