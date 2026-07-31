@@ -14,9 +14,9 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
+from django_q.tasks import async_task
 
 from .ical import build_calendar
-from .tasks import notify_shift_uncovered
 from .models import (
     CalendarToken,
     Role,
@@ -202,7 +202,7 @@ def cancel_view(request, pk):
     signup = get_object_or_404(VolunteerSignup, shift_id=pk, user=request.user, cancelled=False)
     signup.cancelled = True
     signup.save(update_fields=["cancelled"])
-    notify_shift_uncovered(signup.shift, signup)
+    async_task("volunteers.tasks.notify_shift_uncovered", signup.pk)
     messages.success(request, f"You've been removed from “{signup.shift.title}.”")
     return redirect(_return_url(request))
 

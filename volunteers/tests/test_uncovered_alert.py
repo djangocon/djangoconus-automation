@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -7,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from volunteers.models import Role, Shift, VolunteerSignup
+from volunteers.tasks import notify_shift_uncovered
 
 User = get_user_model()
 
@@ -44,23 +46,20 @@ def make_shift(role, *, start_offset_hours=24, length_hours=2):
     )
 
 
-def make_aged_signup(shift, user, *, age_minutes=120):
-    signup = VolunteerSignup.objects.create(shift=shift, user=user)
+def make_cancelled_signup(shift, user, *, age_minutes=120):
+    """A signup that existed for ``age_minutes`` and has just been cancelled."""
+    signup = VolunteerSignup.objects.create(shift=shift, user=user, cancelled=True)
     VolunteerSignup.objects.filter(pk=signup.pk).update(
         created_at=timezone.now() - datetime.timedelta(minutes=age_minutes)
     )
     return signup
 
 
-def cancel(client, shift):
-    return client.post(reverse("volunteers:cancel", args=[shift.id]))
-
-
-def test_alert_sent_when_last_volunteer_cancels_near_shift(auth_client, user, role):
+def test_alert_sent_when_last_volunteer_cancels_near_shift(user, role):
     shift = make_shift(role, start_offset_hours=24)
-    make_aged_signup(shift, user)
+    signup = make_cancelled_signup(shift, user)
 
-    cancel(auth_client, shift)
+    assert notify_shift_uncovered(signup.pk) is True
     assert len(mail.outbox) == 1
     message = mail.outbox[0]
     assert message.recipients() == COORDINATORS
@@ -68,49 +67,61 @@ def test_alert_sent_when_last_volunteer_cancels_near_shift(auth_client, user, ro
     assert "Test Shift" in message.body
 
 
-def test_no_alert_when_signup_and_cancel_within_buffer(auth_client, user, role):
+def test_no_alert_when_signup_and_cancel_within_buffer(user, role):
     shift = make_shift(role, start_offset_hours=24)
-    make_aged_signup(shift, user, age_minutes=10)
+    signup = make_cancelled_signup(shift, user, age_minutes=10)
 
-    cancel(auth_client, shift)
+    assert notify_shift_uncovered(signup.pk) is False
     assert len(mail.outbox) == 0
 
 
-def test_no_alert_when_shift_is_far_out(auth_client, user, role):
+def test_no_alert_when_shift_is_far_out(user, role):
     shift = make_shift(role, start_offset_hours=72)
-    make_aged_signup(shift, user)
+    signup = make_cancelled_signup(shift, user)
 
-    cancel(auth_client, shift)
+    assert notify_shift_uncovered(signup.pk) is False
     assert len(mail.outbox) == 0
 
 
-def test_no_alert_when_shift_still_covered(auth_client, user, role):
+def test_no_alert_when_shift_still_covered(user, role):
     shift = make_shift(role, start_offset_hours=24)
-    make_aged_signup(shift, user)
+    signup = make_cancelled_signup(shift, user)
     other = User.objects.create_user(username="other", email="other@example.com", password="pw12345!")
     VolunteerSignup.objects.create(shift=shift, user=other)
 
-    cancel(auth_client, shift)
+    assert notify_shift_uncovered(signup.pk) is False
     assert len(mail.outbox) == 0
 
 
-def test_no_alert_when_no_coordinators_configured(auth_client, user, role, settings):
+def test_no_alert_when_no_coordinators_configured(user, role, settings):
     settings.VOLUNTEER_COORDINATOR_EMAILS = []
     shift = make_shift(role, start_offset_hours=24)
-    make_aged_signup(shift, user)
+    signup = make_cancelled_signup(shift, user)
 
-    cancel(auth_client, shift)
+    assert notify_shift_uncovered(signup.pk) is False
     assert len(mail.outbox) == 0
 
 
-def test_re_signup_resets_the_buffer(auth_client, user, role):
+@patch("volunteers.views.async_task")
+def test_cancel_view_dispatches_alert_task(mock_async_task, auth_client, user, role):
+    shift = make_shift(role, start_offset_hours=24)
+    signup = VolunteerSignup.objects.create(shift=shift, user=user)
+
+    auth_client.post(reverse("volunteers:cancel", args=[shift.id]))
+    mock_async_task.assert_called_once_with("volunteers.tasks.notify_shift_uncovered", signup.pk)
+
+
+@patch("volunteers.views.async_task")
+def test_re_signup_resets_the_buffer(mock_async_task, auth_client, user, role):
     """Signing up again after a cancel starts a fresh buffer window, so an old
     original signup date can't sneak an alert past the debounce."""
     shift = make_shift(role, start_offset_hours=24)
-    make_aged_signup(shift, user, age_minutes=600)
+    signup = VolunteerSignup.objects.create(shift=shift, user=user)
+    VolunteerSignup.objects.filter(pk=signup.pk).update(created_at=timezone.now() - datetime.timedelta(hours=10))
 
-    cancel(auth_client, shift)
-    mail.outbox.clear()
+    auth_client.post(reverse("volunteers:cancel", args=[shift.id]))
     auth_client.post(reverse("volunteers:signup", args=[shift.id]))
-    cancel(auth_client, shift)
+    auth_client.post(reverse("volunteers:cancel", args=[shift.id]))
+
+    assert notify_shift_uncovered(signup.pk) is False
     assert len(mail.outbox) == 0

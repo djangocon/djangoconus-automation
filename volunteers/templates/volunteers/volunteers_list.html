@@ -8,23 +8,23 @@
 
 {% block content %}
     <div class="flex flex-col gap-6 p-8 text-green-100">
-        <div class="flex flex-wrap gap-3 justify-between items-center">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-4xl font-bold text-yellow-200">Volunteers</h1>
-            <a href="{% url 'volunteers:dashboard' %}" class="text-sm text-green-300 underline print-hide">← Shift dashboard</a>
+            <a href="{% url 'volunteers:dashboard' %}" class="print-hide text-sm text-green-300 underline">← Shift dashboard</a>
         </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <p class="text-3xl font-bold text-yellow-200">{{ total_volunteers }}</p>
                 <p class="text-sm text-green-300">Volunteers signed up</p>
             </div>
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <p class="text-3xl font-bold text-yellow-200">{{ total_hours|floatformat:1 }}</p>
                 <p class="text-sm text-green-300">Total volunteer hours</p>
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-2 items-center text-sm print-hide">
+        <div class="print-hide flex flex-wrap items-center gap-2 text-sm">
             <span class="text-green-300">Sort by:</span>
             {% for key, label in sorts %}
                 <a href="?sort={{ key }}"
@@ -35,9 +35,9 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full border-collapse text-left">
                 <thead>
-                    <tr class="text-yellow-300 border-b border-green-700">
+                    <tr class="border-b border-green-700 text-yellow-300">
                         <th class="p-3">Volunteer</th>
                         <th class="p-3">Email</th>
                         <th class="p-3">Roles</th>

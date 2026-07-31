@@ -53,17 +53,21 @@ def send_shift_reminders():
     return sent
 
 
-def notify_shift_uncovered(shift, cancelled_signup):
+def notify_shift_uncovered(signup_id):
     """Alert the coordinators when a near-term shift just lost its last volunteer.
 
-    Skips quietly when: no coordinator emails are configured, the shift still has
-    active signups, it starts outside the alert window (or already started), or
-    the volunteer signed up and cancelled within the buffer — a quick change of
-    mind isn't worth an email. Returns True when an alert was sent.
+    Dispatched via django-q2's async_task from the cancel view, with the
+    cancelled signup's pk. Skips quietly when: no coordinator emails are
+    configured, the shift still has active signups, it starts outside the alert
+    window (or already started), or the volunteer signed up and cancelled within
+    the buffer — a quick change of mind isn't worth an email. Returns True when
+    an alert was sent.
     """
     recipients = settings.VOLUNTEER_COORDINATOR_EMAILS
     if not recipients:
         return False
+    cancelled_signup = VolunteerSignup.objects.select_related("shift", "shift__role", "user").get(pk=signup_id)
+    shift = cancelled_signup.shift
     if shift.active_signups.exists():
         return False
 
