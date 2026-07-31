@@ -74,9 +74,15 @@ def shift_list_view(request):
             VolunteerSignup.objects.filter(user=request.user, cancelled=False).values_list("shift_id", flat=True)
         )
         my_hours = total_volunteer_hours(request.user)
+        my_upcoming = (
+            VolunteerSignup.objects.filter(user=request.user, cancelled=False, shift__ends_at__gte=timezone.now())
+            .select_related("shift", "shift__role")
+            .order_by("shift__starts_at")[:3]
+        )
     else:
         my_shift_ids = set()
         my_hours = 0
+        my_upcoming = []
 
     days = defaultdict(list)
     for shift in shifts:
@@ -86,6 +92,7 @@ def shift_list_view(request):
         "page_title": "Volunteer Sign-up",
         "days": sorted(days.items()),
         "my_shift_ids": my_shift_ids,
+        "my_upcoming": my_upcoming,
         "my_hours": my_hours,
         "max_hours": max_volunteer_hours(),
         "roles": roles,

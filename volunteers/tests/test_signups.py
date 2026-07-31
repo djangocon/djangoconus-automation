@@ -186,6 +186,31 @@ def test_shift_list_needs_help_filter(client, role):
     assert open_shift.id != staffed_shift.id
 
 
+def test_shift_list_shows_my_upcoming_summary(auth_client, user, role):
+    shift = make_shift(role, title="My Reg Shift")
+    VolunteerSignup.objects.create(shift=shift, user=user)
+
+    resp = auth_client.get(reverse("volunteers:shifts"))
+    body = resp.content.decode()
+    assert "Your upcoming shifts" in body
+    assert "My Reg Shift" in body
+    assert reverse("volunteers:my_shifts") in body
+
+
+def test_shift_list_summary_excludes_cancelled(auth_client, user, role):
+    shift = make_shift(role, title="Cancelled Shift")
+    VolunteerSignup.objects.create(shift=shift, user=user, cancelled=True)
+
+    resp = auth_client.get(reverse("volunteers:shifts"))
+    assert "Your upcoming shifts" not in resp.content.decode()
+
+
+def test_shift_list_no_summary_for_anonymous(client, role):
+    make_shift(role, title="Reg Desk")
+    resp = client.get(reverse("volunteers:shifts"))
+    assert "Your upcoming shifts" not in resp.content.decode()
+
+
 def test_dashboard_filters_by_role_and_location(auth_client, role):
     staff = User.objects.create_user(username="staffer", email="staff@example.com", password="pw12345!", is_staff=True)
     auth_client.force_login(staff)
