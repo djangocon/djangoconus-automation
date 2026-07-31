@@ -63,21 +63,21 @@
 {% endblock extra_head %}
 
 {% block content %}
-    <div class="p-6 mx-auto max-w-7xl">
-        <div class="flex justify-between items-center mb-6">
+    <div class="mx-auto max-w-7xl p-6">
+        <div class="mb-6 flex items-center justify-between">
             <div>
                 <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
                 <h1 class="text-3xl font-bold">Thunderdome</h1>
             </div>
-            <div class="flex gap-2 items-center">
+            <div class="flex items-center gap-2">
                 <a href="{% url 'thunderdome_grants' %}"
-                   class="py-2 px-4 font-semibold text-white bg-green-700 rounded-lg hover:bg-green-600 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                   class="rounded-lg bg-green-700 px-4 py-2 font-semibold text-white hover:bg-green-600 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                     Grant Applicants
                 </a>
                 <form method="post" action="{% url 'thunderdome_sync' %}">
                     {% csrf_token %}
                     <button type="submit"
-                            class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                            class="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                         Sync from Pretalx
                     </button>
                 </form>
@@ -94,7 +94,7 @@
             </div>
         {% endif %}
 
-        <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
+        <div class="bg-opacity-50 mb-6 rounded-lg bg-green-800 p-4">
             <div class="grid grid-cols-7 gap-4 text-center">
                 <div>
                     <p class="text-2xl font-bold">{{ total_count }}</p>
@@ -112,34 +112,34 @@
         </div>
 
         <form id="filter-form"
-              class="flex flex-wrap gap-4 items-end p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg"
+              class="bg-opacity-50 mb-6 flex flex-wrap items-end gap-4 rounded-lg bg-green-800 p-4"
               hx-get="{% url 'thunderdome_submissions' %}"
               hx-target="#submissions-table"
               hx-trigger="change, keyup changed delay:300ms from:#q"
               hx-push-url="true">
             <input type="hidden" name="sort" id="sort-input" value="{{ current_sort }}">
             <div class="flex-grow">
-                <label class="block mb-1 text-xs text-gray-300 uppercase" for="q">Search</label>
+                <label class="mb-1 block text-xs text-gray-300 uppercase" for="q">Search</label>
                 <input type="text"
                        name="q"
                        id="q"
                        value="{{ current_search }}"
                        placeholder="Search title or speaker..."
-                       class="py-1 px-2 w-full text-sm text-gray-900 rounded border border-gray-300">
+                       class="w-full rounded border border-gray-300 px-2 py-1 text-sm text-gray-900">
             </div>
             <div>
-                <label class="block mb-1 text-xs text-gray-300 uppercase" for="duration">Duration</label>
+                <label class="mb-1 block text-xs text-gray-300 uppercase" for="duration">Duration</label>
                 <select name="duration" id="duration"
-                        class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
+                        class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900">
                     <option value="">All</option>
                     <option value="25" {% if current_duration == "25" %}selected{% endif %}>25 min</option>
                     <option value="45" {% if current_duration == "45" %}selected{% endif %}>45 min</option>
                 </select>
             </div>
             <div>
-                <label class="block mb-1 text-xs text-gray-300 uppercase" for="pretalx_state">Pretalx</label>
+                <label class="mb-1 block text-xs text-gray-300 uppercase" for="pretalx_state">Pretalx</label>
                 <select name="pretalx_state" id="pretalx_state"
-                        class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
+                        class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900">
                     <option value="">All (excl. withdrawn)</option>
                     {% for value, label in pretalx_states %}
                         <option value="{{ value }}" {% if current_pretalx_state == value %}selected{% endif %}>
@@ -149,10 +149,10 @@
                 </select>
             </div>
             <div class="relative" id="tag-dropdown-container">
-                <label class="block mb-1 text-xs text-gray-300 uppercase">Tags</label>
+                <label class="mb-1 block text-xs text-gray-300 uppercase">Tags</label>
                 <button type="button" id="tag-dropdown-btn"
                         onclick="toggleTagDropdown()"
-                        class="py-1 px-2 text-sm text-left text-gray-900 bg-white rounded border border-gray-300 truncate"
+                        class="truncate rounded border border-gray-300 bg-white px-2 py-1 text-left text-sm text-gray-900"
                         style="min-width: 140px; max-width: 200px;">
                     {% if current_tags %}
                         {% for tag in tags %}{% if tag.pk in current_tags %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}
@@ -161,24 +161,24 @@
                     {% endif %}
                 </button>
                 <div id="tag-dropdown"
-                     class="hidden overflow-y-auto absolute z-50 py-1 mt-1 w-56 bg-white rounded border border-gray-300 shadow-lg"
+                     class="absolute z-50 mt-1 hidden w-56 overflow-y-auto rounded border border-gray-300 bg-white py-1 shadow-lg"
                      style="max-height: 250px;">
                     {% for tag in tags %}
-                        <label class="flex items-center py-1.5 px-3 cursor-pointer hover:bg-gray-100">
+                        <label class="flex cursor-pointer items-center px-3 py-1.5 hover:bg-gray-100">
                             <input type="checkbox" name="tags" value="{{ tag.pk }}"
                                    data-name="{{ tag.name }}"
                                    {% if tag.pk in current_tags %}checked{% endif %}
                                    onchange="updateTagLabel()"
-                                   class="mr-2 text-green-600 rounded">
+                                   class="mr-2 rounded text-green-600">
                             <span class="text-sm text-gray-900">{{ tag.name }}</span>
                         </label>
                     {% endfor %}
                 </div>
             </div>
             <div>
-                <label class="block mb-1 text-xs text-gray-300 uppercase" for="state">Decision</label>
+                <label class="mb-1 block text-xs text-gray-300 uppercase" for="state">Decision</label>
                 <select name="state" id="state"
-                        class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
+                        class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900">
                     <option value="">All Decisions</option>
                     {% for value, label in states %}
                         <option value="{{ value }}" {% if current_state == value %}selected{% endif %}>

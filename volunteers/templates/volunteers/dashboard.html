@@ -8,20 +8,20 @@
 
 {% block content %}
     <div class="flex flex-col gap-6 p-8 text-green-100">
-        <div class="flex flex-wrap gap-3 justify-between items-center">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
             <div class="flex gap-2">
                 <form method="post" action="{% url 'volunteers:sync_schedule' %}">
                     {% csrf_token %}
                     <input type="hidden" name="dry_run" value="1">
-                    <button type="submit" class="py-2 px-3 text-sm font-medium text-green-100 bg-green-700 rounded-md border border-green-600 hover:bg-green-600">
+                    <button type="submit" class="rounded-md border border-green-600 bg-green-700 px-3 py-2 text-sm font-medium text-green-100 hover:bg-green-600">
                         Preview schedule sync
                     </button>
                 </form>
                 <form method="post" action="{% url 'volunteers:sync_schedule' %}"
                       onsubmit="return confirm('Sync shifts from the conference schedule? Existing slots and signups are kept.');">
                     {% csrf_token %}
-                    <button type="submit" class="py-2 px-3 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                    <button type="submit" class="rounded-md bg-yellow-300 px-3 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
                         Sync schedule now
                     </button>
                 </form>
@@ -36,14 +36,14 @@
             {% endfor %}
         {% endif %}
 
-        <details class="p-4 bg-green-800 rounded-lg border border-green-700 print-hide">
-            <summary class="text-lg font-semibold text-yellow-300 cursor-pointer">📇 Volunteer contact info (shown to all volunteers)</summary>
+        <details class="print-hide rounded-lg border border-green-700 bg-green-800 p-4">
+            <summary class="cursor-pointer text-lg font-semibold text-yellow-300">📇 Volunteer contact info (shown to all volunteers)</summary>
             <p class="mt-2 mb-3 text-sm text-green-200">
                 How volunteers can reach the coordinators — email, Slack, etc. Markdown supported;
                 appears on every volunteer's page.
             </p>
             {% if contact_info %}
-                <div class="p-3 mb-3 max-w-none bg-green-900 rounded border border-green-700 prose prose-invert"
+                <div class="mb-3 max-w-none rounded border border-green-700 bg-green-900 p-3 prose prose-invert"
                      data-markdown>{{ contact_info }}</div>
             {% endif %}
             <form method="post" action="{% url 'volunteers:update_contact' %}" class="flex flex-col gap-2">
@@ -51,19 +51,19 @@
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <textarea name="contact_info" rows="4"
                           placeholder="e.g. **Volunteer chairs:** Rachell & Monica · **Slack:** #volunteers"
-                          class="p-2 w-full text-sm text-green-900 rounded-md">{{ contact_info }}</textarea>
+                          class="w-full rounded-md p-2 text-sm text-green-900">{{ contact_info }}</textarea>
                 <div>
-                    <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+                    <button type="submit" class="rounded-md bg-yellow-300 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
                         Save contact info
                     </button>
                 </div>
             </form>
         </details>
 
-        <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
+        <form method="get" class="flex flex-wrap items-end gap-3 rounded-lg border border-green-700 bg-green-800 p-4">
             <div>
-                <label class="block mb-1 text-xs text-green-300" for="date">Day</label>
-                <select name="date" id="date" class="p-2 text-sm text-green-900 rounded-md">
+                <label class="mb-1 block text-xs text-green-300" for="date">Day</label>
+                <select name="date" id="date" class="rounded-md p-2 text-sm text-green-900">
                     <option value="">All days</option>
                     {% for d in dates %}
                         <option value="{{ d|date:'Y-m-d' }}" {% if d == selected_date %}selected{% endif %}>{{ d|date:"l, M j" }}</option>
@@ -71,8 +71,8 @@
                 </select>
             </div>
             <div>
-                <label class="block mb-1 text-xs text-green-300" for="role">Role</label>
-                <select name="role" id="role" class="p-2 text-sm text-green-900 rounded-md">
+                <label class="mb-1 block text-xs text-green-300" for="role">Role</label>
+                <select name="role" id="role" class="rounded-md p-2 text-sm text-green-900">
                     <option value="">All roles</option>
                     {% for role in roles %}
                         <option value="{{ role }}" {% if role == role_filter %}selected{% endif %}>{{ role }}</option>
@@ -80,23 +80,23 @@
                 </select>
             </div>
             <div>
-                <label class="block mb-1 text-xs text-green-300" for="location">Room / location</label>
-                <select name="location" id="location" class="p-2 text-sm text-green-900 rounded-md">
+                <label class="mb-1 block text-xs text-green-300" for="location">Room / location</label>
+                <select name="location" id="location" class="rounded-md p-2 text-sm text-green-900">
                     <option value="">All locations</option>
                     {% for location in locations %}
                         <option value="{{ location }}" {% if location == location_filter %}selected{% endif %}>{{ location }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <label class="flex gap-2 items-center text-sm text-green-200">
+            <label class="flex items-center gap-2 text-sm text-green-200">
                 <input type="checkbox" name="open_only" value="1" {% if open_only %}checked{% endif %}>
                 Only unstaffed shifts
             </label>
-            <label class="flex gap-2 items-center text-sm text-green-200">
+            <label class="flex items-center gap-2 text-sm text-green-200">
                 <input type="checkbox" name="show_past" value="1" {% if show_past %}checked{% endif %}>
                 Include past shifts
             </label>
-            <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+            <button type="submit" class="rounded-md bg-yellow-300 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
                 Filter
             </button>
             {% if role_filter or location_filter or date_filter or open_only or show_past %}
@@ -112,25 +112,25 @@
         </p>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <p class="text-3xl font-bold text-yellow-200">{{ total_filled }}</p>
                 <p class="text-sm text-green-300">Roles filled</p>
             </div>
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <p class="text-3xl font-bold text-yellow-200">{{ total_open }}</p>
                 <p class="text-sm text-green-300">Still needed</p>
             </div>
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <p class="text-3xl font-bold text-yellow-200">{{ total_capacity }}</p>
                 <p class="text-sm text-green-300">Total capacity</p>
             </div>
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <p class="text-3xl font-bold text-yellow-200">{{ coverage|floatformat:0 }}%</p>
                 <p class="text-sm text-green-300">Coverage</p>
             </div>
         </div>
 
-        <form id="merge-form" method="post" action="{% url 'volunteers:merge_shifts' %}" class="flex flex-wrap gap-3 items-center p-4 bg-green-800 rounded-lg border border-green-700 print-hide">
+        <form id="merge-form" method="post" action="{% url 'volunteers:merge_shifts' %}" class="print-hide flex flex-wrap items-center gap-3 rounded-lg border border-green-700 bg-green-800 p-4">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <span class="text-sm text-green-200">
@@ -138,7 +138,7 @@
                 tick the <span class="text-yellow-200">Merge</span> box on two or more shifts with the same role,
                 in the same room, that run back-to-back, then
             </span>
-            <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
+            <button type="submit" class="rounded-md bg-yellow-300 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
                 Merge selected into a block
             </button>
         </form>
@@ -147,30 +147,30 @@
             <section class="flex flex-col gap-2">
                 <h2 class="text-2xl font-semibold text-yellow-300">{{ day|date:"l, F j" }}</h2>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full border-collapse text-left">
                         <thead>
-                            <tr class="text-yellow-300 border-b border-green-700">
-                                <th class="p-3 text-xs print-hide">Merge</th>
+                            <tr class="border-b border-green-700 text-yellow-300">
+                                <th class="print-hide p-3 text-xs">Merge</th>
                                 <th class="p-3">Shift</th>
                                 <th class="p-3">Role</th>
                                 <th class="p-3">When</th>
                                 <th class="p-3">Filled</th>
                                 <th class="p-3">Volunteers</th>
-                                <th class="p-3 print-hide"></th>
+                                <th class="print-hide p-3"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for shift in day_shifts %}
                                 <tr class="border-b border-green-800 {% if shift.filled_count < shift.capacity %}bg-green-900/40{% endif %}">
-                                    <td class="p-3 text-center print-hide">
-                                        <input type="checkbox" name="shift" value="{{ shift.id }}" form="merge-form" class="w-4 h-4 align-middle accent-yellow-400">
+                                    <td class="print-hide p-3 text-center">
+                                        <input type="checkbox" name="shift" value="{{ shift.id }}" form="merge-form" class="h-4 w-4 align-middle accent-yellow-400">
                                     </td>
                                     <td class="p-3 font-medium text-yellow-100">
                                         {{ shift.title }}
-                                        {% if shift.is_block %}<span class="inline-block py-0.5 px-2 ml-1 text-xs text-green-900 bg-yellow-300 rounded-full">block</span>{% endif %}
+                                        {% if shift.is_block %}<span class="ml-1 inline-block rounded-full bg-yellow-300 px-2 py-0.5 text-xs text-green-900">block</span>{% endif %}
                                         {% if shift.location %}<span class="block text-xs text-green-400">{{ shift.location }}</span>{% endif %}
                                         {% if shift.is_block %}
-                                            <ul class="mt-1 ml-1 text-xs list-disc list-inside text-green-300">
+                                            <ul class="mt-1 ml-1 list-inside list-disc text-xs text-green-300">
                                                 {% for talk in shift.covered_talks %}
                                                     <li>
                                                         <time datetime="{{ talk.starts_at|date:'c' }}" class="whitespace-nowrap">{{ talk.starts_at|date:"g:i A" }}</time>
@@ -194,20 +194,20 @@
                                             <span class="text-green-500">— open —</span>
                                         {% endfor %}
                                     </td>
-                                    <td class="p-3 print-hide">
+                                    <td class="print-hide p-3">
                                         <div class="flex gap-1">
                                             {% if shift.is_block %}
                                                 <form method="post" action="{% url 'volunteers:split_shift' shift.id %}">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                                    <button type="submit" class="py-1 px-2 text-xs text-green-100 bg-green-700 rounded border border-green-600 hover:bg-green-600">Split</button>
+                                                    <button type="submit" class="rounded border border-green-600 bg-green-700 px-2 py-1 text-xs text-green-100 hover:bg-green-600">Split</button>
                                                 </form>
                                             {% endif %}
                                             <form method="post" action="{% url 'volunteers:delete_shift' shift.id %}"
                                                   onsubmit="return confirm('Delete “{{ shift.title|escapejs }}”? Any sign-ups on it are removed.');">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                                <button type="submit" class="py-1 px-2 text-xs text-red-100 bg-red-700 rounded border border-red-600 hover:bg-red-600">Delete</button>
+                                                <button type="submit" class="rounded border border-red-600 bg-red-700 px-2 py-1 text-xs text-red-100 hover:bg-red-600">Delete</button>
                                             </form>
                                         </div>
                                     </td>
