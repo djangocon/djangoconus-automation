@@ -251,8 +251,11 @@ EMAIL_USE_TLS = email["EMAIL_USE_TLS"]
 EMAIL_USE_SSL = email["EMAIL_USE_SSL"]
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 
-DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="DjangoCon US <automation@defna.org>")
-SERVER_EMAIL = env.str("SERVER_EMAIL", default="automation@defna.org")
+# Forward Email rejects any message whose From header does not match the mailbox
+# we authenticate as, with "550 5.1.1 From header must be equal to
+# hello@mail.defna.org". Keep these in sync with the EMAIL_URL credentials.
+DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="DjangoCon US <hello@mail.defna.org>")
+SERVER_EMAIL = env.str("SERVER_EMAIL", default="hello@mail.defna.org")
 
 # Email Octopus API settings
 
