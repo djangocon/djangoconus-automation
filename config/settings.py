@@ -185,6 +185,9 @@ AUTHENTICATION_BACKENDS = [
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_EMAIL_VERIFICATION = "none"
+# Passwordless sign-in: allauth emails a short-lived code (and our email template
+# adds a clickable link that prefills it). See #91/#99.
+ACCOUNT_LOGIN_BY_CODE_ENABLED = True
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 # NOTE: do not set ACCOUNT_USER_MODEL_USERNAME_FIELD = None. We use the stock

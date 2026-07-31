@@ -1,0 +1,12 @@
+{% extends "account/email/base_message.txt" %}
+{% load i18n %}
+
+{% block content %}{% autoescape off %}{% blocktranslate %}Your sign-in code is listed below. Please enter it in your open browser window.{% endblocktranslate %}
+
+{{ code }}
+
+{% blocktranslate %}Or, in the same browser you requested the code from, open this link to sign in:{% endblocktranslate %}
+
+{% if request.is_secure %}https{% else %}http{% endif %}://{{ request.get_host }}{% url 'account_confirm_login_code' %}?code={{ code }}
+
+{% blocktranslate %}This mail can be safely ignored if you did not initiate this action.{% endblocktranslate %}{% endautoescape %}{% endblock content %}
