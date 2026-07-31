@@ -16,6 +16,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .ical import build_calendar
+from .tasks import notify_shift_uncovered
 from .models import (
     CalendarToken,
     Role,
@@ -185,7 +186,10 @@ def signup_view(request, pk):
     if not created:
         signup.cancelled = False
         signup.reminded = False
-        signup.save(update_fields=["cancelled", "reminded"])
+        # Treat re-signing up as a fresh signup so the uncovered-shift alert's
+        # quick-change-of-mind buffer measures from now, not the original signup.
+        signup.created_at = timezone.now()
+        signup.save(update_fields=["cancelled", "reminded", "created_at"])
 
     messages.success(request, f"You're signed up for “{shift.title}.” Thank you!")
     return redirect(return_url)
@@ -198,6 +202,7 @@ def cancel_view(request, pk):
     signup = get_object_or_404(VolunteerSignup, shift_id=pk, user=request.user, cancelled=False)
     signup.cancelled = True
     signup.save(update_fields=["cancelled"])
+    notify_shift_uncovered(signup.shift, signup)
     messages.success(request, f"You've been removed from “{signup.shift.title}.”")
     return redirect(_return_url(request))
 

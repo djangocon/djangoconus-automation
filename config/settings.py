@@ -303,6 +303,17 @@ Q_SCHEDULES = {
 
 VOLUNTEER_MAX_HOURS = env.int("VOLUNTEER_MAX_HOURS", default=8)
 
+# Coordinators to alert when a near-term shift loses its last volunteer (#84).
+# Empty (the default) disables the alert entirely.
+VOLUNTEER_COORDINATOR_EMAILS = env.list("VOLUNTEER_COORDINATOR_EMAILS", default=[])
+
+# Only alert for shifts starting within this window...
+VOLUNTEER_UNCOVERED_ALERT_WINDOW_HOURS = env.int("VOLUNTEER_UNCOVERED_ALERT_WINDOW_HOURS", default=48)
+
+# ...and skip the alert when the volunteer signed up and cancelled within this
+# buffer — a quick change of mind isn't worth an email.
+VOLUNTEER_UNCOVERED_ALERT_BUFFER_MINUTES = env.int("VOLUNTEER_UNCOVERED_ALERT_BUFFER_MINUTES", default=60)
+
 # General volunteer handbook, shown alongside role-specific docs.
 VOLUNTEER_HANDBOOK_URL = env.str(
     "VOLUNTEER_HANDBOOK_URL",
