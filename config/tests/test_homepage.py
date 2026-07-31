@@ -6,24 +6,28 @@ User = get_user_model()
 
 
 @pytest.mark.django_db
-class TestHomepageVolunteerCTA:
-    def test_anonymous_sees_cta_and_signin_hint(self, client):
+class TestHomepagePanels:
+    def test_everyone_sees_both_panels(self, client):
         response = client.get(reverse("home"))
         assert response.status_code == 200
         content = response.content.decode()
         assert reverse("volunteers:shifts") in content
-        assert "Volunteer at DjangoCon US" in content
-        assert "sign in when you're ready" in content
-        assert reverse("volunteers:my_shifts") not in content
+        assert "DjangoCon US Volunteers" in content
         assert reverse("travel_safety:register") in content
-        assert "Travel Safety Check-in" in content
+        assert "Traveling to DjangoCon US" in content
 
-    def test_authenticated_sees_cta_and_my_shifts(self, client):
+    def test_anonymous_sees_signin_row(self, client):
+        response = client.get(reverse("home"))
+        content = response.content.decode()
+        assert reverse("account_login") in content
+        assert "Sign In or Register" in content
+        assert reverse("volunteers:my_shifts") not in content
+
+    def test_authenticated_sees_my_shifts_and_nav(self, client):
         user = User.objects.create_user(username="vol", email="vol@example.com", password="pw")
         client.force_login(user)
         response = client.get(reverse("home"))
-        assert response.status_code == 200
         content = response.content.decode()
-        assert reverse("volunteers:shifts") in content
-        assert "Volunteer at DjangoCon US" in content
         assert reverse("volunteers:my_shifts") in content
+        assert "Sign In or Register" not in content
+        assert reverse("account_logout") in content
