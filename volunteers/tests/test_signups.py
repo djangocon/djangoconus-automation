@@ -307,7 +307,10 @@ def test_dashboard_date_filter(auth_client, role):
     make_shift(role, title="Day One", start_offset_hours=24)
     make_shift(role, title="Day Two", start_offset_hours=24 + 48)
 
-    d1 = (timezone.now() + datetime.timedelta(hours=24)).date().isoformat()
+    # The dashboard filters by conference-local (TIME_ZONE) dates, so compute the
+    # target date in local time — .date() on the UTC value is a day ahead late in
+    # the local evening.
+    d1 = timezone.localtime(timezone.now() + datetime.timedelta(hours=24)).date().isoformat()
     resp = auth_client.get(reverse("volunteers:dashboard"), {"date": d1})
     body = resp.content.decode()
     assert "Day One" in body
