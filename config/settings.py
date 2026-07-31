@@ -233,6 +233,27 @@ LOGGING = {
     },
 }
 
+# Email sending (#90). Configure entirely via EMAIL_URL, e.g.:
+#   submission://USER:PASSWORD@smtp.example.com:587   (STARTTLS)
+#   smtp://USER:PASSWORD@smtp.example.com:465?ssl=True (implicit TLS)
+# The default is the console backend, so environments without EMAIL_URL print
+# emails to stdout instead of dying with ConnectionRefusedError on localhost:25.
+# An unrecognized scheme fails at startup with KeyError("EMAIL_BACKEND") — loud
+# beats silently sending nothing.
+
+email = env.dj_email_url("EMAIL_URL", default="console://")
+EMAIL_BACKEND = email["EMAIL_BACKEND"]
+EMAIL_HOST = email["EMAIL_HOST"]
+EMAIL_PORT = email["EMAIL_PORT"]
+EMAIL_HOST_USER = email["EMAIL_HOST_USER"]
+EMAIL_HOST_PASSWORD = email["EMAIL_HOST_PASSWORD"]
+EMAIL_USE_TLS = email["EMAIL_USE_TLS"]
+EMAIL_USE_SSL = email["EMAIL_USE_SSL"]
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
+
+DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="DjangoCon US <automation@defna.org>")
+SERVER_EMAIL = env.str("SERVER_EMAIL", default="automation@defna.org")
+
 # Email Octopus API settings
 
 EMAILOCTOPUS_API_KEY = env("EMAILOCTOPUS_API_KEY", default="")
