@@ -1,0 +1,13 @@
+Heads up,
+
+This upcoming volunteer shift just lost its only volunteer and is now uncovered:
+
+  {{ shift.title }} ({{ shift.role.name }})
+  {{ shift.starts_at|date:"l, F j" }} from {{ shift.starts_at|date:"g:i A" }} to {{ shift.ends_at|date:"g:i A" }}
+{% if shift.location %}  Location: {{ shift.location }}
+{% endif %}
+{{ user.get_full_name|default:user.email }} cancelled their signup.
+
+You may want to find a replacement or cover it from the dashboard.
+
+— The DjangoCon US Automation

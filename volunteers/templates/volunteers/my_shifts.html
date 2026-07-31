@@ -5,7 +5,7 @@
 {% block extra_head %}{% include "volunteers/_print_styles.html" %}{% endblock extra_head %}
 
 {% block content %}
-    <div class="flex flex-col gap-6 p-8 max-w-3xl text-green-100">
+    <div class="flex max-w-3xl flex-col gap-6 p-8 text-green-100">
         <div class="text-center">
             <h1 class="mb-2 text-4xl font-bold text-yellow-200">My Volunteer Shifts</h1>
             <p class="text-green-200">
@@ -29,7 +29,7 @@
 
         <div class="flex flex-col gap-3">
             {% for signup in signups %}
-                <div class="flex flex-col gap-2 p-4 bg-green-800 rounded-lg border border-green-700 md:flex-row md:justify-between md:items-center shift-card">
+                <div class="shift-card flex flex-col gap-2 rounded-lg border border-green-700 bg-green-800 p-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <p class="text-lg font-semibold text-yellow-100">{{ signup.shift.title }}</p>
                         <p class="text-sm text-green-300">
@@ -48,7 +48,7 @@
                     <form method="post" action="{% url 'volunteers:cancel' signup.shift.id %}" class="shrink-0">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button type="submit" class="py-2 px-3 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
+                        <button type="submit" class="rounded-md border border-red-600 bg-red-700 px-3 py-2 text-sm font-medium text-red-100 hover:bg-red-600">
                             Cancel
                         </button>
                     </form>
@@ -59,20 +59,20 @@
         </div>
 
         {% if contact_info %}
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700">
+            <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <h2 class="mb-2 text-lg font-semibold text-yellow-300">📇 Volunteer contacts</h2>
                 <div class="max-w-none prose prose-invert" data-markdown>{{ contact_info }}</div>
             </div>
         {% endif %}
 
         {% if signups %}
-            <div class="p-4 bg-green-800 rounded-lg border border-green-700 print-hide">
+            <div class="print-hide rounded-lg border border-green-700 bg-green-800 p-4">
                 <h2 class="mb-2 text-lg font-semibold text-yellow-300">📅 Subscribe to your shifts</h2>
                 <p class="mb-2 text-sm text-green-200">
                     Add this private calendar URL to Google Calendar, Apple Calendar, or Outlook to
                     keep your shifts in sync:
                 </p>
-                <code class="block p-2 text-xs text-green-100 break-all bg-green-900 rounded border border-green-700">{{ calendar_url }}</code>
+                <code class="block rounded border border-green-700 bg-green-900 p-2 text-xs break-all text-green-100">{{ calendar_url }}</code>
             </div>
         {% endif %}
     </div>
