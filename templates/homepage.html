@@ -27,6 +27,16 @@
             {% endif %}
         </div>
 
+        <div class="flex flex-col gap-2">
+            <a href="{% url 'travel_safety:register' %}"
+               class="block py-4 px-6 text-2xl font-bold text-white bg-sky-700 rounded-lg shadow hover:bg-sky-600">
+                ✈️ Travel Safety Check-in
+            </a>
+            <p class="text-sm text-green-300">
+                Traveling internationally? Register your plans so we can check on your safe arrival.
+            </p>
+        </div>
+
         {% django_simple_nav "config.nav.MainNav" %}
 
         <div class="text-xl">version {{ app_version }}</div>
