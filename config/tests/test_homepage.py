@@ -15,6 +15,8 @@ class TestHomepageVolunteerCTA:
         assert "Volunteer at DjangoCon US" in content
         assert "sign in when you're ready" in content
         assert reverse("volunteers:my_shifts") not in content
+        assert reverse("travel_safety:register") in content
+        assert "Travel Safety Check-in" in content
 
     def test_authenticated_sees_cta_and_my_shifts(self, client):
         user = User.objects.create_user(username="vol", email="vol@example.com", password="pw")
