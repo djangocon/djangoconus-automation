@@ -119,9 +119,7 @@ def _sprint_payload(*, email, release_title, created_at, leading="No", joining="
 class TestSprintTicketsView(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user(
-            username="staff", password="x", email="staff@example.com", is_staff=True
-        )
+        self.staff = User.objects.create_user(username="staff", password="x", email="staff@example.com", is_staff=True)
         self.client.force_login(self.staff)
 
     def _create_event(self, payload):
@@ -271,9 +269,7 @@ def _historical_payload(*, email, release_title, created_at, year, leading="No",
 class TestHistoricalSprintTicketsCsv(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user(
-            username="staff", password="x", email="staff@example.com", is_staff=True
-        )
+        self.staff = User.objects.create_user(username="staff", password="x", email="staff@example.com", is_staff=True)
         self.client.force_login(self.staff)
 
     def _create_event(self, payload):
