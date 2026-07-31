@@ -121,6 +121,14 @@
                                                     {% if talk.talk_url %}<a href="{{ talk.talk_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">🔗 {{ talk.title }}</a>{% else %}{{ talk.title }}{% endif %}
                                                 </p>
                                             {% endfor %}
+                                            {% if shift.role.description %}
+                                                {# Collapsed by default: a role's duties repeat across every one of its
+                                                   shifts, so rendering them inline would swamp the list. #}
+                                                <details class="mt-1 text-xs">
+                                                    <summary class="cursor-pointer text-yellow-300 select-none">What this role involves</summary>
+                                                    <p class="mt-1 text-sm whitespace-pre-line text-green-200">{{ shift.role.description }}</p>
+                                                </details>
+                                            {% endif %}
                                             {% if shift.role.documentation_url %}
                                                 <p class="mt-1 text-xs">
                                                     <a href="{{ shift.role.documentation_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">
