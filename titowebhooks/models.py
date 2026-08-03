@@ -7,6 +7,7 @@ class TitoHistoricalEvent(models.Model):
     title = models.CharField(max_length=256)
     account_slug = models.CharField(max_length=64, default="defna")
     is_current = models.BooleanField(default=False)
+    start_date = models.DateField(null=True, blank=True, help_text="First day of the conference; anchors days-out math")
     goal = models.PositiveIntegerField(null=True, blank=True, help_text="Sales goal for this year")
     releases = models.JSONField(null=True, blank=True)
     activities = models.JSONField(null=True, blank=True)
@@ -106,6 +107,44 @@ class TitoHistoricalEvent(models.Model):
         if other:
             groups.append(_make_group("Other", other))
         return groups
+
+
+class TitoTicket(models.Model):
+    """One sold ticket, flattened out of the Ti.to API or a webhook payload.
+
+    The historical event rows only hold point-in-time totals, so they can't say
+    what sales looked like partway through a season. These rows keep the purchase
+    date and the real price paid, which is what the days-out curves are built from.
+    """
+
+    SOURCE_API = "api"
+    SOURCE_WEBHOOK = "webhook"
+    SOURCE_CHOICES = [(SOURCE_API, "Ti.to API"), (SOURCE_WEBHOOK, "Webhook")]
+
+    event_slug = models.SlugField(max_length=128, db_index=True)
+    year = models.PositiveIntegerField(db_index=True)
+    ticket_slug = models.CharField(max_length=128, unique=True)
+    reference = models.CharField(max_length=64, blank=True)
+    release_title = models.CharField(max_length=256, blank=True)
+    release_price = models.FloatField(default=0.0, help_text="List price of the release")
+    price = models.FloatField(default=0.0, help_text="What the attendee actually paid")
+    discount_code = models.CharField(max_length=128, blank=True)
+    state_name = models.CharField(max_length=64, blank=True)
+    voided = models.BooleanField(default=False)
+    created_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default=SOURCE_API)
+    last_synced = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-year", "created_at"]
+        indexes = [models.Index(fields=["year", "created_at"])]
+
+    def __str__(self):
+        return f"{self.reference or self.ticket_slug} ({self.year})"
+
+    @property
+    def discount(self) -> float:
+        return self.release_price - self.price
 
 
 class TitoWebhookEvent(models.Model):

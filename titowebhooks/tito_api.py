@@ -38,6 +38,54 @@ def get_releases(account_slug, event_slug, api_token):
         return None
 
 
+def get_event(account_slug, event_slug, api_token):
+    """Fetch a single event, mainly for its start date."""
+    url = f"{TITO_API_BASE}/{account_slug}/{event_slug}"
+    try:
+        response = requests.get(url, headers=_headers(api_token), timeout=10)
+        response.raise_for_status()
+        return response.json().get("event")
+    except Exception as exc:
+        logger.warning("Failed to fetch tito event %s: %s", event_slug, exc)
+        return None
+
+
+def get_tickets(account_slug, event_slug, api_token, max_pages=200):
+    """Fetch every ticket for an event, walking Ti.to's pagination.
+
+    Returns None if the first page fails so callers can tell "no access" apart
+    from "no tickets". A failure partway through returns what we got so far
+    rather than throwing the whole event away.
+    """
+    url = f"{TITO_API_BASE}/{account_slug}/{event_slug}/tickets"
+    tickets = []
+
+    for page in range(1, max_pages + 1):
+        try:
+            response = requests.get(
+                url,
+                headers=_headers(api_token),
+                params={"page": page, "per_page": 100},
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except Exception as exc:
+            logger.warning("Failed to fetch tito tickets page %s for %s: %s", page, event_slug, exc)
+            return tickets or None
+
+        batch = data.get("tickets") or []
+        tickets.extend(batch)
+
+        next_page = (data.get("meta") or {}).get("next_page")
+        if not batch or not next_page:
+            break
+    else:
+        logger.warning("Hit the %s page cap fetching tickets for %s", max_pages, event_slug)
+
+    return tickets
+
+
 def get_activities(account_slug, event_slug, api_token):
     """Fetch all activities for an event."""
     url = f"{TITO_API_BASE}/{account_slug}/{event_slug}/activities"

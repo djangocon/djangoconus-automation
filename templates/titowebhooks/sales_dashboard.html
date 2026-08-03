@@ -6,19 +6,28 @@
 {% block title %}Ticket Sales - DjangoCon US Automation{% endblock %}
 
 {% block content %}
-    <div class="mx-auto max-w-7xl p-6">
-        <div class="mb-6 flex items-center justify-between">
+    <div class="p-6 mx-auto max-w-7xl">
+        <div class="flex justify-between items-center mb-6">
             <div>
                 <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
                 <h1 class="text-3xl font-bold">Ticket Sales</h1>
             </div>
-            <form method="post" action="{% url 'tito_sync' %}">
-                {% csrf_token %}
-                <button type="submit"
-                        class="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
-                    Sync from Tito
-                </button>
-            </form>
+            <div class="flex gap-2">
+                <form method="post" action="{% url 'tito_sync_tickets' %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="py-2 px-4 font-semibold text-green-100 bg-green-800 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                        Sync ticket history
+                    </button>
+                </form>
+                <form method="post" action="{% url 'tito_sync' %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                        Sync from Tito
+                    </button>
+                </form>
+            </div>
         </div>
 
         {% if messages %}
@@ -31,8 +40,127 @@
             </div>
         {% endif %}
 
+        {% if curves.has_data %}
+            <h2 class="mb-3 text-xl font-semibold">Sales pace by year</h2>
+            <p class="mb-3 text-sm text-gray-400">
+                Cumulative sales at each point before the conference, so you can compare seasons at the same distance out.
+                Left edge is a year out, right edge is day one.
+            </p>
+
+            <div class="grid grid-cols-1 gap-4 mb-3 lg:grid-cols-2">
+                {% for chart in curves.charts %}
+                    <div class="p-4 bg-green-800 bg-opacity-30 rounded-lg">
+                        <h3 class="mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">{{ chart.title }}</h3>
+                        <svg viewBox="0 -14 {{ chart.width|add:56 }} {{ chart.height|add:44 }}"
+                             class="w-full"
+                             role="img"
+                             aria-label="{{ chart.title }} by days out, one line per year">
+                            <g transform="translate(48, 0)">
+                                {% for line in chart.gridlines %}
+                                    <line x1="0"
+                                          y1="{{ line.y|floatformat:1 }}"
+                                          x2="{{ chart.width }}"
+                                          y2="{{ line.y|floatformat:1 }}"
+                                          stroke="#14532d"
+                                          stroke-width="1" />
+                                    <text x="-8"
+                                          y="{{ line.y|floatformat:1 }}"
+                                          dy="4"
+                                          text-anchor="end"
+                                          fill="#6b7280"
+                                          font-size="11"
+                                          font-family="monospace">
+                                        {% if chart.is_money %}${% endif %}{{ line.value|floatformat:"0g" }}
+                                    </text>
+                                {% endfor %}
+
+                                {% for label in chart.x_labels %}
+                                    <text x="{{ label.x|floatformat:1 }}"
+                                          y="{{ chart.height|add:18 }}"
+                                          text-anchor="middle"
+                                          fill="#6b7280"
+                                          font-size="11"
+                                          font-family="monospace">{{ label.label }}</text>
+                                {% endfor %}
+
+                                {% for line in chart.lines %}
+                                    <polyline points="{{ line.points }}"
+                                              fill="none"
+                                              stroke="{{ line.color }}"
+                                              stroke-width="{% if line.is_current %}3{% else %}2{% endif %}"
+                                              stroke-linejoin="round"
+                                              stroke-linecap="round"
+                                              opacity="{% if line.is_current %}1{% else %}0.75{% endif %}" />
+                                {% endfor %}
+                            </g>
+                        </svg>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex flex-wrap gap-y-2 gap-x-4 mb-3 text-sm">
+                {% for s in curves.series %}
+                    <span class="inline-flex gap-2 items-center">
+                        <span class="inline-block w-3 h-3 rounded-sm" style="background-color: {{ s.color }}"></span>
+                        <span class="{% if s.is_current %}font-semibold text-white{% else %}text-gray-300{% endif %}">{{ s.year }}</span>
+                        <span class="font-mono text-xs text-gray-500">
+                            {{ s.final_tickets }} &middot; ${{ s.final_revenue|floatformat:"0g" }}
+                        </span>
+                    </span>
+                {% endfor %}
+            </div>
+
+            <details class="overflow-hidden mb-6 bg-green-800 bg-opacity-20 rounded-lg">
+                <summary class="py-2 px-4 text-sm text-gray-300 cursor-pointer hover:bg-green-700 hover:bg-opacity-20">
+                    Show the numbers
+                </summary>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-green-700 bg-opacity-50">
+                            <tr>
+                                <th class="py-2 px-4 text-xs font-medium tracking-wider text-left uppercase">Out</th>
+                                {% for column in curves.columns %}
+                                    <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase"
+                                        style="color: {{ column.color }}">{{ column.year }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-green-800">
+                            {% for row in curves.table_rows %}
+                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                    <td class="py-2 px-4 font-mono text-sm text-gray-400">{{ row.label }}</td>
+                                    {% for cell in row.cells %}
+                                        <td class="py-2 px-4 font-mono text-sm text-right whitespace-nowrap">
+                                            <span class="{% if cell.tickets %}text-green-400{% else %}text-gray-600{% endif %}">{{ cell.tickets }}</span>
+                                            <span class="text-gray-600">&middot;</span>
+                                            <span class="text-gray-400">${{ cell.revenue|floatformat:"0g" }}</span>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+
+            {% if curves.missing %}
+                <p class="mb-6 text-xs text-gray-500">
+                    Not charted:
+                    {% for item in curves.missing %}{{ item.year }} ({{ item.reason }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                </p>
+            {% endif %}
+        {% elif not never_synced %}
+            <div class="p-6 mb-6 text-center bg-green-800 bg-opacity-20 rounded-lg">
+                <p class="mb-3 text-gray-300">No per-ticket history yet, so there's nothing to chart.</p>
+                <p class="mb-4 text-sm text-gray-500">
+                    <strong>Sync ticket history</strong> pulls each ticket's purchase date from Ti.to and backfills from
+                    stored webhooks. A year also needs a start date on its event record to place tickets in time.
+                </p>
+            </div>
+        {% endif %}
+
         {% if never_synced %}
-            <div class="bg-opacity-30 rounded-lg bg-green-800 p-6 text-center">
+            <div class="p-6 text-center bg-green-800 bg-opacity-30 rounded-lg">
                 <p class="mb-4 text-gray-300">No data yet. Click <strong>Sync from Tito</strong> to load ticket sales.</p>
             </div>
         {% else %}
@@ -44,7 +172,7 @@
                             <span class="ml-2 text-sm font-normal text-green-400">current</span>
                         </h2>
 
-                        <div class="bg-opacity-50 mb-3 rounded-lg bg-green-800 p-4">
+                        <div class="p-4 mb-3 bg-green-800 bg-opacity-50 rounded-lg">
                             <div class="grid grid-cols-4 gap-4 text-center">
                                 <div>
                                     <p class="text-2xl font-bold text-green-400">{{ event.total_sold }}</p>
@@ -76,13 +204,13 @@
 
                         {% if event.activities %}
                             <h3 class="mt-4 mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">Activities</h3>
-                            <div class="bg-opacity-30 mb-4 overflow-hidden rounded-lg bg-green-800">
+                            <div class="overflow-hidden mb-4 bg-green-800 bg-opacity-30 rounded-lg">
                                 <table class="w-full">
                                     <tbody class="divide-y divide-green-700">
                                         {% for activity in event.activities %}
-                                            <tr class="transition-colors hover:bg-opacity-20 hover:bg-green-700">
-                                                <td class="px-4 py-2 text-sm">{{ activity.name }}</td>
-                                                <td class="px-4 py-2 text-right font-mono text-sm">
+                                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                                <td class="py-2 px-4 text-sm">{{ activity.name }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right">
                                                     <span class="{% if activity.allocation_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ activity.allocation_count|default:0 }}</span>
                                                     <span class="text-gray-600">/</span>
                                                     <span class="text-gray-300">{% if activity.capacity %}{{ activity.capacity }}{% else %}&infin;{% endif %}</span>
@@ -96,36 +224,36 @@
 
                         {% if event.releases_by_activity %}
                             <h3 class="mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">Tickets</h3>
-                            <div class="bg-opacity-30 overflow-hidden rounded-lg bg-green-800">
+                            <div class="overflow-hidden bg-green-800 bg-opacity-30 rounded-lg">
                                 <table class="w-full">
-                                    <thead class="bg-opacity-50 bg-green-700">
+                                    <thead class="bg-green-700 bg-opacity-50">
                                         <tr>
-                                            <th class="px-4 py-2 text-left text-xs font-medium tracking-wider uppercase">Release</th>
-                                            <th class="px-4 py-2 text-center text-xs font-medium tracking-wider uppercase">State</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase">Price</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase">Sold / Cap</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase">Total</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-left uppercase">Release</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-center uppercase">State</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Price</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Sold / Cap</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-green-700">
                                         {% for group in event.releases_by_activity %}
-                                            <tr class="bg-opacity-60 bg-green-900">
-                                                <td class="px-4 py-1 text-xs font-semibold tracking-wider text-green-300 uppercase">{{ group.name }}</td>
-                                                <td class="px-4 py-1 text-center text-xs text-gray-500"></td>
-                                                <td class="px-4 py-1 text-right text-xs text-gray-500"></td>
-                                                <td class="px-4 py-1 text-right font-mono text-xs text-gray-400">
+                                            <tr class="bg-green-900 bg-opacity-60">
+                                                <td class="py-1 px-4 text-xs font-semibold tracking-wider text-green-300 uppercase">{{ group.name }}</td>
+                                                <td class="py-1 px-4 text-xs text-center text-gray-500"></td>
+                                                <td class="py-1 px-4 text-xs text-right text-gray-500"></td>
+                                                <td class="py-1 px-4 font-mono text-xs text-right text-gray-400">
                                                     <span class="{% if group.total_sold %}text-green-300{% else %}text-gray-600{% endif %}">{{ group.total_sold }}</span>
                                                     <span class="text-gray-600">/</span>
                                                     <span>{% if group.total_capacity %}{{ group.total_capacity }}{% else %}&infin;{% endif %}</span>
                                                 </td>
-                                                <td class="px-4 py-1 text-right font-mono text-xs">
+                                                <td class="py-1 px-4 font-mono text-xs text-right">
                                                     <span class="{% if group.total_revenue %}text-green-300{% else %}text-gray-600{% endif %}">${{ group.total_revenue|floatformat:"0g" }}</span>
                                                 </td>
                                             </tr>
                                             {% for release in group.releases %}
-                                                <tr class="transition-colors hover:bg-opacity-20 hover:bg-green-700">
-                                                    <td class="px-4 py-2 pl-6 text-sm">{{ release.title }}</td>
-                                                    <td class="px-4 py-2 text-center text-sm">
+                                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                                    <td class="py-2 px-4 pl-6 text-sm">{{ release.title }}</td>
+                                                    <td class="py-2 px-4 text-sm text-center">
                                                         <span class="inline-flex py-0.5 px-2 text-xs rounded-full
                                                                      {% if release.state_name == 'on_sale' %}bg-green-800 text-green-200
                                                                      {% elif release.state_name == 'paused' %}bg-yellow-800 text-yellow-200
@@ -133,33 +261,84 @@
                                                             {{ release.state_name|default:"—" }}
                                                         </span>
                                                     </td>
-                                                    <td class="px-4 py-2 text-right font-mono text-sm">
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
                                                         {% if release.price %}<span class="text-gray-300">${{ release.price|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
                                                     </td>
-                                                    <td class="px-4 py-2 text-right font-mono text-sm">
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
                                                         <span class="{% if release.tickets_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ release.tickets_count|default:0 }}</span>
                                                         <span class="text-gray-600">/</span>
                                                         <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
                                                     </td>
-                                                    <td class="px-4 py-2 text-right font-mono text-sm">
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
                                                         {% if release.revenue %}<span class="text-green-400">${{ release.revenue|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
                                                     </td>
                                                 </tr>
                                             {% endfor %}
                                         {% endfor %}
-                                        <tr class="bg-opacity-40 bg-green-700">
-                                            <td class="px-4 py-2 text-xs font-semibold tracking-wider text-green-200 uppercase" colspan="3">Total raised</td>
-                                            <td class="px-4 py-2 text-right font-mono text-xs text-gray-300">{{ event.total_sold }}</td>
-                                            <td class="px-4 py-2 text-right font-mono text-sm text-green-300">${{ event.total_revenue|floatformat:"0g" }}</td>
+                                        <tr class="bg-green-700 bg-opacity-40">
+                                            <td class="py-2 px-4 text-xs font-semibold tracking-wider text-green-200 uppercase" colspan="3">Total raised</td>
+                                            <td class="py-2 px-4 font-mono text-xs text-right text-gray-300">{{ event.total_sold }}</td>
+                                            <td class="py-2 px-4 font-mono text-sm text-right text-green-300">${{ event.total_revenue|floatformat:"0g" }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         {% endif %}
 
+                        {% if discounts.has_data %}
+                            <h3 class="mt-4 mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">Discount codes</h3>
+                            <div class="overflow-hidden bg-green-800 bg-opacity-30 rounded-lg">
+                                <table class="w-full">
+                                    <thead class="bg-green-700 bg-opacity-50">
+                                        <tr>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-left uppercase">Code</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-left uppercase">Releases</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Tickets</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Face value</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Paid</th>
+                                            <th class="py-2 px-4 text-xs font-medium tracking-wider text-right uppercase">Discount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-green-700">
+                                        {% for row in discounts.rows %}
+                                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                                <td class="py-2 px-4 text-sm">
+                                                    {% if row.code %}
+                                                        <span class="font-mono text-green-300">{{ row.code }}</span>
+                                                    {% else %}
+                                                        <span class="text-gray-400">No code</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="py-2 px-4 text-sm text-gray-400">{{ row.releases|join:", "|default:"—" }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right text-green-400">{{ row.count }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right text-gray-300">${{ row.face_value|floatformat:"0g" }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right text-gray-300">${{ row.paid|floatformat:"0g" }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right">
+                                                    {% if row.discount %}<span class="text-yellow-300">&minus;${{ row.discount|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        <tr class="bg-green-700 bg-opacity-40">
+                                            <td class="py-2 px-4 text-xs font-semibold tracking-wider text-green-200 uppercase" colspan="2">
+                                                {{ discounts.code_count }} code{{ discounts.code_count|pluralize }} &middot;
+                                                {{ discounts.discounted_tickets }} of {{ discounts.total_tickets }} ticket{{ discounts.total_tickets|pluralize }} discounted
+                                            </td>
+                                            <td class="py-2 px-4 font-mono text-xs text-right text-gray-300">{{ discounts.total_tickets }}</td>
+                                            <td class="py-2 px-4 font-mono text-xs text-right text-gray-300">${{ discounts.total_face_value|floatformat:"0g" }}</td>
+                                            <td class="py-2 px-4 font-mono text-sm text-right text-green-300">${{ discounts.total_paid|floatformat:"0g" }}</td>
+                                            <td class="py-2 px-4 font-mono text-sm text-right text-yellow-300">&minus;${{ discounts.total_discount|floatformat:"0g" }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500">
+                                From ticket webhooks for {{ discounts.total_tickets }} ticket{{ discounts.total_tickets|pluralize }}, so it covers only what Ti.to has sent us &mdash; the sales table above is priced at face value and will read higher.
+                            </p>
+                        {% endif %}
+
                     {% else %}
-                        <details class="bg-opacity-20 overflow-hidden rounded-lg bg-green-800">
-                            <summary class="flex cursor-pointer items-center justify-between px-4 py-3 hover:bg-opacity-20 hover:bg-green-700">
+                        <details class="overflow-hidden bg-green-800 bg-opacity-20 rounded-lg">
+                            <summary class="flex justify-between items-center py-3 px-4 cursor-pointer hover:bg-green-700 hover:bg-opacity-20">
                                 <span class="font-semibold">{{ event.title }}</span>
                                 <span class="font-mono text-sm text-gray-300">
                                     <span class="text-green-400">{{ event.total_sold }}</span>
@@ -170,13 +349,13 @@
                                 </span>
                             </summary>
                             {% if event.activities %}
-                                <p class="border-t border-green-700 px-4 py-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Activities</p>
+                                <p class="py-2 px-4 text-xs font-semibold tracking-wider text-gray-500 uppercase border-t border-green-700">Activities</p>
                                 <table class="w-full">
                                     <tbody class="divide-y divide-green-800">
                                         {% for activity in event.activities %}
-                                            <tr class="transition-colors hover:bg-opacity-10 hover:bg-green-700">
-                                                <td class="px-4 py-2 text-sm">{{ activity.name }}</td>
-                                                <td class="px-4 py-2 text-right font-mono text-sm">
+                                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
+                                                <td class="py-2 px-4 text-sm">{{ activity.name }}</td>
+                                                <td class="py-2 px-4 font-mono text-sm text-right">
                                                     <span class="{% if activity.allocation_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ activity.allocation_count|default:0 }}</span>
                                                     <span class="text-gray-600">/</span>
                                                     <span class="text-gray-300">{% if activity.capacity %}{{ activity.capacity }}{% else %}&infin;{% endif %}</span>
@@ -187,39 +366,39 @@
                                 </table>
                             {% endif %}
                             {% if event.releases_by_activity %}
-                                <p class="border-t border-green-700 px-4 py-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Tickets</p>
+                                <p class="py-2 px-4 text-xs font-semibold tracking-wider text-gray-500 uppercase border-t border-green-700">Tickets</p>
                                 <table class="w-full">
                                     <tbody class="divide-y divide-green-800">
                                         {% for group in event.releases_by_activity %}
-                                            <tr class="bg-opacity-40 bg-green-900">
-                                                <td class="px-4 py-1 text-xs font-semibold tracking-wider text-green-400 uppercase">{{ group.name }}</td>
-                                                <td class="px-4 py-1 text-right font-mono text-xs text-gray-400">
+                                            <tr class="bg-green-900 bg-opacity-40">
+                                                <td class="py-1 px-4 text-xs font-semibold tracking-wider text-green-400 uppercase">{{ group.name }}</td>
+                                                <td class="py-1 px-4 font-mono text-xs text-right text-gray-400">
                                                     <span class="{% if group.total_sold %}text-green-300{% else %}text-gray-600{% endif %}">{{ group.total_sold }}</span>
                                                     <span class="text-gray-600">/</span>
                                                     <span>{% if group.total_capacity %}{{ group.total_capacity }}{% else %}&infin;{% endif %}</span>
                                                 </td>
-                                                <td class="px-4 py-1 text-right font-mono text-xs">
+                                                <td class="py-1 px-4 font-mono text-xs text-right">
                                                     <span class="{% if group.total_revenue %}text-green-300{% else %}text-gray-600{% endif %}">${{ group.total_revenue|floatformat:"0g" }}</span>
                                                 </td>
                                             </tr>
                                             {% for release in group.releases %}
-                                                <tr class="transition-colors hover:bg-opacity-10 hover:bg-green-700">
-                                                    <td class="px-4 py-2 pl-6 text-sm">{{ release.title }}</td>
-                                                    <td class="px-4 py-2 text-right font-mono text-sm">
+                                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-10">
+                                                    <td class="py-2 px-4 pl-6 text-sm">{{ release.title }}</td>
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
                                                         <span class="{% if release.tickets_count %}text-green-400{% else %}text-gray-500{% endif %}">{{ release.tickets_count|default:0 }}</span>
                                                         <span class="text-gray-600">/</span>
                                                         <span class="text-gray-300">{% if release.quantity %}{{ release.quantity }}{% else %}&infin;{% endif %}</span>
                                                     </td>
-                                                    <td class="px-4 py-2 text-right font-mono text-sm">
+                                                    <td class="py-2 px-4 font-mono text-sm text-right">
                                                         {% if release.revenue %}<span class="text-green-400">${{ release.revenue|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
                                                     </td>
                                                 </tr>
                                             {% endfor %}
                                         {% endfor %}
-                                        <tr class="bg-opacity-30 bg-green-700">
-                                            <td class="px-4 py-2 text-xs font-semibold tracking-wider text-green-200 uppercase">Total raised</td>
-                                            <td class="px-4 py-2 text-right font-mono text-xs text-gray-300">{{ event.total_sold }}</td>
-                                            <td class="px-4 py-2 text-right font-mono text-sm text-green-300">${{ event.total_revenue|floatformat:"0g" }}</td>
+                                        <tr class="bg-green-700 bg-opacity-30">
+                                            <td class="py-2 px-4 text-xs font-semibold tracking-wider text-green-200 uppercase">Total raised</td>
+                                            <td class="py-2 px-4 font-mono text-xs text-right text-gray-300">{{ event.total_sold }}</td>
+                                            <td class="py-2 px-4 font-mono text-sm text-right text-green-300">${{ event.total_revenue|floatformat:"0g" }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
