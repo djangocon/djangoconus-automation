@@ -54,8 +54,10 @@ def _ticket_fields(payload: dict, event_slug: str, year: int, source: str) -> di
     if not ticket_slug:
         return None
 
-    state_name = (payload.get("state_name") or "").lower()
     release = payload.get("release") or {}
+    # Webhooks send "state_name"; the /tickets API sends "state" plus a "void" boolean.
+    state_name = (payload.get("state_name") or payload.get("state") or "").lower()
+    voided = bool(payload.get("void")) or state_name in VOID_STATES
 
     return {
         "ticket_slug": ticket_slug,
@@ -63,11 +65,12 @@ def _ticket_fields(payload: dict, event_slug: str, year: int, source: str) -> di
         "year": year,
         "reference": (payload.get("reference") or "")[:64],
         "release_title": (payload.get("release_title") or release.get("title") or "")[:256],
+        "release_id": payload.get("release_id") or release.get("id"),
         "release_price": _money(payload.get("release_price")),
         "price": _money(payload.get("price")),
         "discount_code": (payload.get("discount_code_used") or "").strip()[:128],
         "state_name": state_name[:64],
-        "voided": state_name in VOID_STATES,
+        "voided": voided,
         "created_at": _parse_dt(payload.get("created_at")),
         "source": source,
         "last_synced": datetime.now(tz=timezone.utc),
