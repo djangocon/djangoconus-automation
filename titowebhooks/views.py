@@ -19,6 +19,7 @@ from rich import print
 
 from emailoctopus.models import Campaign
 from titowebhooks.models import TitoHistoricalEvent, TitoWebhookEvent
+from titowebhooks.sales_curve import sales_curves
 from volunteers.models import VolunteerSignup
 
 superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser)
@@ -407,6 +408,88 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
     return render(request, "titowebhooks/sprint_tickets.html", context)
 
 
+def _money(value) -> float:
+    """Ti.to sends money as strings ("100.0"); missing/garbage becomes 0.0."""
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _latest_tickets_for_event(event_slug: str) -> list[dict]:
+    """Most recent payload per ticket for an event, with voided tickets dropped.
+
+    Ti.to fires a webhook per ticket for every state change, so the same ticket
+    appears many times. We keep the last event per ticket slug and then drop the
+    ones whose final state was a void - those were never really sold.
+    """
+    events = TitoWebhookEvent.objects.filter(payload__event__slug=event_slug).order_by("timestamp")
+
+    latest_by_ticket: dict[str, TitoWebhookEvent] = {}
+    for event in events:
+        payload = event.payload or {}
+        key = payload.get("slug") or payload.get("reference") or str(payload.get("id") or "")
+        if key:
+            latest_by_ticket[key] = event  # ascending order, so the last write wins
+
+    tickets = []
+    for event in latest_by_ticket.values():
+        if event.trigger == "ticket.voided":
+            continue
+        payload = event.payload or {}
+        if (payload.get("state_name") or "").lower() in {"void", "voided"}:
+            continue
+        tickets.append(payload)
+
+    return tickets
+
+
+def _discount_breakdown(event_slug: str) -> dict:
+    """Group the current event's tickets by the discount code used.
+
+    Face value comes from `release_price` (the list price of the release) and what
+    the attendee actually paid from `price`; the gap between them is what the code
+    was worth. Tickets bought without a code are reported as their own row so the
+    totals still reconcile against the sales table.
+    """
+    groups: dict[str, dict] = {}
+
+    for payload in _latest_tickets_for_event(event_slug):
+        code = (payload.get("discount_code_used") or "").strip()
+        group = groups.setdefault(
+            code,
+            {"code": code, "count": 0, "face_value": 0.0, "paid": 0.0, "releases": set()},
+        )
+        face = _money(payload.get("release_price"))
+        paid = _money(payload.get("price"))
+        group["count"] += 1
+        group["face_value"] += face
+        group["paid"] += paid
+        if title := payload.get("release_title"):
+            group["releases"].add(title)
+
+    rows = []
+    for group in groups.values():
+        group["discount"] = group["face_value"] - group["paid"]
+        group["releases"] = sorted(group["releases"])
+        rows.append(group)
+
+    # Codes first (biggest discount at the top), with the no-code row pinned last.
+    rows.sort(key=lambda r: (not r["code"], -r["discount"], r["code"].lower()))
+
+    discounted = [r for r in rows if r["code"]]
+    return {
+        "rows": rows,
+        "has_data": bool(rows),
+        "code_count": len(discounted),
+        "discounted_tickets": sum(r["count"] for r in discounted),
+        "total_tickets": sum(r["count"] for r in rows),
+        "total_face_value": sum(r["face_value"] for r in rows),
+        "total_paid": sum(r["paid"] for r in rows),
+        "total_discount": sum(r["discount"] for r in rows),
+    }
+
+
 @superuser_required
 def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
     events = TitoHistoricalEvent.objects.all()  # ordered by -year via Meta
@@ -415,6 +498,8 @@ def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
     context = {
         "events": events,
         "never_synced": never_synced,
+        "discounts": _discount_breakdown(EVENT_SLUG),
+        "curves": sales_curves(),
     }
     return render(request, "titowebhooks/sales_dashboard.html", context)
 
@@ -424,6 +509,21 @@ def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
 def tito_sync_view(request: HttpRequest) -> HttpResponse:
     async_task("titowebhooks.sync.sync_tito_events")
     messages.success(request, "Tito sync queued. Refresh in a moment to see updated data.")
+    return redirect("tito_sales_dashboard")
+
+
+@superuser_required
+@require_POST
+def tito_sync_tickets_view(request: HttpRequest) -> HttpResponse:
+    """Queue the per-ticket sync that feeds the days-out curves.
+
+    Backfilling from webhooks first means the charts fill in immediately for the
+    years we already have on hand, even if the API sync is slow or lacks access
+    to the older events.
+    """
+    async_task("titowebhooks.sync.backfill_tickets_from_webhooks")
+    async_task("titowebhooks.sync.sync_tito_tickets")
+    messages.success(request, "Ticket history sync queued. This one walks every ticket, so give it a minute.")
     return redirect("tito_sales_dashboard")
 
 
