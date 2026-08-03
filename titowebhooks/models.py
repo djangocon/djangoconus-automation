@@ -126,7 +126,11 @@ class TitoTicket(models.Model):
     ticket_slug = models.CharField(max_length=128, unique=True)
     reference = models.CharField(max_length=64, blank=True)
     release_title = models.CharField(max_length=256, blank=True)
-    release_price = models.FloatField(default=0.0, help_text="List price of the release")
+    release_id = models.PositiveBigIntegerField(null=True, blank=True, db_index=True)
+    release_price = models.FloatField(
+        default=0.0,
+        help_text="List price as reported on the ticket itself; the /tickets API omits this, so prefer the release lookup",
+    )
     price = models.FloatField(default=0.0, help_text="What the attendee actually paid")
     discount_code = models.CharField(max_length=128, blank=True)
     state_name = models.CharField(max_length=64, blank=True)

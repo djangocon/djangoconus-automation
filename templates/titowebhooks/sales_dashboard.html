@@ -222,22 +222,29 @@
                                     {% else %}
                                         <p class="text-2xl font-bold text-gray-600">—</p>
                                     {% endif %}
-                                    <p class="text-sm text-gray-300">Discounts</p>
+                                    <p class="text-sm text-gray-300">
+                                        Discounts{% if event.discounts_incomplete %}<span class="text-yellow-500" title="{{ event.priced_ticket_count }} of {{ event.discounted_ticket_count }} tickets belong to a release with a list price; the rest can't be compared">*</span>{% endif %}
+                                    </p>
                                 </div>
                                 <div>
-                                    {% if event.net_total is not None %}
-                                        <p class="text-2xl font-bold text-white">${{ event.net_total|floatformat:"0g" }}</p>
+                                    {% if event.collected_total is not None %}
+                                        <p class="text-2xl font-bold text-white">${{ event.collected_total|floatformat:"0g" }}</p>
                                     {% else %}
                                         <p class="text-2xl font-bold text-gray-600">—</p>
                                     {% endif %}
                                     <p class="text-sm text-gray-300">
-                                        Total{% if event.totals_partial %}<span class="text-yellow-500" title="Only {{ event.discounted_ticket_count }} of {{ event.total_sold }} tickets synced, so discounts are understated">*</span>{% endif %}
+                                        Collected{% if event.totals_partial %}<span class="text-yellow-500" title="Only {{ event.discounted_ticket_count }} of {{ event.total_sold }} tickets synced">*</span>{% endif %}
                                     </p>
                                 </div>
                             </div>
-                            {% if event.discount_total is None %}
+                            {% if event.collected_total is None %}
                                 <p class="mt-3 text-xs text-gray-500">
-                                    Discounts need per-ticket detail &mdash; run <strong>Sync ticket history</strong> to fill them in.
+                                    Discounts and collected need per-ticket detail &mdash; run <strong>Sync ticket history</strong> to fill them in.
+                                </p>
+                            {% else %}
+                                <p class="mt-3 text-xs text-gray-500">
+                                    Collected is what attendees actually paid. Raised is face value from release list prices, which
+                                    several releases don't set &mdash; so the two won't reconcile by subtraction.
                                 </p>
                             {% endif %}
                             {% if event.last_synced %}
@@ -387,9 +394,9 @@
                                     <span class="text-green-400">{{ event.total_sold }}</span>
                                     sold
                                     {% if event.total_revenue %}&middot; <span class="text-green-300">${{ event.total_revenue|floatformat:"0g" }}</span> raised{% endif %}
-                                    {% if event.discount_total is not None %}
+                                    {% if event.collected_total is not None %}
                                         &middot; <span class="text-yellow-300">&minus;${{ event.discount_total|floatformat:"0g" }}</span> discounts
-                                        &middot; <span class="font-semibold text-white">${{ event.net_total|floatformat:"0g" }}</span> total{% if event.totals_partial %}<span class="text-yellow-500" title="Only {{ event.discounted_ticket_count }} of {{ event.total_sold }} tickets synced, so discounts are understated">*</span>{% endif %}
+                                        &middot; <span class="font-semibold text-white">${{ event.collected_total|floatformat:"0g" }}</span> collected{% if event.totals_partial %}<span class="text-yellow-500" title="Only {{ event.discounted_ticket_count }} of {{ event.total_sold }} tickets synced">*</span>{% endif %}
                                     {% endif %}
                                     {% if event.goal %}&middot; <span class="text-yellow-300">{{ event.percent_of_goal }}%</span> of goal{% endif %}
                                     &middot; {{ event.releases|length }} release{{ event.releases|length|pluralize }}
