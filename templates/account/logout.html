@@ -3,7 +3,7 @@
 {% load i18n %}
 
 {% block content %}
-    <div class="bg-opacity-80 mx-auto flex max-w-md flex-col gap-6 rounded-xl bg-green-900 p-8 text-center text-green-200 shadow-inner">
+    <div class="flex flex-col gap-6 p-8 mx-auto max-w-md text-center text-green-200 bg-green-900 bg-opacity-80 rounded-xl shadow-inner">
         <div class="mb-4 text-4xl font-bold text-yellow-200">
             Sign Out
         </div>
@@ -16,7 +16,7 @@
             {% csrf_token %}
 
             <button type="submit"
-                    class="w-full rounded-lg bg-red-600 px-4 py-3 text-lg font-semibold text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                    class="py-3 px-4 w-full text-lg font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                 Yes, Sign Out
             </button>
         </form>

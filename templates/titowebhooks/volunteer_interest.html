@@ -7,8 +7,8 @@
 {% block title %}Volunteer Interest - DjangoCon US Automation{% endblock %}
 
 {% block content %}
-    <div class="mx-auto max-w-7xl p-6">
-        <div class="mb-6 flex items-center justify-between">
+    <div class="p-6 mx-auto max-w-7xl">
+        <div class="flex justify-between items-center mb-6">
             <div>
                 <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
                 <h1 class="text-3xl font-bold">Volunteer Interest</h1>
@@ -18,11 +18,11 @@
             </div>
             <div class="flex gap-2">
                 <a href="?format=csv"
-                   class="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">Download CSV</a>
+                   class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">Download CSV</a>
             </div>
         </div>
 
-        <div class="bg-opacity-50 mb-6 rounded-lg bg-green-800 p-4">
+        <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
             <div class="grid grid-cols-3 gap-4 text-center">
                 <div>
                     <p class="text-2xl font-bold text-green-400">{{ total_count }}</p>
@@ -41,29 +41,29 @@
 
         {% if people %}
             <div class="overflow-x-auto">
-                <table class="bg-opacity-30 w-full overflow-hidden rounded-lg bg-green-800">
-                    <thead class="bg-opacity-50 bg-green-700">
+                <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
+                    <thead class="bg-green-700 bg-opacity-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Name</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Email</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Company</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Ticket</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Date</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Signed Up</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Name</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Email</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Company</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Ticket</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Date</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Signed Up</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-green-700">
                         {% for person in people %}
-                            <tr class="transition-colors hover:bg-opacity-20 hover:bg-green-700">
-                                <td class="px-4 py-2 text-sm">{{ person.name }}</td>
-                                <td class="px-4 py-2 text-sm">
+                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-20">
+                                <td class="py-2 px-4 text-sm">{{ person.name }}</td>
+                                <td class="py-2 px-4 text-sm">
                                     <a href="mailto:{{ person.email }}"
                                        class="text-yellow-300 underline hover:text-yellow-200">{{ person.email }}</a>
                                 </td>
-                                <td class="px-4 py-2 text-sm">{{ person.company_name }}</td>
-                                <td class="px-4 py-2 text-sm">{{ person.release_title }}</td>
-                                <td class="px-4 py-2 text-sm">{{ person.created_at|date:"Y-m-d" }}</td>
-                                <td class="px-4 py-2 text-sm">
+                                <td class="py-2 px-4 text-sm">{{ person.company_name }}</td>
+                                <td class="py-2 px-4 text-sm">{{ person.release_title }}</td>
+                                <td class="py-2 px-4 text-sm">{{ person.created_at|date:"Y-m-d" }}</td>
+                                <td class="py-2 px-4 text-sm">
                                     {% if person.has_signed_up %}
                                         <span class="text-green-400">Yes</span>
                                     {% else %}
@@ -76,7 +76,7 @@
                 </table>
             </div>
         {% else %}
-            <div class="bg-opacity-30 rounded-lg bg-green-800 p-6 text-center">
+            <div class="p-6 text-center bg-green-800 bg-opacity-30 rounded-lg">
                 <p class="text-gray-300">No attendees have answered &ldquo;Yes!&rdquo; to volunteering yet.</p>
             </div>
         {% endif %}

@@ -3,7 +3,7 @@
 {% block title %}DjangoCon US - Tickets{% endblock title %}
 
 {% block content %}
-    <div class="mx-auto max-w-3xl p-6">
+    <div class="p-6 mx-auto max-w-3xl">
         <div class="mb-8 text-center">
             <h1 class="mb-4 text-4xl font-bold text-yellow-200">DjangoCon US Tickets</h1>
             <p class="text-lg text-gray-300">Enter your email address to claim your ticket to Venueless</p>
@@ -21,7 +21,7 @@
 
         {% if ticket_link %}
             <!-- Show claimed ticket -->
-            <div class="bg-opacity-50 rounded-lg bg-green-800 p-8 shadow-lg">
+            <div class="p-8 bg-green-800 bg-opacity-50 rounded-lg shadow-lg">
                 <div class="mb-6 text-center">
                     {% if is_existing %}
                         <h2 class="mb-2 text-3xl font-bold text-green-400">Welcome Back!</h2>
@@ -36,14 +36,14 @@
                     <div class="text-center">
                         <a href="{{ ticket_link.link }}"
                            target="_blank"
-                           class="inline-block transform rounded-lg bg-yellow-500 px-8 py-4 text-xl font-bold text-green-900 transition-colors duration-300 hover:scale-105 hover:bg-yellow-400">
+                           class="inline-block py-4 px-8 text-xl font-bold text-green-900 bg-yellow-500 rounded-lg transition-colors duration-300 transform hover:bg-yellow-400 hover:scale-105">
                             🎫 Access Venueless
                         </a>
                     </div>
 
-                    <div class="bg-opacity-50 rounded-md bg-green-900 p-4">
+                    <div class="p-4 bg-green-900 bg-opacity-50 rounded-md">
                         <p class="mb-1 text-sm text-gray-400">Your Ticket URL:</p>
-                        <p class="font-mono text-sm break-all text-gray-300">{{ ticket_link.link }}</p>
+                        <p class="font-mono text-sm text-gray-300 break-all">{{ ticket_link.link }}</p>
                     </div>
 
                 </div>
@@ -59,13 +59,13 @@
 
         {% else %}
             <!-- Show claim form -->
-            <div class="bg-opacity-30 rounded-lg bg-green-800 p-8">
+            <div class="p-8 bg-green-800 bg-opacity-30 rounded-lg">
                 {% if tickets_available %}
                     <form method="post" class="space-y-6">
                         {% csrf_token %}
 
                         <div>
-                            <label for="{{ form.email.id_for_label }}" class="mb-3 block text-lg font-medium">
+                            <label for="{{ form.email.id_for_label }}" class="block mb-3 text-lg font-medium">
                                 {{ form.email.label }}
                             </label>
 
@@ -86,7 +86,7 @@
 
                         <div class="pt-4">
                             <button type="submit"
-                                    class="w-full rounded-lg bg-green-600 px-6 py-3 text-lg font-semibold text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                                    class="py-3 px-6 w-full text-lg font-semibold text-white bg-green-600 rounded-lg transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                                 Get My Ticket
                             </button>
                         </div>
@@ -98,13 +98,13 @@
                             If you've already claimed a ticket, enter your email to retrieve it.
                         </p>
 
-                        <div class="bg-opacity-30 rounded-lg bg-blue-800 p-4">
+                        <div class="p-4 bg-blue-800 bg-opacity-30 rounded-lg">
                             <p class="text-sm text-blue-200">
                                 <strong>Already registered?</strong> You can go directly to:
                             </p>
                             <a href="https://dcus25.venueless.events"
                                target="_blank"
-                               class="mt-2 inline-block rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-green-900 transition-colors duration-300 hover:bg-yellow-400">
+                               class="inline-block py-2 px-4 mt-2 text-sm font-semibold text-green-900 bg-yellow-500 rounded-lg transition-colors duration-300 hover:bg-yellow-400">
                                 dcus25.venueless.events
                             </a>
                         </div>
@@ -119,7 +119,7 @@
                             If you believe this is an error or need assistance, please reach out to us:
                         </p>
                         <a href="mailto:hello@djangocon.us"
-                           class="inline-block rounded-lg bg-yellow-500 px-6 py-3 font-semibold text-green-900 transition-colors duration-300 hover:bg-yellow-400">
+                           class="inline-block py-3 px-6 font-semibold text-green-900 bg-yellow-500 rounded-lg transition-colors duration-300 hover:bg-yellow-400">
                             hello@djangocon.us
                         </a>
                     </div>

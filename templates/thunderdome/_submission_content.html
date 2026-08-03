@@ -12,28 +12,28 @@
 {% if submission.abstract %}
     <div class="mb-4">
         <h3 class="mb-1 text-sm font-semibold text-gray-400 uppercase">Abstract</h3>
-        <div class="markdown-content max-w-none prose prose-sm prose-invert text-gray-200">{{ submission.abstract }}</div>
+        <div class="max-w-none text-gray-200 markdown-content prose prose-sm prose-invert">{{ submission.abstract }}</div>
     </div>
 {% endif %}
 
 {% if submission.description %}
     <div class="mb-4">
         <h3 class="mb-1 text-sm font-semibold text-gray-400 uppercase">Description</h3>
-        <div class="markdown-content max-w-none prose prose-sm prose-invert text-gray-200">{{ submission.description }}</div>
+        <div class="max-w-none text-gray-200 markdown-content prose prose-sm prose-invert">{{ submission.description }}</div>
     </div>
 {% endif %}
 
 {% if submission.notes %}
     <div class="mb-4">
         <h3 class="mb-1 text-sm font-semibold text-gray-400 uppercase">Speaker Notes</h3>
-        <div class="markdown-content max-w-none prose prose-sm prose-invert text-gray-200">{{ submission.notes }}</div>
+        <div class="max-w-none text-gray-200 markdown-content prose prose-sm prose-invert">{{ submission.notes }}</div>
     </div>
 {% endif %}
 
 {% if submission.internal_notes %}
     <div class="mb-4">
         <h3 class="mb-1 text-sm font-semibold text-gray-400 uppercase">Internal Notes</h3>
-        <div class="markdown-content max-w-none prose prose-sm prose-invert text-gray-200">{{ submission.internal_notes }}</div>
+        <div class="max-w-none text-gray-200 markdown-content prose prose-sm prose-invert">{{ submission.internal_notes }}</div>
     </div>
 {% endif %}
 
@@ -42,7 +42,7 @@
         <h3 class="mb-1 text-sm font-semibold text-gray-400 uppercase">Tags</h3>
         <div class="flex flex-wrap gap-2">
             {% for tag in submission.tags.all %}
-                <span class="inline-flex rounded-full bg-green-800 px-2 py-1 text-xs">{{ tag.name }}</span>
+                <span class="inline-flex py-1 px-2 text-xs bg-green-800 rounded-full">{{ tag.name }}</span>
             {% endfor %}
         </div>
     </div>
@@ -58,26 +58,26 @@
         {% endif %}
     </h3>
     {% if submission.reviews.all %}
-        <table class="bg-opacity-30 w-full overflow-hidden rounded-lg bg-green-800">
-            <thead class="bg-opacity-50 bg-green-700">
+        <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
+            <thead class="bg-green-700 bg-opacity-50">
                 <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium tracking-wider uppercase">Reviewer</th>
-                    <th class="px-4 py-2 text-center text-xs font-medium tracking-wider uppercase">Score</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium tracking-wider uppercase">Notes</th>
+                    <th class="py-2 px-4 text-xs font-medium tracking-wider text-left uppercase">Reviewer</th>
+                    <th class="py-2 px-4 text-xs font-medium tracking-wider text-center uppercase">Score</th>
+                    <th class="py-2 px-4 text-xs font-medium tracking-wider text-left uppercase">Notes</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-green-700">
                 {% for review in submission.reviews.all %}
                     <tr>
-                        <td class="px-4 py-2 text-sm">{{ review.display_name }}</td>
-                        <td class="px-4 py-2 text-center text-sm">
+                        <td class="py-2 px-4 text-sm">{{ review.display_name }}</td>
+                        <td class="py-2 px-4 text-sm text-center">
                             {% if review.score is not None %}
                                 {{ review.score }}
                             {% else %}
                                 <span class="text-gray-500">-</span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-2 text-sm">{{ review.notes }}</td>
+                        <td class="py-2 px-4 text-sm">{{ review.notes }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

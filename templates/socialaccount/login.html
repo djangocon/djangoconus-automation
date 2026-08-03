@@ -4,7 +4,7 @@
 {% block title %}Sign In - DjangoCon US{% endblock title %}
 
 {% block content %}
-    <div class="mx-auto max-w-md rounded-lg bg-green-800/50 p-8 shadow-lg">
+    <div class="p-8 mx-auto max-w-md rounded-lg shadow-lg bg-green-800/50">
         {% if process == "connect" %}
             <h1 class="mb-4 text-2xl font-bold">
                 {% blocktrans with provider.name as provider %}Connect {{ provider }}{% endblocktrans %}
@@ -22,7 +22,7 @@
         {% endif %}
         <form method="post">
             {% csrf_token %}
-            <button type="submit" class="w-full rounded-lg bg-green-600 px-6 py-3 font-bold text-white transition duration-200 hover:bg-green-500">
+            <button type="submit" class="py-3 px-6 w-full font-bold text-white bg-green-600 rounded-lg transition duration-200 hover:bg-green-500">
                 {% trans "Continue" %}
             </button>
         </form>

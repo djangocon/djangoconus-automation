@@ -3,13 +3,13 @@
 {% load i18n %}
 
 {% block content %}
-    <div class="bg-opacity-80 mx-auto flex max-w-lg flex-col gap-6 rounded-xl bg-green-900 p-8 text-center text-green-200 shadow-inner">
+    <div class="flex flex-col gap-6 p-8 mx-auto max-w-lg text-center text-green-200 bg-green-900 bg-opacity-80 rounded-xl shadow-inner">
         <div class="mb-4 text-4xl font-bold text-yellow-200">
             Sign In
         </div>
 
         {% if form.errors %}
-            <div class="bg-opacity-50 rounded-lg bg-red-800 p-4 text-red-200">
+            <div class="p-4 text-red-200 bg-red-800 bg-opacity-50 rounded-lg">
                 <div class="mb-2 text-sm font-medium">Please correct the following errors:</div>
                 {{ form.errors }}
             </div>
@@ -17,17 +17,17 @@
 
         <div class="space-y-3">
             <a href="{% url 'github_login' %}"
-               class="block w-full rounded-lg bg-gray-800 px-4 py-3 text-lg font-semibold text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+               class="block py-3 px-4 w-full text-lg font-semibold text-white bg-gray-800 rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                 🐙 Sign In with GitHub
             </a>
 
             <a href="{% url 'account_request_login_code' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
-               class="block w-full rounded-lg bg-yellow-300 px-4 py-3 text-lg font-semibold text-green-900 hover:bg-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+               class="block py-3 px-4 w-full text-lg font-semibold text-green-900 bg-yellow-300 rounded-lg hover:bg-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                 ✉️ Email Me a Sign-In Link
             </a>
         </div>
 
-        <div class="flex items-center gap-3 text-sm text-gray-400">
+        <div class="flex gap-3 items-center text-sm text-gray-400">
             <div class="flex-1 border-t border-green-700"></div>
             or sign in with email &amp; password
             <div class="flex-1 border-t border-green-700"></div>
@@ -37,25 +37,25 @@
             {% csrf_token %}
 
             <div class="text-left">
-                <label for="{{ form.login.id_for_label }}" class="mb-1 block text-sm font-medium text-gray-300">
+                <label for="{{ form.login.id_for_label }}" class="block mb-1 text-sm font-medium text-gray-300">
                     {{ form.login.label }}
                 </label>
                 <input type="{{ form.login.field.widget.input_type }}"
                        name="{{ form.login.name }}"
                        id="{{ form.login.id_for_label }}"
-                       class="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                       class="p-3 w-full text-gray-900 rounded-md border border-gray-300 focus:ring-2 focus:ring-green-500 focus:outline-none"
                        {% if form.login.value %}value="{{ form.login.value }}"{% endif %}
                        placeholder="Username or email">
             </div>
 
             <div class="text-left">
-                <label for="{{ form.password.id_for_label }}" class="mb-1 block text-sm font-medium text-gray-300">
+                <label for="{{ form.password.id_for_label }}" class="block mb-1 text-sm font-medium text-gray-300">
                     {{ form.password.label }}
                 </label>
                 <input type="password"
                        name="{{ form.password.name }}"
                        id="{{ form.password.id_for_label }}"
-                       class="w-full rounded-md border border-gray-300 p-3 text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                       class="p-3 w-full text-gray-900 rounded-md border border-gray-300 focus:ring-2 focus:ring-green-500 focus:outline-none"
                        placeholder="Password">
             </div>
 
@@ -72,12 +72,12 @@
             {% endif %}
 
             <button type="submit"
-                    class="w-full rounded-lg bg-green-600 px-4 py-3 text-lg font-semibold text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                    class="py-3 px-4 w-full text-lg font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                 Sign In
             </button>
         </form>
 
-        <div class="border-t border-green-700 pt-4 text-sm text-gray-400">
+        <div class="pt-4 text-sm text-gray-400 border-t border-green-700">
             <a href="{% url 'account_signup' %}" class="text-yellow-300 underline hover:text-yellow-200">
                 Don't have an account? Sign up
             </a>

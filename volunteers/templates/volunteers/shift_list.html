@@ -5,7 +5,7 @@
 {% block extra_head %}{% include "volunteers/_print_styles.html" %}{% endblock extra_head %}
 
 {% block content %}
-    <div class="flex max-w-4xl flex-col gap-6 p-8 text-green-100">
+    <div class="flex flex-col gap-6 p-8 max-w-4xl text-green-100">
         <div class="text-center">
             <h1 class="mb-2 text-4xl font-bold text-yellow-200">Volunteer Sign-up</h1>
             {% if user.is_authenticated %}
@@ -27,7 +27,7 @@
         </div>
 
         {% if my_upcoming %}
-            <section class="print-hide rounded-lg border border-yellow-300 bg-green-800 p-4">
+            <section class="p-4 bg-green-800 rounded-lg border border-yellow-300 print-hide">
                 <h2 class="mb-2 text-lg font-semibold text-yellow-300">Your upcoming shifts</h2>
                 <ul class="space-y-1 text-sm text-green-100">
                     {% for signup in my_upcoming %}
@@ -38,7 +38,7 @@
                         </li>
                     {% endfor %}
                 </ul>
-                <a href="{% url 'volunteers:my_shifts' %}" class="mt-2 inline-block text-sm text-yellow-300 underline hover:text-yellow-200">
+                <a href="{% url 'volunteers:my_shifts' %}" class="inline-block mt-2 text-sm text-yellow-300 underline hover:text-yellow-200">
                     See my full schedule &amp; calendar feed
                 </a>
             </section>
@@ -52,21 +52,21 @@
             {% endfor %}
         {% endif %}
 
-        <form method="get" class="flex flex-wrap items-end gap-3 rounded-lg border border-green-700 bg-green-800 p-4">
+        <form method="get" class="flex flex-wrap gap-3 items-end p-4 bg-green-800 rounded-lg border border-green-700">
             <div>
-                <label class="mb-1 block text-xs text-green-300" for="role">Role</label>
-                <select name="role" id="role" class="rounded-md p-2 text-sm text-green-900">
+                <label class="block mb-1 text-xs text-green-300" for="role">Role</label>
+                <select name="role" id="role" class="p-2 text-sm text-green-900 rounded-md">
                     <option value="">All roles</option>
                     {% for role in roles %}
                         <option value="{{ role }}" {% if role == role_filter %}selected{% endif %}>{{ role }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <label class="flex items-center gap-2 text-sm text-green-200">
+            <label class="flex gap-2 items-center text-sm text-green-200">
                 <input type="checkbox" name="needs_help" value="1" {% if needs_help %}checked{% endif %}>
                 Where we need help
             </label>
-            <button type="submit" class="rounded-md bg-yellow-300 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
+            <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                 Filter
             </button>
             {% if role_filter or needs_help %}
@@ -75,18 +75,18 @@
         </form>
 
         {% for day, shifts in days %}
-            <section class="rounded-lg border border-green-700 bg-green-800 p-6">
+            <section class="p-6 bg-green-800 rounded-lg border border-green-700">
                 <h2 class="mb-4 text-2xl font-semibold text-yellow-300">{{ day|date:"l, F j" }}</h2>
                 {% regroup shifts by starts_at as time_groups %}
                 <div class="flex flex-col gap-6">
                     {% for slot in time_groups %}
-                        <div class="flex flex-col gap-2 border-l-2 border-green-600 pl-4">
-                            <div class="flex flex-wrap items-baseline gap-2">
+                        <div class="flex flex-col gap-2 pl-4 border-l-2 border-green-600">
+                            <div class="flex flex-wrap gap-2 items-baseline">
                                 <h3 class="text-lg font-semibold text-yellow-100">
                                     <time datetime="{{ slot.grouper|date:'c' }}" class="whitespace-nowrap">{{ slot.grouper|date:"g:i A" }}</time>
                                 </h3>
                                 {% if slot.list|length > 1 %}
-                                    <span class="rounded-full bg-yellow-300 px-2 py-0.5 text-xs font-semibold text-green-900">
+                                    <span class="py-0.5 px-2 text-xs font-semibold text-green-900 bg-yellow-300 rounded-full">
                                         {{ slot.list|length }} shifts at this time — sign up for any
                                     </span>
                                 {% endif %}
@@ -125,28 +125,28 @@
                                         <div class="mt-auto">
                                             {% if not user.is_authenticated %}
                                                 {% if shift.signups_open %}
-                                                    <a href="{% url 'account_login' %}?next={{ request.path }}" class="inline-block rounded-md bg-yellow-300 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
+                                                    <a href="{% url 'account_login' %}?next={{ request.path }}" class="inline-block py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                                                         Sign in to sign up
                                                     </a>
                                                 {% else %}
-                                                    <span class="px-3 py-2 text-sm text-green-400">Signups closed</span>
+                                                    <span class="py-2 px-3 text-sm text-green-400">Signups closed</span>
                                                 {% endif %}
                                             {% elif shift.id in my_shift_ids %}
                                                 <form method="post" action="{% url 'volunteers:cancel' shift.id %}">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                                     <span class="mr-2 text-sm text-green-300">✓ Signed up</span>
-                                                    <button type="submit" class="rounded-md border border-red-600 bg-red-700 px-3 py-2 text-sm font-medium text-red-100 hover:bg-red-600">
+                                                    <button type="submit" class="py-2 px-3 text-sm font-medium text-red-100 bg-red-700 rounded-md border border-red-600 hover:bg-red-600">
                                                         Cancel
                                                     </button>
                                                 </form>
                                             {% elif not shift.signups_open %}
-                                                <span class="px-3 py-2 text-sm text-green-400">Signups closed</span>
+                                                <span class="py-2 px-3 text-sm text-green-400">Signups closed</span>
                                             {% else %}
                                                 <form method="post" action="{% url 'volunteers:signup' shift.id %}">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                                    <button type="submit" class="rounded-md bg-yellow-300 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
+                                                    <button type="submit" class="py-2 px-4 text-sm font-semibold text-green-900 bg-yellow-300 rounded-md hover:bg-yellow-200">
                                                         Sign up
                                                     </button>
                                                 </form>

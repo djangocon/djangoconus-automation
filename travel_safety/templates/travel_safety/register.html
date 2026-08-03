@@ -3,13 +3,13 @@
 {% block title %}{{ page_title }}{% endblock title %}
 
 {% block content %}
-    <div class="flex max-w-4xl flex-col gap-6 rounded-xl bg-green-900 p-8 text-green-200 shadow-inner">
+    <div class="flex flex-col gap-6 p-8 max-w-4xl text-green-200 bg-green-900 rounded-xl shadow-inner">
         <div class="mb-8 text-center">
             <h1 class="mb-6 text-4xl font-bold text-yellow-200">DjangoCon US 2026 Travel Safety Registration</h1>
         </div>
 
     <!-- Introduction Text -->
-        <div class="mb-8 rounded-lg border border-blue-600 bg-gray-100 p-6">
+        <div class="p-6 mb-8 bg-gray-100 rounded-lg border border-blue-600">
             <div class="space-y-4 text-sm leading-relaxed text-green-900">
                 <p>
                     We recognize that international travel to the United States has become more concerning this year, and we want to acknowledge those valid worries. The organizers of DjangoCon US 2026 are committed to ensuring all our international attendees have the support they need for a safe experience entering and leaving the United States.
@@ -39,13 +39,13 @@
             {% csrf_token %}
 
         <!-- Personal Information Section -->
-            <div class="rounded-lg border border-green-700 bg-green-800 p-6">
-                <h2 class="mb-4 flex items-center text-2xl font-semibold text-yellow-300">
+            <div class="p-6 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="flex items-center mb-4 text-2xl font-semibold text-yellow-300">
                     👤 Personal Information
                 </h2>
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.name.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -57,7 +57,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.email.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -69,7 +69,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.phone.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -81,7 +81,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.preferred_contact.label }}
                         </label>
                         {{ form.preferred_contact }}
@@ -95,13 +95,13 @@
             </div>
 
         <!-- Arrival Flight Information Section -->
-            <div class="rounded-lg border border-green-700 bg-green-800 p-6">
-                <h2 class="mb-4 flex items-center text-2xl font-semibold text-yellow-300">
+            <div class="p-6 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="flex items-center mb-4 text-2xl font-semibold text-yellow-300">
                     ✈️ Arrival Flight Information
                 </h2>
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.arrival_airline.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -113,7 +113,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.arrival_flight_number.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -125,7 +125,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.arrival_time.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -138,7 +138,7 @@
                         <p class="mt-1 text-xs text-green-300">Time zone: US/Chicago (Central Time)</p>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.arrival_airport.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -153,12 +153,12 @@
             </div>
 
         <!-- Accommodation Information Section (Optional) -->
-            <div class="rounded-lg border border-green-700 bg-green-800 p-6">
-                <h2 class="mb-4 flex items-center text-2xl font-semibold text-yellow-300">
+            <div class="p-6 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="flex items-center mb-4 text-2xl font-semibold text-yellow-300">
                     🏨 Accommodation Information <span class="ml-2 text-sm text-green-300">(Optional)</span>
                 </h2>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-green-200">
+                    <label class="block mb-1 text-sm font-medium text-green-200">
                         {{ form.accommodation.label }}
                     </label>
                     {{ form.accommodation }}
@@ -171,13 +171,13 @@
             </div>
 
         <!-- Departure Flight Information Section (Optional) -->
-            <div class="rounded-lg border border-green-700 bg-green-800 p-6">
-                <h2 class="mb-4 flex items-center text-2xl font-semibold text-yellow-300">
+            <div class="p-6 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="flex items-center mb-4 text-2xl font-semibold text-yellow-300">
                     🛫 Departure Flight Information <span class="ml-2 text-sm text-green-300">(Optional)</span>
                 </h2>
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.departure_airline.label }}
                         </label>
                         {{ form.departure_airline }}
@@ -188,7 +188,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.departure_flight_number.label }}
                         </label>
                         {{ form.departure_flight_number }}
@@ -199,7 +199,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.departure_time.label }}
                         </label>
                         {{ form.departure_time }}
@@ -211,7 +211,7 @@
                         <p class="mt-1 text-xs text-green-300">Time zone: US/Chicago (Central Time)</p>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.departure_airport.label }}
                         </label>
                         {{ form.departure_airport }}
@@ -222,7 +222,7 @@
                         {% endif %}
                     </div>
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.departure_destination.label }}
                         </label>
                         {{ form.departure_destination }}
@@ -236,13 +236,13 @@
             </div>
 
         <!-- Emergency Contact Section -->
-            <div class="rounded-lg border border-green-700 bg-green-800 p-6">
-                <h2 class="mb-4 flex items-center text-2xl font-semibold text-yellow-300">
+            <div class="p-6 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="flex items-center mb-4 text-2xl font-semibold text-yellow-300">
                     🚨 Emergency Contact Information
                 </h2>
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.emergency_contact_name.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -254,7 +254,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.emergency_contact_phone.label }}
                             <span class="text-red-400">*</span>
                         </label>
@@ -266,7 +266,7 @@
                         {% endif %}
                     </div>
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-green-200">
+                        <label class="block mb-1 text-sm font-medium text-green-200">
                             {{ form.emergency_contact_relationship.label }}
                         </label>
                         {{ form.emergency_contact_relationship }}
@@ -280,12 +280,12 @@
             </div>
 
         <!-- Additional Information Section (Optional) -->
-            <div class="rounded-lg border border-green-700 bg-green-800 p-6">
-                <h2 class="mb-4 flex items-center text-2xl font-semibold text-yellow-300">
+            <div class="p-6 bg-green-800 rounded-lg border border-green-700">
+                <h2 class="flex items-center mb-4 text-2xl font-semibold text-yellow-300">
                     📝 Additional Information <span class="ml-2 text-sm text-green-300">(Optional)</span>
                 </h2>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-green-200">
+                    <label class="block mb-1 text-sm font-medium text-green-200">
                         {{ form.user_notes.label }}
                     </label>
                     {{ form.user_notes }}
@@ -298,7 +298,7 @@
             </div>
 
         <!-- Data Retention Policy Notice -->
-            <div class="rounded-lg border border-yellow-600 bg-yellow-900 p-4">
+            <div class="p-4 bg-yellow-900 rounded-lg border border-yellow-600">
                 <h3 class="mb-2 text-lg font-semibold text-yellow-200">📋 Data Retention Policy</h3>
                 <p class="text-sm text-yellow-100">
                     Your travel safety information will be securely stored for monitoring purposes during DjangoCon US.
@@ -309,7 +309,7 @@
 
         <!-- Form Errors -->
             {% if form.non_field_errors %}
-                <div class="rounded-md border border-red-600 bg-red-700 p-4">
+                <div class="p-4 bg-red-700 rounded-md border border-red-600">
                     {% for error in form.non_field_errors %}
                         <p class="text-red-100">{{ error }}</p>
                     {% endfor %}
@@ -318,14 +318,14 @@
 
         <!-- Submit Button -->
             <div class="text-center">
-                <button type="submit" class="rounded-lg bg-yellow-600 px-8 py-3 font-semibold text-yellow-900 shadow-lg transition duration-200 hover:bg-yellow-500">
+                <button type="submit" class="py-3 px-8 font-semibold text-yellow-900 bg-yellow-600 rounded-lg shadow-lg transition duration-200 hover:bg-yellow-500">
                     Register Travel Information
                 </button>
             </div>
         </form>
 
     <!-- Back to Home -->
-        <div class="border-t border-green-700 pt-4 text-center">
+        <div class="pt-4 text-center border-t border-green-700">
             <a href="{% url 'home' %}" class="text-yellow-300 underline hover:text-yellow-200">
                 ← Back to Home
             </a>

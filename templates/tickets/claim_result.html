@@ -3,7 +3,7 @@
 {% block title %}Your Ticket - DjangoCon US{% endblock %}
 
 {% block content %}
-    <div class="mx-auto max-w-3xl p-6">
+    <div class="p-6 mx-auto max-w-3xl">
         <div class="mb-8 text-center">
             {% if is_existing %}
                 <h1 class="mb-4 text-4xl font-bold text-green-400">Welcome Back!</h1>
@@ -14,9 +14,9 @@
             {% endif %}
         </div>
 
-        <div class="bg-opacity-50 rounded-lg bg-green-800 p-8 shadow-lg">
+        <div class="p-8 bg-green-800 bg-opacity-50 rounded-lg shadow-lg">
             <div class="space-y-6">
-                <div class="border-b border-green-600 pb-6">
+                <div class="pb-6 border-b border-green-600">
                     <h2 class="mb-4 text-2xl font-semibold">Your Ticket Information</h2>
 
                     <div class="space-y-4">
@@ -27,7 +27,7 @@
 
                         <div>
                             <p class="mb-1 text-sm text-gray-400">Ticket URL</p>
-                            <div class="bg-opacity-50 rounded-md bg-green-900 p-3">
+                            <div class="p-3 bg-green-900 bg-opacity-50 rounded-md">
                                 <p class="font-mono text-lg break-all">{{ ticket_link.link }}</p>
                             </div>
                         </div>
@@ -47,7 +47,7 @@
                             <div>
                                 <p class="mb-1 text-sm text-gray-400">Status</p>
                                 <p class="text-md">
-                                    <span class="inline-flex rounded-full bg-green-800 px-3 py-1 text-sm font-semibold text-green-200">
+                                    <span class="inline-flex py-1 px-3 text-sm font-semibold text-green-200 bg-green-800 rounded-full">
                                         Ready to Use
                                     </span>
                                 </p>
@@ -59,7 +59,7 @@
                 <div class="space-y-4">
                     <a href="{{ ticket_link.link }}"
                        target="_blank"
-                       class="block w-full rounded-lg bg-green-600 px-6 py-3 text-center text-lg font-semibold text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                       class="block py-3 px-6 w-full text-lg font-semibold text-center text-white bg-green-600 rounded-lg transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                         Access Your Ticket →
                     </a>
 
@@ -73,7 +73,7 @@
             </div>
         </div>
 
-        <div class="bg-opacity-30 mt-8 rounded-lg bg-yellow-800 p-4">
+        <div class="p-4 mt-8 bg-yellow-800 bg-opacity-30 rounded-lg">
             <p class="text-sm text-yellow-200">
                 <strong>Important:</strong> Save this page or bookmark your ticket URL.
                 You can always retrieve it again using your email address.

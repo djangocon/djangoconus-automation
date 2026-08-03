@@ -1,66 +1,66 @@
-<tr id="submission-{{ submission.pk }}" class="transition-colors hover:bg-opacity-30 hover:bg-green-700">
-    <td class="w-8 px-3 py-3">
-        <input type="checkbox" class="row-select rounded" data-pk="{{ submission.pk }}" onchange="updateSelectedCount();">
+<tr id="submission-{{ submission.pk }}" class="transition-colors hover:bg-green-700 hover:bg-opacity-30">
+    <td class="py-3 px-3 w-8">
+        <input type="checkbox" class="rounded row-select" data-pk="{{ submission.pk }}" onchange="updateSelectedCount();">
     </td>
-    <td class="px-4 py-3 text-sm whitespace-nowrap">
+    <td class="py-3 px-4 text-sm whitespace-nowrap">
         <a href="https://pretalx.com/djangocon-us-2026/talk/{{ submission.pretalx_id }}/"
            target="_blank"
            class="text-blue-300 underline hover:text-blue-200">
             {{ submission.pretalx_id }}
         </a>
     </td>
-    <td class="px-4 py-3 text-sm">
+    <td class="py-3 px-4 text-sm">
         <a href="{% url 'thunderdome_submission_page' submission.pretalx_id %}"
            class="text-blue-300 underline hover:text-blue-200">
             {{ submission.title }}
         </a>
     </td>
-    <td class="px-4 py-3 text-sm">
+    <td class="py-3 px-4 text-sm">
         {% for speaker in submission.speakers.all %}
             {{ speaker.name }}{% if not forloop.last %}, {% endif %}
         {% endfor %}
     </td>
-    <td class="px-4 py-3 text-center text-sm whitespace-nowrap">
+    <td class="py-3 px-4 text-sm text-center whitespace-nowrap">
         {% if submission.duration %}{{ submission.duration }} min{% else %}-{% endif %}
     </td>
-    <td class="px-4 py-3 text-center text-sm">
+    <td class="py-3 px-4 text-sm text-center">
         <a href="{% url 'thunderdome_submission_page' submission.pretalx_id %}"
            class="text-blue-300 underline hover:text-blue-200">
             {{ submission.annotated_review_count }}
         </a>
     </td>
-    <td class="px-4 py-3 text-center text-sm">
+    <td class="py-3 px-4 text-sm text-center">
         {% if submission.annotated_review_mean is not None %}
             {{ submission.annotated_review_mean|floatformat:1 }}
         {% else %}
             -
         {% endif %}
     </td>
-    <td class="px-4 py-3 text-sm">
+    <td class="py-3 px-4 text-sm">
         <div class="flex flex-wrap gap-1">
             {% for tag in submission.tags.all %}
-                <span class="inline-flex rounded-full bg-green-800 px-2 py-0.5 text-xs">{{ tag.name }}</span>
+                <span class="inline-flex py-0.5 px-2 text-xs bg-green-800 rounded-full">{{ tag.name }}</span>
             {% endfor %}
         </div>
     </td>
-    <td class="px-4 py-3 text-center text-sm whitespace-nowrap">
+    <td class="py-3 px-4 text-sm text-center whitespace-nowrap">
         {% if submission.has_grant_applicant %}
             <span title="At least one speaker has applied for a grant"
-                  class="inline-flex rounded-full bg-yellow-700 px-2 py-1 text-xs text-yellow-100">
+                  class="inline-flex py-1 px-2 text-xs text-yellow-100 bg-yellow-700 rounded-full">
                 $
             </span>
         {% else %}
             <span class="text-gray-500">-</span>
         {% endif %}
     </td>
-    <td class="px-4 py-3 text-center text-sm whitespace-nowrap">
+    <td class="py-3 px-4 text-sm text-center whitespace-nowrap">
         <span class="inline-flex py-1 px-2 text-xs rounded-full {% if submission.pretalx_state == 'withdrawn' %}bg-gray-700 text-gray-300{% elif submission.pretalx_state == 'accepted' %}bg-green-800 text-green-200{% elif submission.pretalx_state == 'rejected' %}bg-red-800 text-red-200{% elif submission.pretalx_state == 'confirmed' %}bg-blue-800 text-blue-200{% else %}bg-gray-600 text-gray-200{% endif %}">
             {{ submission.get_pretalx_state_display }}
         </span>
     </td>
-    <td class="px-4 py-3 text-center text-sm whitespace-nowrap">
+    <td class="py-3 px-4 text-sm text-center whitespace-nowrap">
         <select name="state"
-                class="rounded border border-gray-300 px-1 py-1 text-xs text-gray-900"
+                class="py-1 px-1 text-xs text-gray-900 rounded border border-gray-300"
                 hx-post="{% url 'thunderdome_submission_set_state' submission.pk %}"
                 hx-target="#submission-{{ submission.pk }}"
                 hx-swap="outerHTML"
