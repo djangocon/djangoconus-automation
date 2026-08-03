@@ -18,7 +18,7 @@ from django_q.tasks import async_task
 from rich import print
 
 from emailoctopus.models import Campaign
-from titowebhooks.models import TitoHistoricalEvent, TitoWebhookEvent
+from titowebhooks.models import TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
 from titowebhooks.sales_curve import sales_curves
 from volunteers.models import VolunteerSignup
 
@@ -490,10 +490,40 @@ def _discount_breakdown(event_slug: str) -> dict:
     }
 
 
+def _annotate_event_totals(events: list[TitoHistoricalEvent]) -> None:
+    """Hang discount and net-revenue totals off each event, in place.
+
+    "Raised" on this page is face value - list price times count, straight from
+    Ti.to's release counts. Subtracting what the discount codes gave away turns it
+    into money we actually took in. Years with no per-ticket detail get None rather
+    than a zero, since "no discounts synced" and "no discounts given" look identical
+    at a glance and only one of them is good news.
+    """
+    totals: dict[int, dict] = {}
+    rows = TitoTicket.objects.filter(voided=False).values_list("year", "release_price", "price")
+
+    for year, release_price, price in rows:
+        entry = totals.setdefault(year, {"discount": 0.0, "paid": 0.0, "count": 0})
+        entry["discount"] += (release_price or 0.0) - (price or 0.0)
+        entry["paid"] += price or 0.0
+        entry["count"] += 1
+
+    for event in events:
+        entry = totals.get(event.year)
+        event.has_ticket_detail = entry is not None
+        event.discount_total = entry["discount"] if entry else None
+        event.net_total = (event.total_revenue - entry["discount"]) if entry else None
+        event.discounted_ticket_count = entry["count"] if entry else 0
+        # Discounts computed off a partial sync understate the giveaway, which quietly
+        # overstates the net. Flag it so the number isn't read as final.
+        event.totals_partial = bool(entry) and entry["count"] < (event.total_sold or 0)
+
+
 @superuser_required
 def tito_sales_dashboard_view(request: HttpRequest) -> HttpResponse:
-    events = TitoHistoricalEvent.objects.all()  # ordered by -year via Meta
-    never_synced = not events.exists()
+    events = list(TitoHistoricalEvent.objects.all())  # ordered by -year via Meta
+    never_synced = not events
+    _annotate_event_totals(events)
 
     context = {
         "events": events,
