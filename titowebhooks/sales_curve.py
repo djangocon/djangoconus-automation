@@ -11,6 +11,14 @@ from titowebhooks.models import TitoHistoricalEvent, TitoTicket
 # Days before the conference start date, furthest out first.
 CHECKPOINTS = [365, 330, 300, 270, 240, 210, 180, 150, 120, 90, 60, 30, 21, 14, 7, 3, 0]
 
+# 2021 was the COVID year - the sales pattern says nothing useful about a normal
+# season, so it would only distort a year-over-year read.
+EXCLUDED_YEARS = {2021}
+
+# A year whose synced tickets fall this far short of its snapshot total is only
+# partially covered, so its curve sits below where that season really was.
+COVERAGE_THRESHOLD = 0.95
+
 # Distinct enough to tell apart on a dark background, oldest year to newest.
 SERIES_COLORS = [
     "#f87171",
@@ -71,6 +79,16 @@ def _series_for_event(event: TitoHistoricalEvent) -> dict | None:
 
     ticket_counts, revenue = _cumulative_at_checkpoints(days_out_values)
 
+    # How much of the season we actually hold. The snapshot totals come straight from
+    # Ti.to's release counts, so a shortfall means tickets we never synced - and a
+    # curve that sits low for reasons that have nothing to do with how sales went.
+    snapshot_sold = event.total_sold or 0
+    synced = len(days_out_values)
+    coverage = (synced / snapshot_sold) if snapshot_sold else None
+    sources = sorted(
+        TitoTicket.objects.filter(year=event.year, voided=False).values_list("source", flat=True).distinct()
+    )
+
     return {
         "year": event.year,
         "title": event.title,
@@ -80,6 +98,12 @@ def _series_for_event(event: TitoHistoricalEvent) -> dict | None:
         "revenue": revenue,
         "final_tickets": ticket_counts[-1],
         "final_revenue": revenue[-1],
+        "synced_tickets": synced,
+        "snapshot_sold": snapshot_sold,
+        "coverage": coverage,
+        "coverage_percent": round(coverage * 100) if coverage is not None else None,
+        "partial": coverage is not None and coverage < COVERAGE_THRESHOLD,
+        "sources": sources,
     }
 
 
@@ -116,8 +140,7 @@ def _chart(series: list[dict], key: str, width: float = 720, height: float = 260
     ]
 
     gridlines = [
-        {"y": height - (height * fraction), "value": axis_max * fraction}
-        for fraction in (0, 0.25, 0.5, 0.75, 1.0)
+        {"y": height - (height * fraction), "value": axis_max * fraction} for fraction in (0, 0.25, 0.5, 0.75, 1.0)
     ]
 
     x_step = width / (len(CHECKPOINTS) - 1) if len(CHECKPOINTS) > 1 else width
@@ -140,19 +163,25 @@ def _chart(series: list[dict], key: str, width: float = 720, height: float = 260
 
 def sales_curves() -> dict:
     """Days-out ticket and revenue curves for every year we can chart."""
-    events = TitoHistoricalEvent.objects.all().order_by("year")
+    events = list(TitoHistoricalEvent.objects.all().order_by("year"))
+    chartable = [e for e in events if e.year not in EXCLUDED_YEARS]
 
-    series = [s for s in (_series_for_event(e) for e in events) if s]
+    series = [s for s in (_series_for_event(e) for e in chartable) if s]
     for index, s in enumerate(series):
         s["color"] = SERIES_COLORS[index % len(SERIES_COLORS)]
 
     # Skipped years are worth naming - an empty chart otherwise looks like a bug.
     charted_years = {s["year"] for s in series}
-    missing = [
-        {"year": e.year, "reason": "no start date" if not e.start_date else "no ticket detail synced"}
-        for e in events
-        if e.year not in charted_years
-    ]
+
+    def _reason(event):
+        if event.year in EXCLUDED_YEARS:
+            return "excluded, COVID year"
+        if not event.start_date:
+            return "no start date"
+        return "no ticket detail synced"
+
+    missing = [{"year": e.year, "reason": _reason(e)} for e in events if e.year not in charted_years]
+    partial = [s for s in series if s["partial"]]
 
     return {
         "has_data": bool(series),
@@ -162,6 +191,10 @@ def sales_curves() -> dict:
         "columns": [{"year": s["year"], "color": s["color"]} for s in series],
         "checkpoint_labels": CHECKPOINT_LABELS,
         "checkpoints": CHECKPOINTS,
+        # Any year charted off incomplete data makes the comparison misleading, so
+        # say so on the page rather than letting a low curve read as slow sales.
+        "partial": sorted(partial, key=lambda s: -s["year"]),
+        "excluded_years": sorted(EXCLUDED_YEARS),
         "charts": (
             [
                 {"title": "Tickets sold", "is_money": False, **_chart(series, "tickets")},
@@ -175,9 +208,7 @@ def sales_curves() -> dict:
             {
                 "label": label,
                 "days_out": CHECKPOINTS[i],
-                "cells": [
-                    {"year": s["year"], "tickets": s["tickets"][i], "revenue": s["revenue"][i]} for s in series
-                ],
+                "cells": [{"year": s["year"], "tickets": s["tickets"][i], "revenue": s["revenue"][i]} for s in series],
             }
             for i, label in enumerate(CHECKPOINT_LABELS)
         ],

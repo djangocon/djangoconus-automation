@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket
-from titowebhooks.sales_curve import CHECKPOINTS, sales_curves
+from titowebhooks.sales_curve import CHECKPOINTS, EXCLUDED_YEARS, sales_curves
 
 User = get_user_model()
 
@@ -192,6 +192,100 @@ def test_table_rows_line_up_with_the_checkpoints():
     assert len(curves["table_rows"]) == len(CHECKPOINTS)
     assert curves["table_rows"][-1]["label"] == "Event"
     assert curves["table_rows"][-1]["cells"] == [{"year": 2026, "tickets": 1, "revenue": 100.0}]
+
+
+@pytest.mark.django_db
+def test_covid_year_is_excluded_but_named():
+    assert 2021 in EXCLUDED_YEARS
+
+    make_event(year=2026)
+    make_ticket("new", days_out=30)
+    make_event(year=2021, start_date=datetime.date(2021, 9, 22), is_current=False)
+    make_ticket("covid", year=2021, created_at=datetime.datetime(2021, 8, 23, tzinfo=datetime.timezone.utc))
+
+    curves = sales_curves()
+
+    assert [s["year"] for s in curves["series"]] == [2026]
+    assert {"year": 2021, "reason": "excluded, COVID year"} in curves["missing"]
+    assert curves["excluded_years"] == [2021]
+
+
+@pytest.mark.django_db
+def test_excluded_year_does_not_consume_a_series_color():
+    make_event(year=2021, start_date=datetime.date(2021, 9, 22), is_current=False)
+    make_ticket("covid", year=2021, created_at=datetime.datetime(2021, 8, 23, tzinfo=datetime.timezone.utc))
+    make_event(year=2026)
+    make_ticket("new", days_out=30)
+
+    assert sales_curves()["series"][0]["color"] == "#f87171"  # the first color, not the second
+
+
+@pytest.mark.django_db
+def test_coverage_compares_synced_tickets_against_the_snapshot_total():
+    make_event(releases=[{"tickets_count": 10, "price": "100.0"}])
+    for i in range(10):
+        make_ticket(f"t{i}", days_out=30)
+
+    series = sales_curves()["series"][0]
+
+    assert series["synced_tickets"] == 10
+    assert series["snapshot_sold"] == 10
+    assert series["coverage_percent"] == 100
+    assert series["partial"] is False
+    assert sales_curves()["partial"] == []
+
+
+@pytest.mark.django_db
+def test_partially_synced_year_is_flagged():
+    make_event(releases=[{"tickets_count": 100, "price": "100.0"}])
+    for i in range(40):
+        make_ticket(f"t{i}", days_out=30)
+
+    curves = sales_curves()
+    series = curves["series"][0]
+
+    assert series["coverage_percent"] == 40
+    assert series["partial"] is True
+    assert [s["year"] for s in curves["partial"]] == [2026]
+
+
+@pytest.mark.django_db
+def test_year_without_a_snapshot_total_is_not_flagged_as_partial():
+    make_event()  # no releases, so there's nothing to compare against
+    make_ticket("a", days_out=30)
+
+    series = sales_curves()["series"][0]
+
+    assert series["coverage"] is None
+    assert series["partial"] is False
+
+
+@pytest.mark.django_db
+def test_revenue_is_discount_aware_for_every_year_not_just_the_current_one():
+    make_event(year=2026)
+    make_event(year=2024, start_date=datetime.date(2024, 9, 22), is_current=False)
+    make_ticket("now-comp", year=2026, days_out=30, price=0.0)
+    make_ticket("now-paid", year=2026, days_out=30, price=500.0)
+    old = datetime.datetime(2024, 8, 23, tzinfo=datetime.timezone.utc)
+    make_ticket("then-comp", year=2024, price=0.0, created_at=old)
+    make_ticket("then-paid", year=2024, price=400.0, created_at=old)
+
+    by_year = {s["year"]: s for s in sales_curves()["series"]}
+
+    assert by_year[2026]["final_revenue"] == 500.0
+    assert by_year[2024]["final_revenue"] == 400.0
+
+
+@pytest.mark.django_db
+def test_dashboard_warns_when_a_year_is_only_partly_synced(client):
+    user = User.objects.create_superuser(username="root2", email="r2@example.com", password="pw12345!")
+    client.force_login(user)
+    make_event(releases=[{"tickets_count": 100, "price": "100.0"}])
+    make_ticket("a", days_out=30)
+
+    response = client.get(URL)
+
+    assert "Not an even comparison yet" in response.content.decode()
 
 
 @pytest.mark.django_db

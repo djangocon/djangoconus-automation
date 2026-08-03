@@ -44,8 +44,22 @@
             <h2 class="mb-3 text-xl font-semibold">Sales pace by year</h2>
             <p class="mb-3 text-sm text-gray-400">
                 Cumulative sales at each point before the conference, so you can compare seasons at the same distance out.
-                Left edge is a year out, right edge is day one.
+                Left edge is a year out, right edge is day one. Revenue is what attendees actually paid, after discount
+                codes and comps, for every year shown.
             </p>
+
+            {% if curves.partial %}
+                <div class="p-4 mb-4 bg-yellow-900 bg-opacity-40 rounded-lg border border-yellow-700">
+                    <p class="text-sm text-yellow-200">
+                        <strong>Not an even comparison yet.</strong>
+                        {% for s in curves.partial %}
+                            {{ s.year }} has {{ s.synced_tickets }} of {{ s.snapshot_sold }} tickets synced ({{ s.coverage_percent }}%){% if not forloop.last %};{% endif %}
+                        {% endfor %}.
+                        Those curves sit lower than the season really was. Run <strong>Sync ticket history</strong> to fill
+                        them in before reading anything into the gaps.
+                    </p>
+                </div>
+            {% endif %}
 
             <div class="grid grid-cols-1 gap-4 mb-3 lg:grid-cols-2">
                 {% for chart in curves.charts %}
@@ -106,6 +120,12 @@
                         <span class="font-mono text-xs text-gray-500">
                             {{ s.final_tickets }} &middot; ${{ s.final_revenue|floatformat:"0g" }}
                         </span>
+                        {% if s.partial %}
+                            <span class="font-mono text-xs text-yellow-500"
+                                  title="Only {{ s.synced_tickets }} of {{ s.snapshot_sold }} tickets synced, so this curve reads low">
+                                {{ s.coverage_percent }}% synced
+                            </span>
+                        {% endif %}
                     </span>
                 {% endfor %}
             </div>
