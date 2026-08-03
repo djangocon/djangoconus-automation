@@ -490,81 +490,44 @@ def _discount_breakdown(event_slug: str) -> dict:
     }
 
 
-def _release_price_map(event: TitoHistoricalEvent) -> dict[int, float]:
-    """Release id -> list price, for the releases that have one.
-
-    Plenty of releases (comps, sponsor allocations) carry no price at all, so this
-    map is deliberately sparse - a missing id means "we don't know the face value",
-    which is different from "it was free".
-    """
-    prices = {}
-    for release in event.releases or []:
-        release_id = release.get("id")
-        price = release.get("price")
-        if release_id is None or price is None:
-            continue
-        try:
-            prices[int(release_id)] = float(price)
-        except (TypeError, ValueError):
-            continue
-    return prices
-
-
 def _annotate_event_totals(events: list[TitoHistoricalEvent]) -> None:
-    """Hang collected-revenue and discount totals off each event, in place.
+    """Hang revenue and discount totals off each event, in place.
 
-    Total is the sum of what attendees actually paid, straight from the ticket rows.
-    It is deliberately not "Raised minus Discounts": Raised is face value derived from
-    release list prices, and a good number of releases have no price set, so that
-    subtraction drifts from reality.
+    Revenue is what attendees actually paid, summed from the ticket rows. Discounts
+    are the gap between that and Raised, so the three figures reconcile on sight:
+    Raised minus Discounts is Revenue.
 
-    Discounts compare each ticket against its own release's list price, and only for
-    the tickets whose release has one. Years with no per-ticket detail get None rather
-    than a zero, since "nothing synced" and "nothing given away" look identical at a
-    glance and only one of them is good news.
+    Years with no per-ticket detail get None rather than a zero, since "nothing
+    synced" and "nothing given away" look identical at a glance and only one of them
+    is good news.
     """
-    per_year: dict[int, list] = {}
-    rows = TitoTicket.objects.filter(voided=False).values_list("year", "release_id", "release_price", "price")
-    for year, release_id, release_price, price in rows:
-        per_year.setdefault(year, []).append((release_id, release_price or 0.0, price or 0.0))
+    revenue_by_year: dict[int, float] = {}
+    counts: dict[int, int] = {}
+
+    for year, price in TitoTicket.objects.filter(voided=False).values_list("year", "price"):
+        revenue_by_year[year] = revenue_by_year.get(year, 0.0) + (price or 0.0)
+        counts[year] = counts.get(year, 0) + 1
 
     for event in events:
-        tickets = per_year.get(event.year)
-        event.has_ticket_detail = bool(tickets)
+        revenue = revenue_by_year.get(event.year)
+        event.has_ticket_detail = revenue is not None
 
-        if not tickets:
-            event.collected_total = None
+        if revenue is None:
+            event.revenue_total = None
             event.discount_total = None
-            event.discounted_ticket_count = 0
-            event.priced_ticket_count = 0
+            event.ticket_detail_count = 0
             event.totals_partial = False
-            event.discounts_incomplete = False
+            event.face_value_understated = False
             continue
 
-        prices = _release_price_map(event)
-        collected = 0.0
-        discount = 0.0
-        priced = 0
-
-        for release_id, ticket_release_price, price in tickets:
-            collected += price
-            # The ticket's own release_price when the webhook gave us one, otherwise
-            # the release's list price. The /tickets API sends neither for some rows.
-            face = ticket_release_price or prices.get(release_id)
-            if face:
-                priced += 1
-                # Cash value given away. A ticket sold at or above list isn't a
-                # negative discount, so it contributes nothing rather than netting off.
-                discount += max(face - price, 0.0)
-
-        event.collected_total = collected
-        event.discount_total = discount
-        event.discounted_ticket_count = len(tickets)
-        event.priced_ticket_count = priced
-        # A partial sync understates both numbers; unpriced releases understate only
-        # the discount. Either way the figures aren't final, so say so.
-        event.totals_partial = len(tickets) < (event.total_sold or 0)
-        event.discounts_incomplete = priced < len(tickets)
+        event.revenue_total = revenue
+        event.ticket_detail_count = counts[event.year]
+        # Raised only counts releases that have a list price set. Comps and sponsor
+        # allocations sell for real money against no list price, so a year can take in
+        # more than its face value - which is not a discount, negative or otherwise.
+        event.discount_total = max(event.total_revenue - revenue, 0.0)
+        event.face_value_understated = revenue > event.total_revenue
+        event.totals_partial = counts[event.year] < (event.total_sold or 0)
 
 
 @superuser_required
