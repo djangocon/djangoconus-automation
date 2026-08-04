@@ -63,54 +63,65 @@
 
             <div class="grid grid-cols-1 gap-4 mb-3 lg:grid-cols-2">
                 {% for chart in curves.charts %}
-                    <div class="p-4 bg-green-800 bg-opacity-30 rounded-lg">
-                        <h3 class="mb-2 text-sm font-semibold tracking-wider text-gray-400 uppercase">{{ chart.title }}</h3>
-                        <svg viewBox="0 -14 {{ chart.width|add:56 }} {{ chart.height|add:44 }}"
-                             class="w-full"
-                             role="img"
-                             aria-label="{{ chart.title }} by days out, one line per year">
-                            <g transform="translate(48, 0)">
-                                {% for line in chart.gridlines %}
-                                    <line x1="0"
-                                          y1="{{ line.y|floatformat:1 }}"
-                                          x2="{{ chart.width }}"
-                                          y2="{{ line.y|floatformat:1 }}"
-                                          stroke="#14532d"
-                                          stroke-width="1" />
-                                    <text x="-8"
-                                          y="{{ line.y|floatformat:1 }}"
-                                          dy="4"
-                                          text-anchor="end"
-                                          fill="#6b7280"
-                                          font-size="11"
-                                          font-family="monospace">
-                                        {% if chart.is_money %}${% endif %}{{ line.value|floatformat:"0g" }}
-                                    </text>
-                                {% endfor %}
-
-                                {% for label in chart.x_labels %}
-                                    <text x="{{ label.x|floatformat:1 }}"
-                                          y="{{ chart.height|add:18 }}"
-                                          text-anchor="middle"
-                                          fill="#6b7280"
-                                          font-size="11"
-                                          font-family="monospace">{{ label.label }}</text>
-                                {% endfor %}
-
-                                {% for line in chart.lines %}
-                                    <polyline points="{{ line.points }}"
-                                              fill="none"
-                                              stroke="{{ line.color }}"
-                                              stroke-width="{% if line.is_current %}3{% else %}2{% endif %}"
-                                              stroke-linejoin="round"
-                                              stroke-linecap="round"
-                                              opacity="{% if line.is_current %}1{% else %}0.75{% endif %}" />
-                                {% endfor %}
-                            </g>
-                        </svg>
-                    </div>
+                    <figure class="p-4 bg-green-800 bg-opacity-30 rounded-lg cursor-zoom-in group"
+                            data-chart
+                            tabindex="0"
+                            role="button"
+                            aria-label="Enlarge the {{ chart.title }} chart">
+                        <figcaption class="flex justify-between items-center mb-2">
+                            <h3 class="text-sm font-semibold tracking-wider text-gray-400 uppercase">{{ chart.title }}</h3>
+                            <span class="text-xs text-gray-500 opacity-0 transition-opacity group-hover:opacity-100">click to enlarge</span>
+                        </figcaption>
+                        {% include "titowebhooks/_sales_chart.html" with chart=chart %}
+                    </figure>
                 {% endfor %}
             </div>
+
+            <dialog id="chart-modal"
+                    class="p-0 w-11/12 max-w-6xl text-white bg-transparent backdrop:bg-black backdrop:bg-opacity-70">
+                <div class="p-6 bg-green-900 rounded-lg border border-green-700 shadow-2xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-semibold" data-modal-title></h3>
+                        <button type="button"
+                                class="py-1 px-3 text-sm text-gray-300 rounded hover:text-white hover:bg-green-800"
+                                data-modal-close>Close</button>
+                    </div>
+                    <div data-modal-body></div>
+                    <p class="mt-3 text-xs text-gray-500">Hover any point for the exact figure at that distance out.</p>
+                </div>
+            </dialog>
+
+            <script>
+                (function () {
+                    const modal = document.getElementById("chart-modal");
+                    if (!modal) return;
+                    const body = modal.querySelector("[data-modal-body]");
+                    const title = modal.querySelector("[data-modal-title]");
+
+                    function open(card) {
+                        // The chart is plain scalable SVG, so a copy fills the wider modal for free.
+                        body.innerHTML = card.querySelector("svg").outerHTML;
+                        title.textContent = card.querySelector("h3").textContent;
+                        modal.showModal();
+                    }
+
+                    document.querySelectorAll("[data-chart]").forEach(function (card) {
+                        card.addEventListener("click", function () { open(card); });
+                        card.addEventListener("keydown", function (event) {
+                            if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                open(card);
+                            }
+                        });
+                    });
+
+                    modal.querySelector("[data-modal-close]").addEventListener("click", function () { modal.close(); });
+                    // Clicking the backdrop lands on the dialog itself, not its contents.
+                    modal.addEventListener("click", function (event) {
+                        if (event.target === modal) modal.close();
+                    });
+                })();
+            </script>
 
             <div class="flex flex-wrap gap-y-2 gap-x-4 mb-3 text-sm">
                 {% for s in curves.series %}

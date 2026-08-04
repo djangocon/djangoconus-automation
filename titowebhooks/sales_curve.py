@@ -6,6 +6,8 @@ spacing is deliberately uneven - roughly monthly while sales are slow, tightenin
 to weeks and then days as the conference approaches, which is when the curve moves.
 """
 
+import math
+
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket
 
 # Days before the conference start date, furthest out first.
@@ -122,28 +124,90 @@ def _polyline(values: list[float], max_value: float, width: float, height: float
     return " ".join(f"{i * step:.1f},{height - (v * scale):.1f}" for i, v in enumerate(values))
 
 
-def _chart(series: list[dict], key: str, width: float = 720, height: float = 260) -> dict:
+def _format_value(value: float, is_money: bool) -> str:
+    """Exact value for hover readouts - no rounding, this is the number you came for."""
+    if is_money:
+        return f"${value:,.0f}"
+    return f"{value:,.0f} ticket{'' if value == 1 else 's'}"
+
+
+def _axis_step(rough_step: float) -> float:
+    """Round a step up to the nearest 1, 2, 2.5 or 5 times a power of ten.
+
+    Scaling the data max directly gives ticks like 75,600 and 226,800, which are
+    unreadable at a glance. Snapping the step to a round number gives 80k / 160k /
+    240k instead, at the cost of a little headroom above the top line.
+    """
+    if rough_step <= 0:
+        return 1.0
+
+    magnitude = 10 ** math.floor(math.log10(rough_step))
+    for multiple in (1, 2, 2.5, 5, 10):
+        if rough_step <= multiple * magnitude:
+            return multiple * magnitude
+    return 10 * magnitude
+
+
+def _format_axis(value: float, is_money: bool) -> str:
+    """Compact tick label: 0, 240, 24k, 1.2M - with a $ when it's money.
+
+    Ticket counts stay written out for longer than dollars do: an axis reading
+    750 / 1k looks like two different units, where 750 / 1,000 plainly doesn't.
+    """
+    prefix = "$" if is_money else ""
+    abbreviate_from = 1_000 if is_money else 10_000
+
+    for divisor, suffix in ((1_000_000, "M"), (1_000, "k")):
+        if abs(value) >= max(divisor, abbreviate_from):
+            scaled = value / divisor
+            # One decimal only when it carries information: 1.2M, but 24k not 24.0k.
+            text = f"{scaled:.1f}".rstrip("0").rstrip(".")
+            return f"{prefix}{text}{suffix}"
+
+    return f"{prefix}{value:,.0f}"
+
+
+def _chart(series: list[dict], key: str, is_money: bool, width: float = 720, height: float = 260) -> dict:
     """Build everything the template needs to draw one chart."""
     max_value = max((max(s[key]) for s in series), default=0)
-    # Round the axis up so the top line isn't flush against the ceiling.
-    axis_max = max_value * 1.05 if max_value else 1
 
-    lines = [
-        {
-            "year": s["year"],
-            "color": s["color"],
-            "is_current": s["is_current"],
-            "points": _polyline(s[key], axis_max, width, height),
-            "final": s[key][-1],
-        }
-        for s in series
-    ]
-
-    gridlines = [
-        {"y": height - (height * fraction), "value": axis_max * fraction} for fraction in (0, 0.25, 0.5, 0.75, 1.0)
-    ]
+    tick_count = 4
+    step = _axis_step((max_value or 1) / tick_count)
+    # Grow the axis to a whole number of steps so the top tick is round and the
+    # highest point still sits inside the plot.
+    axis_max = step * max(tick_count, math.ceil((max_value or 1) / step))
+    ticks = [step * i for i in range(int(round(axis_max / step)) + 1)]
 
     x_step = width / (len(CHECKPOINTS) - 1) if len(CHECKPOINTS) > 1 else width
+
+    lines = []
+    for s in series:
+        values = s[key]
+        points = [
+            {
+                "x": i * x_step,
+                "y": height - (v * height / axis_max if axis_max else 0),
+                "value": v,
+                "label": f"{s['year']} · {CHECKPOINT_LABELS[i]} · {_format_value(v, is_money)}",
+            }
+            for i, v in enumerate(values)
+        ]
+        lines.append(
+            {
+                "year": s["year"],
+                "color": s["color"],
+                "is_current": s["is_current"],
+                "points": " ".join(f"{p['x']:.1f},{p['y']:.1f}" for p in points),
+                "markers": points,
+                "final": values[-1],
+            }
+        )
+
+    gridlines = [
+        {"y": height - (tick * height / axis_max if axis_max else 0), "label": _format_axis(tick, is_money)}
+        for tick in ticks
+    ]
+
     x_labels = [
         {"x": i * x_step, "label": label}
         for i, label in enumerate(CHECKPOINT_LABELS)
@@ -158,6 +222,7 @@ def _chart(series: list[dict], key: str, width: float = 720, height: float = 260
         "gridlines": gridlines,
         "x_labels": x_labels,
         "max_value": max_value,
+        "axis_max": axis_max,
     }
 
 
@@ -197,8 +262,8 @@ def sales_curves() -> dict:
         "excluded_years": sorted(EXCLUDED_YEARS),
         "charts": (
             [
-                {"title": "Tickets sold", "is_money": False, **_chart(series, "tickets")},
-                {"title": "Revenue", "is_money": True, **_chart(series, "revenue")},
+                {"title": "Tickets sold", "is_money": False, "slug": "tickets", **_chart(series, "tickets", False)},
+                {"title": "Revenue", "is_money": True, "slug": "revenue", **_chart(series, "revenue", True)},
             ]
             if series
             else []

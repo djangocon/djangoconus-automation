@@ -1,0 +1,53 @@
+{% comment %}
+One days-out chart. Kept in its own file so the modal can reuse the same markup by
+copying the rendered SVG - there is no second rendering path to drift out of sync.
+{% endcomment %}
+<svg viewBox="0 -14 {{ chart.width|add:64 }} {{ chart.height|add:44 }}"
+     class="w-full"
+     role="img"
+     aria-label="{{ chart.title }} by days out, one line per year">
+    <g transform="translate(56, 0)">
+        {% for line in chart.gridlines %}
+            <line x1="0"
+                  y1="{{ line.y|floatformat:1 }}"
+                  x2="{{ chart.width }}"
+                  y2="{{ line.y|floatformat:1 }}"
+                  stroke="#14532d"
+                  stroke-width="1" />
+            <text x="-10" y="{{ line.y|floatformat:1 }}" dy="4" text-anchor="end" fill="#9ca3af" font-size="11" font-family="monospace">{{ line.label }}</text>
+        {% endfor %}
+
+        {% for label in chart.x_labels %}
+            <text x="{{ label.x|floatformat:1 }}" y="{{ chart.height|add:18 }}" text-anchor="middle" fill="#9ca3af" font-size="11" font-family="monospace">{{ label.label }}</text>
+        {% endfor %}
+
+        {% for line in chart.lines %}
+            <polyline points="{{ line.points }}"
+                      fill="none"
+                      stroke="{{ line.color }}"
+                      stroke-width="{% if line.is_current %}3{% else %}2{% endif %}"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      opacity="{% if line.is_current %}1{% else %}0.75{% endif %}" />
+        {% endfor %}
+
+        {% for line in chart.lines %}
+            {% for marker in line.markers %}
+                <g class="chart-point">
+                    <circle cx="{{ marker.x|floatformat:1 }}"
+                            cy="{{ marker.y|floatformat:1 }}"
+                            r="2.5"
+                            fill="{{ line.color }}"
+                            opacity="0.85" />
+                    {# Generous invisible target so the exact figure is easy to hover. #}
+                    <circle cx="{{ marker.x|floatformat:1 }}"
+                            cy="{{ marker.y|floatformat:1 }}"
+                            r="11"
+                            fill="transparent">
+                        <title>{{ marker.label }}</title>
+                    </circle>
+                </g>
+            {% endfor %}
+        {% endfor %}
+    </g>
+</svg>

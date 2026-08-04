@@ -289,6 +289,77 @@ def test_dashboard_warns_when_a_year_is_only_partly_synced(client):
 
 
 @pytest.mark.django_db
+def test_axis_ticks_are_round_ascending_and_cover_the_data():
+    make_event()
+    for i in range(37):  # an awkward max that used to give ticks like 9.7
+        make_ticket(f"t{i}", days_out=30, price=1000.0)
+
+    chart = sales_curves()["charts"][1]  # revenue
+
+    assert chart["max_value"] == 37000
+    assert chart["axis_max"] >= 37000  # the top line fits inside the plot
+    assert chart["axis_max"] % 10000 == 0  # and lands on a round number
+    # Rendered top to bottom, so y descends while the values climb.
+    assert [g["y"] for g in chart["gridlines"]] == sorted([g["y"] for g in chart["gridlines"]], reverse=True)
+    assert [g["label"] for g in chart["gridlines"]] == ["$0", "$10k", "$20k", "$30k", "$40k"]
+
+
+@pytest.mark.django_db
+def test_ticket_axis_is_not_formatted_as_money():
+    make_event()
+    for i in range(12):
+        make_ticket(f"t{i}", days_out=30)
+
+    labels = [g["label"] for g in sales_curves()["charts"][0]["gridlines"]]
+
+    assert labels[0] == "0"
+    assert not any("$" in label for label in labels)
+
+
+@pytest.mark.django_db
+def test_every_point_carries_a_hover_label():
+    make_event()
+    make_ticket("a", days_out=30, price=250.0)
+
+    revenue_line = sales_curves()["charts"][1]["lines"][0]
+
+    assert len(revenue_line["markers"]) == len(CHECKPOINTS)
+    assert revenue_line["markers"][-1]["label"] == "2026 · Event · $250"
+    tickets_line = sales_curves()["charts"][0]["lines"][0]
+    assert tickets_line["markers"][-1]["label"] == "2026 · Event · 1 ticket"
+
+
+@pytest.mark.django_db
+def test_markers_line_up_with_the_polyline():
+    make_event()
+    make_ticket("a", days_out=200)
+    make_ticket("b", days_out=5)
+
+    line = sales_curves()["charts"][0]["lines"][0]
+    drawn = [tuple(p.split(",")) for p in line["points"].split(" ")]
+
+    assert len(drawn) == len(line["markers"])
+    for (x, y), marker in zip(drawn, line["markers"], strict=True):
+        assert float(x) == pytest.approx(marker["x"], abs=0.05)
+        assert float(y) == pytest.approx(marker["y"], abs=0.05)
+
+
+@pytest.mark.django_db
+def test_dashboard_renders_hover_targets_and_the_expand_modal(client):
+    user = User.objects.create_superuser(username="root3", email="r3@example.com", password="pw12345!")
+    client.force_login(user)
+    make_event()
+    make_ticket("a", days_out=30, price=250.0)
+
+    body = client.get(URL).content.decode()
+
+    assert "<title>2026 · Event · $250</title>" in body
+    assert 'id="chart-modal"' in body
+    assert "data-chart" in body
+    assert "click to enlarge" in body
+
+
+@pytest.mark.django_db
 def test_dashboard_renders_the_chart(client):
     user = User.objects.create_user(
         username="root", email="root@example.com", password="pw12345!", is_staff=True, is_superuser=True
