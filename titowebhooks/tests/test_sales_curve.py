@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket
-from titowebhooks.sales_curve import CHECKPOINTS, EXCLUDED_YEARS, _is_addon, sales_curves
+from titowebhooks.sales_curve import CHART_WIDTH, CHECKPOINTS, EXCLUDED_YEARS, _is_addon, sales_curves
 
 User = get_user_model()
 
@@ -127,14 +127,14 @@ def test_sales_after_the_event_starts_clamp_to_day_zero():
 @pytest.mark.django_db
 def test_years_without_a_start_date_are_reported_as_missing():
     make_event(year=2026)
-    make_event(year=2019, start_date=None, is_current=False)
+    make_event(year=2020, start_date=None, is_current=False)
     make_ticket("a", days_out=30)
-    make_ticket("old", year=2019, created_at=datetime.datetime(2019, 1, 1, tzinfo=datetime.timezone.utc))
+    make_ticket("old", year=2020, created_at=datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc))
 
     curves = sales_curves()
 
     assert [s["year"] for s in curves["series"]] == [2026]
-    assert curves["missing"] == [{"year": 2019, "reason": "no start date"}]
+    assert curves["missing"] == [{"year": 2020, "reason": "no start date"}]
 
 
 @pytest.mark.django_db
@@ -290,19 +290,19 @@ def test_dashboard_warns_when_a_year_is_only_partly_synced(client):
 
 
 @pytest.mark.django_db
-def test_axis_ticks_are_round_ascending_and_cover_the_data():
+def test_ticket_axis_is_pinned_to_100s_up_to_550():
     make_event()
-    for i in range(37):  # an awkward max that used to give ticks like 9.7
-        make_ticket(f"t{i}", days_out=30, price=1000.0)
+    for i in range(37):
+        make_ticket(f"t{i}", days_out=30)
 
-    chart = sales_curves()["charts"][0]  # tickets, which still scales to its data
+    chart = sales_curves()["charts"][0]
 
-    assert chart["max_value"] == 37
-    assert chart["axis_max"] >= 37  # the top line fits inside the plot
-    assert chart["axis_max"] % 10 == 0  # and lands on a round number
+    assert chart["step"] == 100
+    assert chart["axis_max"] == 550
+    assert [g["label"] for g in chart["gridlines"]] == ["0", "100", "200", "300", "400", "500"]
     # Rendered top to bottom, so y descends while the values climb.
     assert [g["y"] for g in chart["gridlines"]] == sorted([g["y"] for g in chart["gridlines"]], reverse=True)
-    assert [g["label"] for g in chart["gridlines"]] == ["0", "10", "20", "30", "40"]
+    assert chart["clipped"] is False
 
 
 @pytest.mark.parametrize(
@@ -313,7 +313,8 @@ def test_axis_ticks_are_round_ascending_and_cover_the_data():
         ("Sprint (In Person)- Thursday", True),
         ("Sprints", True),
         ("Tutorial - Django Forms", True),
-        ("Tutorials", True),
+        ("Morning Tutorial: Hands-On Web Application Security", True),
+        ("Online Sprint - Friday (October 20)", True),
         ("SPRINT ONLINE", True),
         ("Opportunity Grant Ticket", False),
         # A donation is a line item, not a person in a seat.
@@ -374,56 +375,100 @@ def test_charts_say_which_tickets_they_count():
 
 
 @pytest.mark.django_db
-def test_revenue_axis_is_pinned_to_50k_steps_up_to_250k():
-    make_event()
-    make_ticket("a", days_out=30, price=1234.0)
+def test_2019_is_hidden_by_default_but_named():
+    make_event(year=2026)
+    make_ticket("new", days_out=30)
+    make_event(year=2019, start_date=datetime.date(2019, 9, 22), is_current=False)
+    make_ticket("old", year=2019, created_at=datetime.datetime(2019, 8, 23, tzinfo=datetime.timezone.utc))
 
-    chart = sales_curves()["charts"][1]
+    curves = sales_curves()
 
-    assert chart["step"] == 50_000
-    assert chart["axis_max"] == 250_000
-    assert [g["label"] for g in chart["gridlines"]] == ["$0", "$50k", "$100k", "$150k", "$200k", "$250k"]
-    assert chart["clipped"] is False
-
-
-@pytest.mark.django_db
-def test_revenue_axis_does_not_rescale_around_a_small_year():
-    make_event()
-    make_ticket("a", days_out=30, price=100.0)
-
-    # A $100 season must not stretch to fill the plot, or the shape lies.
-    chart = sales_curves()["charts"][1]
-
-    assert chart["axis_max"] == 250_000
-    bottom = chart["height"]
-    assert chart["lines"][0]["markers"][-1]["y"] == pytest.approx(bottom, abs=1)
+    assert [s["year"] for s in curves["series"]] == [2026]
+    assert curves["include_optional"] is False
+    assert curves["optional_years"] == [2019]
+    assert {"year": 2019, "reason": "hidden by default, it skews the comparison"} in curves["missing"]
 
 
 @pytest.mark.django_db
-def test_revenue_above_the_cap_is_drawn_at_the_top_and_flagged():
-    make_event()
-    make_ticket("huge", days_out=30, price=400_000.0)
+def test_2019_comes_back_when_asked_for():
+    make_event(year=2026)
+    make_ticket("new", days_out=30)
+    make_event(year=2019, start_date=datetime.date(2019, 9, 22), is_current=False)
+    make_ticket("old", year=2019, created_at=datetime.datetime(2019, 8, 23, tzinfo=datetime.timezone.utc))
 
-    chart = sales_curves()["charts"][1]
+    curves = sales_curves(include_optional=True)
 
-    assert chart["clipped"] is True
-    assert chart["max_value"] == 400_000
-    last = chart["lines"][0]["markers"][-1]
-    assert last["y"] == 0  # pinned to the ceiling, not drawn off the canvas
-    assert last["value"] == 400_000  # but the hover still reports the truth
-    assert last["value_label"] == "$400,000"
+    assert [s["year"] for s in curves["series"]] == [2026, 2019]
+    assert curves["include_optional"] is True
 
 
 @pytest.mark.django_db
-def test_ticket_axis_still_scales_to_its_data():
+def test_axes_grow_when_the_optional_year_is_shown():
     make_event()
-    for i in range(12):
-        make_ticket(f"t{i}", days_out=30)
+    make_ticket("a", days_out=30)
 
-    chart = sales_curves()["charts"][0]
+    default = sales_curves()
+    expanded = sales_curves(include_optional=True)
 
-    assert chart["axis_max"] == 20  # scaled to the data, not pinned like revenue
-    assert chart["clipped"] is False
+    assert default["charts"][0]["axis_max"] == 550
+    assert default["charts"][1]["axis_max"] == 200_000
+    assert expanded["charts"][0]["axis_max"] == 700
+    assert expanded["charts"][1]["axis_max"] == 250_000
+
+
+@pytest.mark.django_db
+def test_today_marker_sits_at_the_current_distance_out():
+    make_event()  # 2026 conference starts 2026-09-15
+    make_ticket("a", days_out=30)
+
+    curves = sales_curves(today=datetime.date(2026, 8, 16))  # 30 days out
+
+    marker = curves["today"]
+    assert marker["days_out"] == 30
+    assert marker["label"] == "today · 30 days out"
+    # The 30-day checkpoint is a real gridline, so the rule lands exactly on it.
+    x_step = curves["charts"][0]["width"] / (len(CHECKPOINTS) - 1)
+    assert marker["x"] == pytest.approx(CHECKPOINTS.index(30) * x_step)
+    assert curves["charts"][0]["today"] == marker
+    assert curves["charts"][1]["today"] == marker
+
+
+@pytest.mark.django_db
+def test_today_marker_interpolates_between_checkpoints():
+    make_event()
+    make_ticket("a", days_out=30)
+
+    # 25 days out falls between the 30 and 21 day checkpoints.
+    marker = sales_curves(today=datetime.date(2026, 8, 21))["today"]
+
+    x_step = CHART_WIDTH / (len(CHECKPOINTS) - 1)
+    low = CHECKPOINTS.index(30) * x_step
+    high = CHECKPOINTS.index(21) * x_step
+    assert low < marker["x"] < high
+
+
+@pytest.mark.django_db
+def test_today_marker_disappears_once_the_conference_has_started():
+    make_event()
+    make_ticket("a", days_out=30)
+
+    assert sales_curves(today=datetime.date(2026, 9, 16))["today"] is None
+
+
+@pytest.mark.django_db
+def test_today_marker_is_absent_more_than_a_year_out():
+    make_event()
+    make_ticket("a", days_out=30)
+
+    assert sales_curves(today=datetime.date(2025, 1, 1))["today"] is None
+
+
+@pytest.mark.django_db
+def test_today_marker_needs_a_current_event():
+    make_event(is_current=False)
+    make_ticket("a", days_out=30)
+
+    assert sales_curves(today=datetime.date(2026, 8, 16))["today"] is None
 
 
 @pytest.mark.django_db
@@ -493,6 +538,24 @@ def test_dashboard_renders_hover_targets_and_the_expand_modal(client):
     assert 'data-value="$250"' in body
     assert 'aria-label="2026 · Event · $250"' in body
     assert 'tabindex="0"' in body
+
+
+@pytest.mark.django_db
+def test_dashboard_toggles_the_optional_year_by_query_string(client):
+    user = User.objects.create_superuser(username="root4", email="r4@example.com", password="pw12345!")
+    client.force_login(user)
+    make_event(year=2026)
+    make_ticket("new", days_out=30)
+    make_event(year=2019, start_date=datetime.date(2019, 9, 22), is_current=False)
+    make_ticket("old", year=2019, created_at=datetime.datetime(2019, 8, 23, tzinfo=datetime.timezone.utc))
+
+    default = client.get(URL)
+    assert [s["year"] for s in default.context["curves"]["series"]] == [2026]
+    assert "Show 2019" in default.content.decode()
+
+    expanded = client.get(URL, {"show": "all"})
+    assert [s["year"] for s in expanded.context["curves"]["series"]] == [2026, 2019]
+    assert "Hide 2019" in expanded.content.decode()
 
 
 @pytest.mark.django_db

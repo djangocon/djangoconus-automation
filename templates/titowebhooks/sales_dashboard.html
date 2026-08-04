@@ -42,11 +42,19 @@
 
         {% if curves.has_data %}
             <h2 class="mb-3 text-xl font-semibold">Sales pace by year</h2>
-            <p class="mb-3 text-sm text-gray-400">
-                Cumulative sales at each point before the conference, so you can compare seasons at the same distance out.
-                Left edge is a year out, right edge is day one. Revenue is what attendees actually paid, after discount
-                codes and comps, for every year shown.
-            </p>
+            <div class="flex flex-wrap gap-3 justify-between items-start mb-3">
+                <p class="max-w-3xl text-sm text-gray-400">
+                    Cumulative sales at each point before the conference, so you can compare seasons at the same distance out.
+                    Left edge is a year out, right edge is day one. Revenue is what attendees actually paid, after discount
+                    codes and comps, for every year shown.
+                    {% if curves.today %}The dashed rule marks where this season sits today.{% endif %}
+                </p>
+                <a href="{% if curves.include_optional %}?{% else %}?show=all{% endif %}"
+                   class="py-1 px-3 text-xs whitespace-nowrap rounded-lg border transition-colors
+                          {% if curves.include_optional %}text-green-200 bg-green-700 border-green-600{% else %}text-gray-400 border-green-700 hover:text-gray-200 hover:bg-green-800{% endif %}">
+                    {% if curves.include_optional %}Hide {{ curves.optional_years|join:", " }}{% else %}Show {{ curves.optional_years|join:", " }}{% endif %}
+                </a>
+            </div>
 
             {% if curves.partial %}
                 <div class="p-4 mb-4 bg-yellow-900 bg-opacity-40 rounded-lg border border-yellow-700">

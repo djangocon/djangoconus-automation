@@ -8,6 +8,8 @@ to weeks and then days as the conference approaches, which is when the curve mov
 
 import math
 
+from django.utils import timezone
+
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket
 
 # Days before the conference start date, furthest out first.
@@ -21,10 +23,23 @@ EXCLUDED_YEARS = {2021}
 # partially covered, so its curve sits below where that season really was.
 COVERAGE_THRESHOLD = 0.95
 
-# The revenue axis is pinned rather than scaled to the data, so the chart keeps the
-# same shape season to season and a good year doesn't visually flatten the others.
+# 2019 ran far bigger than any season since, so it stretches both axes and flattens
+# the years anyone is actually comparing. Off by default, available on request.
+OPTIONAL_YEARS = {2019}
+
+# The axes are pinned rather than scaled to the data, so the charts keep the same
+# shape season to season and one big year doesn't visually flatten the others. The
+# revenue ceiling lifts when 2019 is shown, because it needs the room.
 REVENUE_AXIS_STEP = 50_000
-REVENUE_AXIS_MAX = 250_000
+REVENUE_AXIS_MAX = 200_000
+REVENUE_AXIS_MAX_WITH_OPTIONAL = 250_000
+
+CHART_WIDTH = 720
+CHART_HEIGHT = 260
+
+TICKETS_AXIS_STEP = 100
+TICKETS_AXIS_MAX = 550
+TICKETS_AXIS_MAX_WITH_OPTIONAL = 700
 
 # Releases matched by these keywords do not represent another attendee, so they are
 # left out of the head count. Their money still counts toward revenue.
@@ -79,6 +94,46 @@ def _cumulative_at_checkpoints(days_out_values: list[tuple[int, float]]) -> tupl
         revenue.append(sum(price for _, price, _ in sold))
 
     return tickets, revenue
+
+
+def _x_for_days_out(days_out: int, x_step: float) -> float | None:
+    """Where a given distance-out falls along the x axis, or None if off the chart.
+
+    The checkpoints are unevenly spaced, so this interpolates within whichever pair
+    the day lands between rather than scaling linearly across the whole range.
+    """
+    if days_out > CHECKPOINTS[0] or days_out < CHECKPOINTS[-1]:
+        return None
+
+    for i in range(len(CHECKPOINTS) - 1):
+        high, low = CHECKPOINTS[i], CHECKPOINTS[i + 1]
+        if high >= days_out >= low:
+            span = high - low
+            fraction = (high - days_out) / span if span else 0
+            return (i + fraction) * x_step
+
+    return None
+
+
+def _today_marker(events: list[TitoHistoricalEvent], x_step: float, today) -> dict | None:
+    """Vertical rule showing how far out the current season is right now.
+
+    Anchored to the current event, since that is the only season still in motion -
+    it tells you which part of the older curves you should be comparing against.
+    """
+    current = next((e for e in events if e.is_current and e.start_date), None)
+    if not current:
+        return None
+
+    days_out = (current.start_date - today).days
+    if days_out < 0:
+        return None  # the conference has already started; the whole chart is history
+
+    x = _x_for_days_out(days_out, x_step)
+    if x is None:
+        return None
+
+    return {"x": x, "days_out": days_out, "label": f"today · {_when_label(days_out)}"}
 
 
 def _is_addon(release_title: str) -> bool:
@@ -207,10 +262,11 @@ def _chart(
     series: list[dict],
     key: str,
     is_money: bool,
-    width: float = 720,
-    height: float = 260,
+    width: float = CHART_WIDTH,
+    height: float = CHART_HEIGHT,
     step: float | None = None,
     axis_max: float | None = None,
+    today_marker: dict | None = None,
 ) -> dict:
     """Build everything the template needs to draw one chart.
 
@@ -227,7 +283,10 @@ def _chart(
         # highest point still sits inside the plot.
         axis_max = step * max(tick_count, math.ceil((max_value or 1) / step))
 
-    ticks = [step * i for i in range(int(round(axis_max / step)) + 1)]
+    # Ticks stop at the last whole step at or below the ceiling, so a cap that isn't a
+    # multiple of the step (550 by 100s) gets 0..500 and a little headroom, rather
+    # than a stray label hanging above the plot.
+    ticks = [step * i for i in range(int(math.floor(axis_max / step + 1e-9)) + 1)]
     # A pinned axis can be shorter than the data. Draw those points along the top
     # rather than off the canvas, and let the caller say so on the page.
     clipped = max_value > axis_max
@@ -281,13 +340,21 @@ def _chart(
         "axis_max": axis_max,
         "step": step,
         "clipped": clipped,
+        "today": today_marker,
     }
 
 
-def sales_curves() -> dict:
-    """Days-out ticket and revenue curves for every year we can chart."""
+def sales_curves(include_optional: bool = False, today=None) -> dict:
+    """Days-out ticket and revenue curves for every year we can chart.
+
+    include_optional brings back the years held out by default (2019), which needs
+    taller axes to fit. today anchors the "we are here" rule and is injectable so
+    tests do not depend on the calendar.
+    """
+    today = today or timezone.localdate()
     events = list(TitoHistoricalEvent.objects.all().order_by("year"))
-    chartable = [e for e in events if e.year not in EXCLUDED_YEARS]
+    hidden = EXCLUDED_YEARS if include_optional else EXCLUDED_YEARS | OPTIONAL_YEARS
+    chartable = [e for e in events if e.year not in hidden]
 
     series = [s for s in (_series_for_event(e) for e in chartable) if s]
     for index, s in enumerate(series):
@@ -299,12 +366,20 @@ def sales_curves() -> dict:
     def _reason(event):
         if event.year in EXCLUDED_YEARS:
             return "excluded, COVID year"
+        if event.year in OPTIONAL_YEARS and not include_optional:
+            return "hidden by default, it skews the comparison"
         if not event.start_date:
             return "no start date"
         return "no ticket detail synced"
 
     missing = [{"year": e.year, "reason": _reason(e)} for e in events if e.year not in charted_years]
     partial = [s for s in series if s["partial"]]
+
+    x_step = CHART_WIDTH / (len(CHECKPOINTS) - 1) if len(CHECKPOINTS) > 1 else CHART_WIDTH
+    marker = _today_marker(events, x_step, today)
+
+    tickets_max = TICKETS_AXIS_MAX_WITH_OPTIONAL if include_optional else TICKETS_AXIS_MAX
+    revenue_max = REVENUE_AXIS_MAX_WITH_OPTIONAL if include_optional else REVENUE_AXIS_MAX
 
     return {
         "has_data": bool(series),
@@ -318,6 +393,9 @@ def sales_curves() -> dict:
         # say so on the page rather than letting a low curve read as slow sales.
         "partial": sorted(partial, key=lambda s: -s["year"]),
         "excluded_years": sorted(EXCLUDED_YEARS),
+        "optional_years": sorted(OPTIONAL_YEARS),
+        "include_optional": include_optional,
+        "today": marker,
         "charts": (
             [
                 {
@@ -325,14 +403,28 @@ def sales_curves() -> dict:
                     "note": "attendees only, excluding sprints, tutorials and donations",
                     "is_money": False,
                     "slug": "tickets",
-                    **_chart(series, "tickets", False),
+                    **_chart(
+                        series,
+                        "tickets",
+                        False,
+                        step=TICKETS_AXIS_STEP,
+                        axis_max=tickets_max,
+                        today_marker=marker,
+                    ),
                 },
                 {
                     "title": "Revenue",
                     "note": "every line item, including sprints, tutorials and donations",
                     "is_money": True,
                     "slug": "revenue",
-                    **_chart(series, "revenue", True, step=REVENUE_AXIS_STEP, axis_max=REVENUE_AXIS_MAX),
+                    **_chart(
+                        series,
+                        "revenue",
+                        True,
+                        step=REVENUE_AXIS_STEP,
+                        axis_max=revenue_max,
+                        today_marker=marker,
+                    ),
                 },
             ]
             if series

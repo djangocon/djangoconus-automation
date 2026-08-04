@@ -17,6 +17,18 @@ copying the rendered SVG - there is no second rendering path to drift out of syn
             <text x="-10" y="{{ line.y|floatformat:1 }}" dy="4" text-anchor="end" fill="#9ca3af" font-size="11" font-family="monospace">{{ line.label }}</text>
         {% endfor %}
 
+        {% if chart.today %}
+            <line x1="{{ chart.today.x|floatformat:1 }}"
+                  y1="0"
+                  x2="{{ chart.today.x|floatformat:1 }}"
+                  y2="{{ chart.height }}"
+                  stroke="#e5e7eb"
+                  stroke-width="1.5"
+                  stroke-dasharray="5 4"
+                  opacity="0.75" />
+            <text x="{{ chart.today.x|floatformat:1 }}" y="-4" text-anchor="middle" fill="#e5e7eb" font-size="11" font-family="monospace">{{ chart.today.label }}</text>
+        {% endif %}
+
         {% for label in chart.x_labels %}
             <text x="{{ label.x|floatformat:1 }}" y="{{ chart.height|add:18 }}" text-anchor="middle" fill="#9ca3af" font-size="11" font-family="monospace">{{ label.label }}</text>
         {% endfor %}
