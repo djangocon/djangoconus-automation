@@ -32,6 +32,40 @@ class BulkTicketCreationForm(forms.Form):
         return urls
 
 
+class AssignByEmailForm(forms.Form):
+    """Staff-facing: hand a link to any address, roster member or not."""
+
+    email = forms.EmailField(
+        label="Email address",
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder": "attendee@example.com",
+                "class": "p-2 w-full text-gray-900 rounded-md border border-gray-300 "
+                "focus:ring-2 focus:ring-green-500 focus:outline-none",
+            }
+        ),
+    )
+    name = forms.CharField(
+        label="Name",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Optional",
+                "class": "p-2 w-full text-gray-900 rounded-md border border-gray-300 "
+                "focus:ring-2 focus:ring-green-500 focus:outline-none",
+            }
+        ),
+    )
+    send_email = forms.BooleanField(
+        label="Email the link to them",
+        required=False,
+        initial=True,
+    )
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
+
+
 class ClaimTicketForm(forms.Form):
     email = forms.EmailField(
         label="Your Email Address",

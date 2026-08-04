@@ -1,0 +1,24 @@
+{% if name %}Hi {{ name }},{% else %}Hi there,{% endif %}
+{% if is_reissue %}
+We've issued you a NEW link for the DjangoCon US{% if year %} {{ year }}{% endif %} online conference.
+Please use the link below -- any link we sent you previously no longer works.
+{% elif is_resend %}
+As requested, here's your link to the DjangoCon US{% if year %} {{ year }}{% endif %} online
+conference again. It's the same link we sent you before, so if you already have
+it bookmarked you're all set.
+{% else %}
+Thanks for buying an online ticket! Here's your personal link to join the
+DjangoCon US{% if year %} {{ year }}{% endif %} online conference.
+{% endif %}
+Join the online conference:
+{{ ticket_link }}
+
+This link is tied to your ticket -- please don't share it. If you need a
+replacement, just reply to this email and we'll issue you a new one.
+
+See you online,
+The DjangoCon US Team
+
+--
+Questions? Reply to this email or reach us at {{ support_email }}.
+DjangoCon US is organized by DEFNA, the Django Events Foundation North America.

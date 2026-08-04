@@ -125,6 +125,10 @@ class TitoTicket(models.Model):
     year = models.PositiveIntegerField(db_index=True)
     ticket_slug = models.CharField(max_length=128, unique=True)
     reference = models.CharField(max_length=64, blank=True)
+    email = models.EmailField(
+        blank=True, db_index=True, help_text="Attendee address; blank until the ticket is claimed"
+    )
+    name = models.CharField(max_length=256, blank=True)
     release_title = models.CharField(max_length=256, blank=True)
     release_id = models.PositiveBigIntegerField(null=True, blank=True, db_index=True)
     release_price = models.FloatField(

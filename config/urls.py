@@ -12,7 +12,14 @@ from thunderdome.views import (
     submissions_view,
     sync_from_pretalx_view,
 )
-from tickets.views import claim_ticket_view, create_tickets_view, tickets_info, tickets_list_view
+from tickets.views import (
+    claim_ticket_view,
+    create_tickets_view,
+    online_attendees_view,
+    ticket_emails_view,
+    tickets_info,
+    tickets_list_view,
+)
 from titowebhooks.views import (
     sprint_tickets_view,
     tito_sales_dashboard_view,
@@ -37,6 +44,8 @@ urlpatterns = [
     path("tickets/create/", create_tickets_view, name="create_tickets"),
     path("tickets/list/", tickets_list_view, name="tickets_list"),
     path("tickets/claim/", claim_ticket_view, name="claim_ticket"),
+    path("tickets/attendees/", online_attendees_view, name="online_attendees"),
+    path("tickets/emails/", ticket_emails_view, name="ticket_emails"),
     path("sprints/tickets/", sprint_tickets_view, name="sprint_tickets"),
     path("tito/sales/", tito_sales_dashboard_view, name="tito_sales_dashboard"),
     path("tito/volunteer-interest/", volunteer_interest_view, name="volunteer_interest"),

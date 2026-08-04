@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block body_class %}flex flex-col p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock %}
+{% block main_class %}flex-1 mx-auto w-full text-white{% endblock %}
+
+{% block title %}Online Attendees - DjangoCon US Automation{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-7xl">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <a href="/" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
+                <h1 class="text-3xl font-bold">Online Attendees &middot; {{ year }}</h1>
+                <p class="mt-1 text-sm text-gray-400">Everyone who bought an online ticket, and where their link stands.</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{% url 'ticket_emails' %}"
+                   class="py-2 px-4 font-semibold text-white rounded-lg border border-green-600 hover:bg-green-800">
+                    Email Log
+                </a>
+                <a href="?year={{ year }}&status={{ status }}&format=csv"
+                   class="py-2 px-4 font-semibold text-white rounded-lg border border-green-600 hover:bg-green-800">
+                    Export CSV
+                </a>
+                <a href="{% url 'tickets_list' %}"
+                   class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700">
+                    Ticket Links
+                </a>
+            </div>
+        </div>
+
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 mb-3 rounded-lg {% if message.tags == 'success' %}bg-green-800{% elif message.tags == 'warning' %}bg-yellow-800{% elif message.tags == 'error' %}bg-red-800{% else %}bg-blue-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
+            <div class="grid grid-cols-2 gap-4 text-center md:grid-cols-5">
+                <div>
+                    <p class="text-2xl font-bold">{{ total_count }}</p>
+                    <p class="text-sm text-gray-300">Online Buyers</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-green-400">{{ assigned_count }}</p>
+                    <p class="text-sm text-gray-300">Have a Link</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-yellow-400">{{ unassigned_count }}</p>
+                    <p class="text-sm text-gray-300">Awaiting a Link</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-blue-300">{{ emailed_count }}</p>
+                    <p class="text-sm text-gray-300">Emailed</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold {% if available_links %}text-green-400{% else %}text-red-400{% endif %}">{{ available_links }}</p>
+                    <p class="text-sm text-gray-300">Links in Pool</p>
+                </div>
+            </div>
+            {% if not available_links %}
+                <p class="pt-3 mt-3 text-sm text-center text-red-300 border-t border-green-700">
+                    The link pool is empty &mdash;
+                    <a href="{% url 'create_tickets' %}" class="underline hover:text-red-200">add more ticket links</a>
+                    before assigning.
+                </p>
+            {% endif %}
+            {% if failed_emails %}
+                <p class="pt-3 mt-3 text-sm text-center text-red-300 border-t border-green-700">
+                    {{ failed_emails }} email{{ failed_emails|pluralize }} failed to send &mdash;
+                    <a href="{% url 'ticket_emails' %}?status=failed" class="underline hover:text-red-200">review them</a>.
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="p-4 mb-6 bg-green-800 bg-opacity-30 rounded-lg">
+            <h2 class="mb-3 text-lg font-semibold">Assign a link by email address</h2>
+            <form method="post" class="flex flex-wrap gap-3 items-end">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="assign_by_email">
+                <div class="flex-1 min-w-[240px]">
+                    <label for="{{ assign_form.email.id_for_label }}" class="block mb-1 text-sm text-gray-300">Email</label>
+                    {{ assign_form.email }}
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <label for="{{ assign_form.name.id_for_label }}" class="block mb-1 text-sm text-gray-300">Name</label>
+                    {{ assign_form.name }}
+                </div>
+                <label class="flex gap-2 items-center pb-2 text-sm text-gray-300">
+                    {{ assign_form.send_email }}
+                    Email it to them
+                </label>
+                <button type="submit"
+                        class="py-2 px-4 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700">
+                    Assign
+                </button>
+            </form>
+            <p class="mt-2 text-xs text-gray-400">
+                Works for anyone &mdash; if the address isn't on the roster yet it's added as a manual entry.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4 text-sm">
+            {% for value, label in filters %}
+                <a href="?year={{ year }}&status={{ value }}"
+                   class="py-1 px-3 rounded-full {% if status == value %}bg-green-600 text-white{% else %}bg-green-800 bg-opacity-40 text-gray-300 hover:bg-opacity-70{% endif %}">
+                    {{ label }}
+                </a>
+            {% endfor %}
+        </div>
+
+        {% if attendees %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="flex flex-wrap gap-2 items-center p-3 mb-3 bg-green-800 bg-opacity-30 rounded-lg">
+                    <span class="text-sm text-gray-300">With selected:</span>
+                    <button type="submit" name="action" value="assign_and_email"
+                            class="py-2 px-3 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700">
+                        Assign link &amp; email
+                    </button>
+                    <button type="submit" name="action" value="email"
+                            class="py-2 px-3 text-sm font-semibold text-white bg-blue-700 rounded-lg hover:bg-blue-600">
+                        Resend existing link
+                    </button>
+                    <button type="submit" name="action" value="reissue"
+                            onclick="return confirm('Issue a brand new link to everyone selected? Their current links stop working.')"
+                            class="py-2 px-3 text-sm font-semibold text-white bg-yellow-700 rounded-lg hover:bg-yellow-600">
+                        Issue new link
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
+                        <thead class="bg-green-700 bg-opacity-50">
+                            <tr>
+                                <th class="py-3 px-4 w-8 text-left">
+                                    <input type="checkbox"
+                                           onclick="document.querySelectorAll('input[name=attendee_ids]').forEach(c => c.checked = this.checked)">
+                                </th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Attendee</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Release</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Purchased</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Link</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Emails</th>
+                                <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Last Emailed</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-green-700">
+                            {% for attendee in attendees %}
+                                <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-30">
+                                    <td class="py-3 px-4">
+                                        <input type="checkbox" name="attendee_ids" value="{{ attendee.pk }}">
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="block font-medium">{{ attendee.name|default:"—" }}</span>
+                                        <span class="block text-sm text-blue-300">{{ attendee.email }}</span>
+                                        {% if attendee.source == "manual" %}
+                                            <span class="inline-block mt-1 text-xs text-gray-400">added by staff</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-gray-300">{{ attendee.release_title|default:"—" }}</td>
+                                    <td class="py-3 px-4 text-sm whitespace-nowrap">
+                                        {% if attendee.purchased_at %}
+                                            {{ attendee.purchased_at|date:"M d, Y" }}
+                                        {% else %}
+                                            <span class="text-gray-500">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm">
+                                        {% with link=attendee.active_ticket_link %}
+                                            {% if link %}
+                                                <a href="{{ link.link }}" target="_blank" rel="noopener"
+                                                   class="block max-w-xs text-green-300 hover:text-green-200 truncate"
+                                                   title="{{ link.link }}">{{ link.link|truncatechars:40 }}</a>
+                                            {% else %}
+                                                <span class="inline-flex py-1 px-3 text-xs font-semibold text-yellow-200 bg-yellow-800 rounded-full">
+                                                    No link
+                                                </span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-center">
+                                        {% if attendee.sent_email_count %}
+                                            <span class="font-semibold text-green-300">{{ attendee.sent_email_count }}</span>
+                                        {% else %}
+                                            <span class="text-gray-500">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-sm whitespace-nowrap">
+                                        {% if attendee.last_emailed_at %}
+                                            {{ attendee.last_emailed_at|date:"M d, Y g:i A" }}
+                                        {% else %}
+                                            <span class="text-gray-500">Never</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        {% else %}
+            <div class="py-12 text-center bg-green-800 bg-opacity-30 rounded-lg">
+                <p class="mb-2 text-xl text-gray-300">No online attendees match this filter.</p>
+                <p class="text-sm text-gray-400">
+                    Run <code class="py-1 px-2 bg-black bg-opacity-40 rounded">manage.py sync_online_attendees</code>
+                    to pull the roster from Ti.to.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

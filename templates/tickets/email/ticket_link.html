@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="color-scheme" content="light">
+        <title>Your DjangoCon US online conference link</title>
+    </head>
+    {# Table layout and inline styles throughout: Outlook and Gmail strip <style> blocks and ignore flex/grid. #}
+    <body style="margin:0; padding:0; background-color:#f4f6f5; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; color:#20303c;">
+        <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+            {% if is_reissue %}
+                Here is your new link to join DjangoCon US online.
+            {% else %}
+                Here is your link to join DjangoCon US online.
+            {% endif %}
+        </div>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f6f5;">
+            <tr>
+                <td align="center" style="padding:24px 12px;">
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; background-color:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #dfe5e2;">
+
+                        <tr>
+                            <td style="background-color:#0c4b33; padding:28px 32px;">
+                                <p style="margin:0; font-size:22px; font-weight:700; color:#ffffff; letter-spacing:-0.2px;">
+                                    DjangoCon US{% if year %} {{ year }}{% endif %}
+                                </p>
+                                <p style="margin:6px 0 0; font-size:14px; color:#93d7b7;">Online Conference</p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:32px 32px 8px;">
+                                <p style="margin:0 0 16px; font-size:16px; line-height:1.5;">
+                                    {% if name %}Hi {{ name }},{% else %}Hi there,{% endif %}
+                                </p>
+
+                                {% if is_reissue %}
+                                    <p style="margin:0 0 16px; font-size:16px; line-height:1.5;">
+                                        We've issued you a <strong>new link</strong> for the DjangoCon US online
+                                        conference. Please use the button below &mdash; any link we sent you
+                                        previously no longer works.
+                                    </p>
+                                {% elif is_resend %}
+                                    <p style="margin:0 0 16px; font-size:16px; line-height:1.5;">
+                                        As requested, here's your link to the DjangoCon US online conference again.
+                                        It's the same link we sent you before, so if you already have it bookmarked
+                                        you're all set.
+                                    </p>
+                                {% else %}
+                                    <p style="margin:0 0 16px; font-size:16px; line-height:1.5;">
+                                        Thanks for buying an online ticket! Here's your personal link to join the
+                                        DjangoCon US online conference.
+                                    </p>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td align="center" style="padding:16px 32px 8px;">
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td align="center" style="background-color:#0c4b33; border-radius:8px;">
+                                            <a href="{{ ticket_link }}"
+                                               style="display:inline-block; padding:16px 36px; font-size:17px; font-weight:700; color:#ffffff; text-decoration:none;">
+                                                Join the online conference
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:8px 32px 24px;">
+                                <p style="margin:0 0 8px; font-size:13px; color:#5c6b73;">
+                                    Button not working? Copy and paste this address into your browser:
+                                </p>
+                                <p style="margin:0; font-size:13px; line-height:1.5; word-break:break-all;">
+                                    <a href="{{ ticket_link }}" style="color:#0c4b33;">{{ ticket_link }}</a>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:0 32px 28px;">
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f7f4; border-left:4px solid #93d7b7; border-radius:6px;">
+                                    <tr>
+                                        <td style="padding:16px 20px;">
+                                            <p style="margin:0; font-size:14px; line-height:1.6; color:#20303c;">
+                                                This link is tied to your ticket &mdash; please don't share it. If you
+                                                need a replacement, just reply to this email and we'll issue you a
+                                                new one.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:0 32px 32px;">
+                                <p style="margin:0; font-size:16px; line-height:1.5;">
+                                    See you online,<br>
+                                    <strong>The DjangoCon US Team</strong>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="background-color:#f4f6f5; border-top:1px solid #dfe5e2; padding:20px 32px;">
+                                <p style="margin:0; font-size:12px; line-height:1.6; color:#5c6b73;">
+                                    Questions? Reply to this email or reach us at
+                                    <a href="mailto:{{ support_email }}" style="color:#0c4b33;">{{ support_email }}</a>.
+                                </p>
+                                <p style="margin:8px 0 0; font-size:12px; color:#8a9aa2;">
+                                    DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
+                                </p>
+                            </td>
+                        </tr>
+
+                    </table>
+
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
