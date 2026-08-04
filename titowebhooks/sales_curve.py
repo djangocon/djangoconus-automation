@@ -124,6 +124,15 @@ def _polyline(values: list[float], max_value: float, width: float, height: float
     return " ".join(f"{i * step:.1f},{height - (v * scale):.1f}" for i, v in enumerate(values))
 
 
+def _when_label(days_out: int) -> str:
+    """Spelled-out distance for the hover readout, where "1mo" is too terse."""
+    if days_out == 0:
+        return "on event day"
+    if days_out == 1:
+        return "1 day out"
+    return f"{days_out} days out"
+
+
 def _format_value(value: float, is_money: bool) -> str:
     """Exact value for hover readouts - no rounding, this is the number you came for."""
     if is_money:
@@ -188,6 +197,8 @@ def _chart(series: list[dict], key: str, is_money: bool, width: float = 720, hei
                 "x": i * x_step,
                 "y": height - (v * height / axis_max if axis_max else 0),
                 "value": v,
+                "when": _when_label(CHECKPOINTS[i]),
+                "value_label": _format_value(v, is_money),
                 "label": f"{s['year']} · {CHECKPOINT_LABELS[i]} · {_format_value(v, is_money)}",
             }
             for i, v in enumerate(values)

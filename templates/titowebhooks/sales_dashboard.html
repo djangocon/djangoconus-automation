@@ -91,8 +91,82 @@
                 </div>
             </dialog>
 
+            <div id="chart-tooltip"
+                 class="hidden fixed z-50 py-2 px-3 font-mono text-xs bg-black bg-opacity-90 rounded-lg border border-green-700 shadow-xl pointer-events-none">
+                <span class="font-semibold" data-tip-year></span>
+                <span class="text-gray-400" data-tip-when></span>
+                <div class="mt-0.5 text-sm font-bold text-white" data-tip-value></div>
+            </div>
+
+            <style>
+                .chart-hit { outline: none; cursor: crosshair; }
+                /* The dot is decorative; hovering it must reach the hit circle beneath. */
+                .chart-dot { pointer-events: none; transition: r 80ms ease-out; }
+                /* Grow the visible dot when its hit target is hovered or focused. */
+                .chart-hit:hover + .chart-dot,
+                .chart-hit:focus-visible + .chart-dot { r: 6; opacity: 1; }
+                .chart-hit:focus-visible + .chart-dot { stroke: #fff; stroke-width: 2; }
+            </style>
+
             <script>
                 (function () {
+                    const tooltip = document.getElementById("chart-tooltip");
+                    const tipYear = tooltip.querySelector("[data-tip-year]");
+                    const tipWhen = tooltip.querySelector("[data-tip-when]");
+                    const tipValue = tooltip.querySelector("[data-tip-value]");
+
+                    function place(event) {
+                        const pad = 14;
+                        const box = tooltip.getBoundingClientRect();
+                        // Flip to the other side of the cursor near the viewport edges.
+                        let x = event.clientX + pad;
+                        let y = event.clientY + pad;
+                        if (x + box.width > window.innerWidth) x = event.clientX - box.width - pad;
+                        if (y + box.height > window.innerHeight) y = event.clientY - box.height - pad;
+                        tooltip.style.left = Math.max(4, x) + "px";
+                        tooltip.style.top = Math.max(4, y) + "px";
+                    }
+
+                    function show(point, event) {
+                        tipYear.textContent = point.dataset.year;
+                        tipYear.style.color = point.dataset.color;
+                        tipWhen.textContent = "· " + point.dataset.when;
+                        tipValue.textContent = point.dataset.value;
+                        tooltip.classList.remove("hidden");
+                        if (event) place(event);
+                    }
+
+                    function hide() {
+                        tooltip.classList.add("hidden");
+                    }
+
+                    // Delegated, so the copy of the chart inside the modal works too.
+                    document.addEventListener("mouseover", function (event) {
+                        const point = event.target.closest("[data-point]");
+                        if (point) show(point, event);
+                    });
+                    document.addEventListener("mousemove", function (event) {
+                        if (!tooltip.classList.contains("hidden") && event.target.closest("[data-point]")) {
+                            place(event);
+                        }
+                    });
+                    document.addEventListener("mouseout", function (event) {
+                        if (event.target.closest("[data-point]")) hide();
+                    });
+                    // Keyboard users get the same readout, parked next to the dot.
+                    document.addEventListener("focusin", function (event) {
+                        const point = event.target.closest("[data-point]");
+                        if (!point) return;
+                        const box = point.getBoundingClientRect();
+                        show(point, null);
+                        tooltip.style.left = box.right + 8 + "px";
+                        tooltip.style.top = box.top + "px";
+                    });
+                    document.addEventListener("focusout", function (event) {
+                        if (event.target.closest("[data-point]")) hide();
+                    });
+                    document.addEventListener("scroll", hide, true);
+
                     const modal = document.getElementById("chart-modal");
                     if (!modal) return;
                     const body = modal.querySelector("[data-modal-body]");
@@ -115,6 +189,7 @@
                         });
                     });
 
+                    modal.addEventListener("close", hide);
                     modal.querySelector("[data-modal-close]").addEventListener("click", function () { modal.close(); });
                     // Clicking the backdrop lands on the dialog itself, not its contents.
                     modal.addEventListener("click", function (event) {

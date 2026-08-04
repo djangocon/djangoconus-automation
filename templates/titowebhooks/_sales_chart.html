@@ -33,20 +33,28 @@ copying the rendered SVG - there is no second rendering path to drift out of syn
 
         {% for line in chart.lines %}
             {% for marker in line.markers %}
-                <g class="chart-point">
-                    <circle cx="{{ marker.x|floatformat:1 }}"
-                            cy="{{ marker.y|floatformat:1 }}"
-                            r="2.5"
-                            fill="{{ line.color }}"
-                            opacity="0.85" />
-                    {# Generous invisible target so the exact figure is easy to hover. #}
-                    <circle cx="{{ marker.x|floatformat:1 }}"
-                            cy="{{ marker.y|floatformat:1 }}"
-                            r="11"
-                            fill="transparent">
-                        <title>{{ marker.label }}</title>
-                    </circle>
-                </g>
+                {# Hit target first: the dot is a following sibling so CSS can grow it,
+                   and .chart-dot ignores pointer events so hovering the dot still
+                   lands on this generous transparent circle. #}
+                <circle class="chart-hit"
+                        cx="{{ marker.x|floatformat:1 }}"
+                        cy="{{ marker.y|floatformat:1 }}"
+                        r="12"
+                        fill="transparent"
+                        tabindex="0"
+                        role="img"
+                        aria-label="{{ marker.label }}"
+                        data-point
+                        data-year="{{ line.year }}"
+                        data-color="{{ line.color }}"
+                        data-when="{{ marker.when }}"
+                        data-value="{{ marker.value_label }}"></circle>
+                <circle class="chart-dot"
+                        cx="{{ marker.x|floatformat:1 }}"
+                        cy="{{ marker.y|floatformat:1 }}"
+                        r="3"
+                        fill="{{ line.color }}"
+                        opacity="0.9" />
             {% endfor %}
         {% endfor %}
     </g>

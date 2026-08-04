@@ -328,6 +328,13 @@ def test_every_point_carries_a_hover_label():
     tickets_line = sales_curves()["charts"][0]["lines"][0]
     assert tickets_line["markers"][-1]["label"] == "2026 · Event · 1 ticket"
 
+    # The hover readout spells the distance out, where the axis label is terse.
+    last = revenue_line["markers"][-1]
+    assert last["when"] == "on event day"
+    assert last["value_label"] == "$250"
+    thirty_days = revenue_line["markers"][CHECKPOINTS.index(30)]
+    assert thirty_days["when"] == "30 days out"
+
 
 @pytest.mark.django_db
 def test_markers_line_up_with_the_polyline():
@@ -353,10 +360,17 @@ def test_dashboard_renders_hover_targets_and_the_expand_modal(client):
 
     body = client.get(URL).content.decode()
 
-    assert "<title>2026 · Event · $250</title>" in body
     assert 'id="chart-modal"' in body
     assert "data-chart" in body
     assert "click to enlarge" in body
+
+    # Hover targets carry the values the tooltip reads, and stay reachable by keyboard.
+    assert 'id="chart-tooltip"' in body
+    assert "data-point" in body
+    assert 'data-when="on event day"' in body
+    assert 'data-value="$250"' in body
+    assert 'aria-label="2026 · Event · $250"' in body
+    assert 'tabindex="0"' in body
 
 
 @pytest.mark.django_db
