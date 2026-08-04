@@ -220,7 +220,7 @@
                 })();
             </script>
 
-            <div class="flex flex-wrap gap-y-2 gap-x-4 mb-3 text-sm">
+            <div class="flex flex-wrap gap-y-2 gap-x-5 justify-center mb-2 text-sm">
                 {% for s in curves.series %}
                     <span class="inline-flex gap-2 items-center">
                         <span class="inline-block w-3 h-3 rounded-sm" style="background-color: {{ s.color }}"></span>
@@ -237,6 +237,18 @@
                     </span>
                 {% endfor %}
             </div>
+
+            <p class="mb-4 text-xs text-center text-gray-500">
+                Each year shows attendees &middot; revenue at the conference.
+                {% if curves.include_optional %}
+                    {{ curves.optional_years|join:", " }} is a much bigger season than any since, so it stretches both
+                    axes &mdash; <a href="?" class="underline hover:text-gray-300">hide it</a> for a closer comparison.
+                {% else %}
+                    {{ curves.optional_years|join:", " }} is left out by default for the same reason &mdash; it ran far
+                    bigger than any season since and flattens the rest.
+                    <a href="?show=all" class="underline hover:text-gray-300">Show it anyway</a>.
+                {% endif %}
+            </p>
 
             <details class="overflow-hidden mb-6 bg-green-800 bg-opacity-20 rounded-lg">
                 <summary class="py-2 px-4 text-sm text-gray-300 cursor-pointer hover:bg-green-700 hover:bg-opacity-20">

@@ -3,7 +3,6 @@ import csv
 import hashlib
 import hmac
 import json
-import logging
 import re
 from datetime import datetime, timezone
 
@@ -19,12 +18,9 @@ from django_q.tasks import async_task
 from rich import print
 
 from emailoctopus.models import Campaign
-from tickets.sync import record_webhook_attendee
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
 from titowebhooks.sales_curve import sales_curves
 from volunteers.models import VolunteerSignup
-
-logger = logging.getLogger(__name__)
 
 superuser_required = user_passes_test(lambda u: u.is_active and u.is_superuser)
 
@@ -76,14 +72,6 @@ def tito_webhook(request):
         tito_webhook_endpoint_id=request.headers.get("x-webhook-endpoint-id"),
         tito_signature=signature,
     )
-
-    # Land online buyers on the roster right away so staff aren't waiting on the
-    # nightly sync to see a purchase they were just told about.
-    if request.headers.get("x-webhook-name") == "ticket.completed":
-        try:
-            record_webhook_attendee(payload)
-        except Exception:
-            logger.exception("Failed to record online attendee from webhook payload")
 
     try:
         if settings.EMAILOCTOPUS_API_KEY:
