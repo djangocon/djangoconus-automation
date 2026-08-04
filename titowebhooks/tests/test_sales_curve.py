@@ -316,6 +316,8 @@ def test_axis_ticks_are_round_ascending_and_cover_the_data():
         ("Tutorials", True),
         ("SPRINT ONLINE", True),
         ("Opportunity Grant Ticket", False),
+        # A donation is a line item, not a person in a seat.
+        ("Donation", True),
         ("", False),
     ],
 )
@@ -329,11 +331,12 @@ def test_sprints_and_tutorials_are_left_out_of_the_head_count():
     make_ticket("conf", days_out=30, price=500.0)
     make_ticket("sprint", days_out=30, price=50.0, release_title="Sprint (In Person)- Thursday")
     make_ticket("tutorial", days_out=30, price=150.0, release_title="Tutorial - Django Forms")
+    make_ticket("gift", days_out=30, price=25.0, release_title="Donation")
 
     series = sales_curves()["series"][0]
 
     assert series["final_tickets"] == 1  # only the conference ticket is an attendee
-    assert series["addon_tickets"] == 2
+    assert series["addon_tickets"] == 3
 
 
 @pytest.mark.django_db
@@ -366,8 +369,8 @@ def test_charts_say_which_tickets_they_count():
 
     charts = sales_curves()["charts"]
 
-    assert "excluding sprints and tutorials" in charts[0]["note"]
-    assert "including sprints and tutorials" in charts[1]["note"]
+    assert "excluding sprints, tutorials and donations" in charts[0]["note"]
+    assert "including sprints, tutorials and donations" in charts[1]["note"]
 
 
 @pytest.mark.django_db

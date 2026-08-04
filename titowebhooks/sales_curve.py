@@ -26,9 +26,13 @@ COVERAGE_THRESHOLD = 0.95
 REVENUE_AXIS_STEP = 50_000
 REVENUE_AXIS_MAX = 250_000
 
-# Releases matched by these keywords are add-ons rather than another attendee, so they
-# are left out of the head count. Their money still counts toward revenue.
-ADDON_KEYWORDS = ("sprint", "tutorial")
+# Releases matched by these keywords do not represent another attendee, so they are
+# left out of the head count. Their money still counts toward revenue.
+#
+# Sprints and tutorials are add-ons bought on top of a conference ticket; a donation
+# is not a ticket at all. Matching on the title is crude, but Ti.to gives us nothing
+# structural to key off - releases carry no type or category field.
+ADDON_KEYWORDS = ("sprint", "tutorial", "donation")
 
 # Distinct enough to tell apart on a dark background, oldest year to newest.
 SERIES_COLORS = [
@@ -62,9 +66,9 @@ def _cumulative_at_checkpoints(days_out_values: list[tuple[int, float]]) -> tupl
     checkpoint when it was bought at least that many days before the event, so the
     series only ever climbs as the checkpoints march toward day zero.
 
-    Sprints and tutorials are add-ons an attendee buys on top of a conference ticket,
-    so they inflate a head count without representing another attendee. They are left
-    out of the count but kept in revenue, where the money is real either way.
+    Sprints, tutorials and donations inflate a head count without representing
+    another attendee, so they are left out of the count but kept in revenue, where
+    the money is real either way.
     """
     tickets = []
     revenue = []
@@ -78,7 +82,7 @@ def _cumulative_at_checkpoints(days_out_values: list[tuple[int, float]]) -> tupl
 
 
 def _is_addon(release_title: str) -> bool:
-    """Sprints and tutorials are bought alongside a conference ticket, not instead of one."""
+    """True when a release is not a person attending: an add-on, or a donation."""
     title = (release_title or "").lower()
     return any(keyword in title for keyword in ADDON_KEYWORDS)
 
@@ -318,14 +322,14 @@ def sales_curves() -> dict:
             [
                 {
                     "title": "Tickets sold",
-                    "note": "conference tickets only, excluding sprints and tutorials",
+                    "note": "attendees only, excluding sprints, tutorials and donations",
                     "is_money": False,
                     "slug": "tickets",
                     **_chart(series, "tickets", False),
                 },
                 {
                     "title": "Revenue",
-                    "note": "all tickets, including sprints and tutorials",
+                    "note": "every line item, including sprints, tutorials and donations",
                     "is_money": True,
                     "slug": "revenue",
                     **_chart(series, "revenue", True, step=REVENUE_AXIS_STEP, axis_max=REVENUE_AXIS_MAX),
