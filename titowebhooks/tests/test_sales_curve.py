@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket
-from titowebhooks.sales_curve import CHECKPOINTS, EXCLUDED_YEARS, sales_curves
+from titowebhooks.sales_curve import CHECKPOINTS, EXCLUDED_YEARS, _is_addon, sales_curves
 
 User = get_user_model()
 
@@ -23,7 +23,7 @@ def make_event(year=2026, start_date=START, is_current=True, **extra):
     )
 
 
-def make_ticket(slug, year=2026, days_out=30, price=100.0, voided=False, created_at=None):
+def make_ticket(slug, year=2026, days_out=30, price=100.0, voided=False, created_at=None, release_title="Individual"):
     """A ticket bought `days_out` days before the 2026 start date."""
     if created_at is None and days_out is not None:
         created_at = datetime.datetime.combine(
@@ -37,6 +37,7 @@ def make_ticket(slug, year=2026, days_out=30, price=100.0, voided=False, created
         year=year,
         price=price,
         release_price=price,
+        release_title=release_title,
         voided=voided,
         created_at=created_at,
     )
@@ -294,14 +295,132 @@ def test_axis_ticks_are_round_ascending_and_cover_the_data():
     for i in range(37):  # an awkward max that used to give ticks like 9.7
         make_ticket(f"t{i}", days_out=30, price=1000.0)
 
-    chart = sales_curves()["charts"][1]  # revenue
+    chart = sales_curves()["charts"][0]  # tickets, which still scales to its data
 
-    assert chart["max_value"] == 37000
-    assert chart["axis_max"] >= 37000  # the top line fits inside the plot
-    assert chart["axis_max"] % 10000 == 0  # and lands on a round number
+    assert chart["max_value"] == 37
+    assert chart["axis_max"] >= 37  # the top line fits inside the plot
+    assert chart["axis_max"] % 10 == 0  # and lands on a round number
     # Rendered top to bottom, so y descends while the values climb.
     assert [g["y"] for g in chart["gridlines"]] == sorted([g["y"] for g in chart["gridlines"]], reverse=True)
-    assert [g["label"] for g in chart["gridlines"]] == ["$0", "$10k", "$20k", "$30k", "$40k"]
+    assert [g["label"] for g in chart["gridlines"]] == ["0", "10", "20", "30", "40"]
+
+
+@pytest.mark.parametrize(
+    "title,is_addon",
+    [
+        ("Individual", False),
+        ("Corporate", False),
+        ("Sprint (In Person)- Thursday", True),
+        ("Sprints", True),
+        ("Tutorial - Django Forms", True),
+        ("Tutorials", True),
+        ("SPRINT ONLINE", True),
+        ("Opportunity Grant Ticket", False),
+        ("", False),
+    ],
+)
+def test_addon_detection(title, is_addon):
+    assert _is_addon(title) is is_addon
+
+
+@pytest.mark.django_db
+def test_sprints_and_tutorials_are_left_out_of_the_head_count():
+    make_event()
+    make_ticket("conf", days_out=30, price=500.0)
+    make_ticket("sprint", days_out=30, price=50.0, release_title="Sprint (In Person)- Thursday")
+    make_ticket("tutorial", days_out=30, price=150.0, release_title="Tutorial - Django Forms")
+
+    series = sales_curves()["series"][0]
+
+    assert series["final_tickets"] == 1  # only the conference ticket is an attendee
+    assert series["addon_tickets"] == 2
+
+
+@pytest.mark.django_db
+def test_addon_money_still_counts_toward_revenue():
+    make_event()
+    make_ticket("conf", days_out=30, price=500.0)
+    make_ticket("sprint", days_out=30, price=50.0, release_title="Sprints")
+
+    series = sales_curves()["series"][0]
+
+    assert series["final_revenue"] == 550.0  # the sprint fee was still collected
+    assert series["final_tickets"] == 1
+
+
+@pytest.mark.django_db
+def test_a_year_of_only_addons_still_charts_its_revenue():
+    make_event()
+    make_ticket("sprint", days_out=30, price=50.0, release_title="Sprints")
+
+    series = sales_curves()["series"][0]
+
+    assert series["final_tickets"] == 0
+    assert series["final_revenue"] == 50.0
+
+
+@pytest.mark.django_db
+def test_charts_say_which_tickets_they_count():
+    make_event()
+    make_ticket("a", days_out=30)
+
+    charts = sales_curves()["charts"]
+
+    assert "excluding sprints and tutorials" in charts[0]["note"]
+    assert "including sprints and tutorials" in charts[1]["note"]
+
+
+@pytest.mark.django_db
+def test_revenue_axis_is_pinned_to_50k_steps_up_to_250k():
+    make_event()
+    make_ticket("a", days_out=30, price=1234.0)
+
+    chart = sales_curves()["charts"][1]
+
+    assert chart["step"] == 50_000
+    assert chart["axis_max"] == 250_000
+    assert [g["label"] for g in chart["gridlines"]] == ["$0", "$50k", "$100k", "$150k", "$200k", "$250k"]
+    assert chart["clipped"] is False
+
+
+@pytest.mark.django_db
+def test_revenue_axis_does_not_rescale_around_a_small_year():
+    make_event()
+    make_ticket("a", days_out=30, price=100.0)
+
+    # A $100 season must not stretch to fill the plot, or the shape lies.
+    chart = sales_curves()["charts"][1]
+
+    assert chart["axis_max"] == 250_000
+    bottom = chart["height"]
+    assert chart["lines"][0]["markers"][-1]["y"] == pytest.approx(bottom, abs=1)
+
+
+@pytest.mark.django_db
+def test_revenue_above_the_cap_is_drawn_at_the_top_and_flagged():
+    make_event()
+    make_ticket("huge", days_out=30, price=400_000.0)
+
+    chart = sales_curves()["charts"][1]
+
+    assert chart["clipped"] is True
+    assert chart["max_value"] == 400_000
+    last = chart["lines"][0]["markers"][-1]
+    assert last["y"] == 0  # pinned to the ceiling, not drawn off the canvas
+    assert last["value"] == 400_000  # but the hover still reports the truth
+    assert last["value_label"] == "$400,000"
+
+
+@pytest.mark.django_db
+def test_ticket_axis_still_scales_to_its_data():
+    make_event()
+    for i in range(12):
+        make_ticket(f"t{i}", days_out=30)
+
+    chart = sales_curves()["charts"][0]
+
+    assert chart["axis_max"] == 20  # scaled to the data, not pinned like revenue
+    assert chart["clipped"] is False
 
 
 @pytest.mark.django_db

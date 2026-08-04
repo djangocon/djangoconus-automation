@@ -68,11 +68,19 @@
                             tabindex="0"
                             role="button"
                             aria-label="Enlarge the {{ chart.title }} chart">
-                        <figcaption class="flex justify-between items-center mb-2">
-                            <h3 class="text-sm font-semibold tracking-wider text-gray-400 uppercase">{{ chart.title }}</h3>
+                        <figcaption class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="text-sm font-semibold tracking-wider text-gray-400 uppercase">{{ chart.title }}</h3>
+                                {% if chart.note %}<p class="text-xs text-gray-500">{{ chart.note }}</p>{% endif %}
+                            </div>
                             <span class="text-xs text-gray-500 opacity-0 transition-opacity group-hover:opacity-100">click to enlarge</span>
                         </figcaption>
                         {% include "titowebhooks/_sales_chart.html" with chart=chart %}
+                        {% if chart.clipped %}
+                            <p class="mt-2 text-xs text-yellow-500">
+                                Axis is capped; some points sit above it. Hover them for the real figure.
+                            </p>
+                        {% endif %}
                     </figure>
                 {% endfor %}
             </div>
@@ -177,6 +185,9 @@
                         body.innerHTML = card.querySelector("svg").outerHTML;
                         title.textContent = card.querySelector("h3").textContent;
                         modal.showModal();
+                        // A modal dialog paints in the top layer, above every z-index on the
+                        // page, so the tooltip has to live inside it to be visible at all.
+                        modal.appendChild(tooltip);
                     }
 
                     document.querySelectorAll("[data-chart]").forEach(function (card) {
@@ -189,7 +200,10 @@
                         });
                     });
 
-                    modal.addEventListener("close", hide);
+                    modal.addEventListener("close", function () {
+                        hide();
+                        document.body.appendChild(tooltip);  // back out of the top layer
+                    });
                     modal.querySelector("[data-modal-close]").addEventListener("click", function () { modal.close(); });
                     // Clicking the backdrop lands on the dialog itself, not its contents.
                     modal.addEventListener("click", function (event) {

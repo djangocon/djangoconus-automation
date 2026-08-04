@@ -21,6 +21,15 @@ EXCLUDED_YEARS = {2021}
 # partially covered, so its curve sits below where that season really was.
 COVERAGE_THRESHOLD = 0.95
 
+# The revenue axis is pinned rather than scaled to the data, so the chart keeps the
+# same shape season to season and a good year doesn't visually flatten the others.
+REVENUE_AXIS_STEP = 50_000
+REVENUE_AXIS_MAX = 250_000
+
+# Releases matched by these keywords are add-ons rather than another attendee, so they
+# are left out of the head count. Their money still counts toward revenue.
+ADDON_KEYWORDS = ("sprint", "tutorial")
+
 # Distinct enough to tell apart on a dark background, oldest year to newest.
 SERIES_COLORS = [
     "#f87171",
@@ -49,19 +58,29 @@ CHECKPOINT_LABELS = [_label(d) for d in CHECKPOINTS]
 def _cumulative_at_checkpoints(days_out_values: list[tuple[int, float]]) -> tuple[list[int], list[float]]:
     """Cumulative ticket count and revenue at each checkpoint.
 
-    Takes (days_out, price) pairs. A ticket counts toward a checkpoint when it was
-    bought at least that many days before the event, so the series only ever climbs
-    as the checkpoints march toward day zero.
+    Takes (days_out, price, is_conference_ticket) triples. A ticket counts toward a
+    checkpoint when it was bought at least that many days before the event, so the
+    series only ever climbs as the checkpoints march toward day zero.
+
+    Sprints and tutorials are add-ons an attendee buys on top of a conference ticket,
+    so they inflate a head count without representing another attendee. They are left
+    out of the count but kept in revenue, where the money is real either way.
     """
     tickets = []
     revenue = []
 
     for checkpoint in CHECKPOINTS:
-        sold = [(d, p) for d, p in days_out_values if d >= checkpoint]
-        tickets.append(len(sold))
-        revenue.append(sum(p for _, p in sold))
+        sold = [row for row in days_out_values if row[0] >= checkpoint]
+        tickets.append(sum(1 for _, _, is_conference in sold if is_conference))
+        revenue.append(sum(price for _, price, _ in sold))
 
     return tickets, revenue
+
+
+def _is_addon(release_title: str) -> bool:
+    """Sprints and tutorials are bought alongside a conference ticket, not instead of one."""
+    title = (release_title or "").lower()
+    return any(keyword in title for keyword in ADDON_KEYWORDS)
 
 
 def _series_for_event(event: TitoHistoricalEvent) -> dict | None:
@@ -71,15 +90,18 @@ def _series_for_event(event: TitoHistoricalEvent) -> dict | None:
 
     tickets = TitoTicket.objects.filter(year=event.year, voided=False).exclude(created_at=None)
 
-    days_out_values = [((event.start_date - t.created_at.date()).days, t.price) for t in tickets]
-    # Tickets sold after the conference started (comps, walk-ins) still belong to
-    # the season - clamp them to day zero rather than dropping them.
-    days_out_values = [(max(d, 0), p) for d, p in days_out_values]
+    days_out_values = [
+        # Tickets sold after the conference started (comps, walk-ins) still belong to
+        # the season - clamp them to day zero rather than dropping them.
+        (max((event.start_date - t.created_at.date()).days, 0), t.price, not _is_addon(t.release_title))
+        for t in tickets
+    ]
 
     if not days_out_values:
         return None
 
     ticket_counts, revenue = _cumulative_at_checkpoints(days_out_values)
+    addons = sum(1 for _, _, is_conference in days_out_values if not is_conference)
 
     # How much of the season we actually hold. The snapshot totals come straight from
     # Ti.to's release counts, so a shortfall means tickets we never synced - and a
@@ -100,6 +122,7 @@ def _series_for_event(event: TitoHistoricalEvent) -> dict | None:
         "revenue": revenue,
         "final_tickets": ticket_counts[-1],
         "final_revenue": revenue[-1],
+        "addon_tickets": addons,
         "synced_tickets": synced,
         "snapshot_sold": snapshot_sold,
         "coverage": coverage,
@@ -176,16 +199,34 @@ def _format_axis(value: float, is_money: bool) -> str:
     return f"{prefix}{value:,.0f}"
 
 
-def _chart(series: list[dict], key: str, is_money: bool, width: float = 720, height: float = 260) -> dict:
-    """Build everything the template needs to draw one chart."""
+def _chart(
+    series: list[dict],
+    key: str,
+    is_money: bool,
+    width: float = 720,
+    height: float = 260,
+    step: float | None = None,
+    axis_max: float | None = None,
+) -> dict:
+    """Build everything the template needs to draw one chart.
+
+    Pass step and axis_max to pin the scale - useful when a chart should keep the
+    same shape from year to year instead of rescaling itself around whichever
+    season happened to sell the most.
+    """
     max_value = max((max(s[key]) for s in series), default=0)
 
-    tick_count = 4
-    step = _axis_step((max_value or 1) / tick_count)
-    # Grow the axis to a whole number of steps so the top tick is round and the
-    # highest point still sits inside the plot.
-    axis_max = step * max(tick_count, math.ceil((max_value or 1) / step))
+    if step is None or axis_max is None:
+        tick_count = 4
+        step = _axis_step((max_value or 1) / tick_count)
+        # Grow the axis to a whole number of steps so the top tick is round and the
+        # highest point still sits inside the plot.
+        axis_max = step * max(tick_count, math.ceil((max_value or 1) / step))
+
     ticks = [step * i for i in range(int(round(axis_max / step)) + 1)]
+    # A pinned axis can be shorter than the data. Draw those points along the top
+    # rather than off the canvas, and let the caller say so on the page.
+    clipped = max_value > axis_max
 
     x_step = width / (len(CHECKPOINTS) - 1) if len(CHECKPOINTS) > 1 else width
 
@@ -195,7 +236,7 @@ def _chart(series: list[dict], key: str, is_money: bool, width: float = 720, hei
         points = [
             {
                 "x": i * x_step,
-                "y": height - (v * height / axis_max if axis_max else 0),
+                "y": height - (min(v, axis_max) * height / axis_max if axis_max else 0),
                 "value": v,
                 "when": _when_label(CHECKPOINTS[i]),
                 "value_label": _format_value(v, is_money),
@@ -234,6 +275,8 @@ def _chart(series: list[dict], key: str, is_money: bool, width: float = 720, hei
         "x_labels": x_labels,
         "max_value": max_value,
         "axis_max": axis_max,
+        "step": step,
+        "clipped": clipped,
     }
 
 
@@ -273,8 +316,20 @@ def sales_curves() -> dict:
         "excluded_years": sorted(EXCLUDED_YEARS),
         "charts": (
             [
-                {"title": "Tickets sold", "is_money": False, "slug": "tickets", **_chart(series, "tickets", False)},
-                {"title": "Revenue", "is_money": True, "slug": "revenue", **_chart(series, "revenue", True)},
+                {
+                    "title": "Tickets sold",
+                    "note": "conference tickets only, excluding sprints and tutorials",
+                    "is_money": False,
+                    "slug": "tickets",
+                    **_chart(series, "tickets", False),
+                },
+                {
+                    "title": "Revenue",
+                    "note": "all tickets, including sprints and tutorials",
+                    "is_money": True,
+                    "slug": "revenue",
+                    **_chart(series, "revenue", True, step=REVENUE_AXIS_STEP, axis_max=REVENUE_AXIS_MAX),
+                },
             ]
             if series
             else []
