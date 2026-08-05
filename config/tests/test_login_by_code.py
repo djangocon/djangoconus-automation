@@ -3,9 +3,23 @@ import re
 import pytest
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
+from django.test import Client
 from django.urls import reverse
 
 User = get_user_model()
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_limits():
+    """Allauth throttles request_login_code at 20/m/ip and stores that in the cache.
+
+    Every test here posts from 127.0.0.1, and the cache outlives individual tests,
+    so without this the later ones silently get throttled instead of sending mail.
+    """
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture
@@ -62,8 +76,33 @@ class TestLoginByCode:
         response = client.get(reverse("home"))
         assert not response.context["user"].is_authenticated
 
-    def test_unknown_email_does_not_reveal_account_state(self, client):
+    def test_unknown_email_is_signed_up_rather_than_turned_away(self, client):
+        """Previously an unknown address got a "no such account" mail and a dead end.
+
+        Attendees have no reason to have signed up first, so the account is now
+        created on the spot and the code goes out as normal. See
+        config/account_forms.py and config/tests/test_account_forms.py.
+        """
         response = request_code(client, "nobody@example.com")
         assert response.status_code == 302
         assert len(mail.outbox) == 1
-        assert "code=" not in mail.outbox[0].body
+        assert re.search(r"\?code=([A-Z0-9]+)", mail.outbox[0].body)
+        assert User.objects.filter(email="nobody@example.com").exists()
+
+    def test_unknown_email_is_indistinguishable_from_a_known_one(self, user):
+        """Enumeration protection: both paths must look the same from outside.
+
+        Separate clients: a session with a login already in flight short-circuits
+        the second request, which would compare the two paths unfairly.
+        """
+        known = request_code(Client(), user.email)
+        known_body = mail.outbox[0].body
+        mail.outbox.clear()
+
+        unknown = request_code(Client(), "stranger@example.com")
+        unknown_body = mail.outbox[0].body
+
+        assert known.status_code == unknown.status_code
+        assert known.url == unknown.url
+        # Same template, same shape -- only the code itself differs.
+        assert bool(re.search(r"\?code=", known_body)) == bool(re.search(r"\?code=", unknown_body))
