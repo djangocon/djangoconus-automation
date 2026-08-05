@@ -68,15 +68,17 @@
             <div class="rounded-lg border border-green-700 bg-green-800 p-4">
                 <h2 class="mb-2 text-lg font-semibold text-yellow-300">📇 Volunteer contacts</h2>
                 {% if chairs %}
-                    <p class="mb-2 text-sm text-green-200">
+                    <p class="text-sm text-green-200">
                         <strong class="text-green-100">Volunteer chairs:</strong>
                         {% for chair in chairs %}
                             {{ chair.get_full_name|default:chair.get_username }}{% if not forloop.last %} · {% endif %}
                         {% endfor %}
-                        {% if volunteer_contact_email %}
-                            — reach them at
-                            <a href="mailto:{{ volunteer_contact_email }}" class="text-yellow-300 underline">{{ volunteer_contact_email }}</a>
-                        {% endif %}
+                    </p>
+                {% endif %}
+                {% if chairs and volunteer_contact_email %}
+                    <p class="mb-2 text-sm text-green-200">
+                        Reach them at
+                        <a href="mailto:{{ volunteer_contact_email }}" class="text-yellow-300 underline">{{ volunteer_contact_email }}</a>
                     </p>
                 {% endif %}
                 {% if contact_info %}
