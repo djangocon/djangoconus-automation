@@ -20,7 +20,7 @@
 {% endblock extra_head %}
 
 {% block content %}
-    <div class="p-6 mx-auto max-w-4xl">
+    <div class="mx-auto max-w-4xl p-6">
         <div class="mb-4">
             <a href="/" class="text-sm text-gray-400 hover:text-gray-200">Home</a>
             <span class="text-sm text-gray-500">/</span>
@@ -30,13 +30,13 @@
             </a>
         </div>
 
-        <div class="flex justify-between items-start mb-2">
+        <div class="mb-2 flex items-start justify-between">
             <h1 class="text-3xl font-bold">{{ submission.title }}</h1>
         </div>
 
-        <div class="grid grid-cols-4 gap-4 p-4 mb-6 text-sm text-gray-300 bg-green-800 bg-opacity-50 rounded-lg">
+        <div class="bg-opacity-50 mb-6 grid grid-cols-4 gap-4 rounded-lg bg-green-800 p-4 text-sm text-gray-300">
             <div>
-                <span class="block mb-2 text-xs font-medium text-gray-400 uppercase">ID</span>
+                <span class="mb-2 block text-xs font-medium text-gray-400 uppercase">ID</span>
                 <a href="https://pretalx.com/djangocon-us-2026/talk/{{ submission.pretalx_id }}/"
                    target="_blank"
                    class="text-blue-300 underline hover:text-blue-200">
@@ -44,19 +44,19 @@
                 </a>
             </div>
             <div>
-                <span class="block mb-2 text-xs font-medium text-gray-400 uppercase">Duration</span>
+                <span class="mb-2 block text-xs font-medium text-gray-400 uppercase">Duration</span>
                 {% if submission.duration %}{{ submission.duration }} min{% else %}-{% endif %}
             </div>
             <div>
-                <span class="block mb-2 text-xs font-medium text-gray-400 uppercase">Pretalx Status</span>
+                <span class="mb-2 block text-xs font-medium text-gray-400 uppercase">Pretalx Status</span>
                 <span class="inline-flex py-1 px-2 text-xs rounded-full {% if submission.pretalx_state == 'withdrawn' %}bg-gray-700 text-gray-300{% elif submission.pretalx_state == 'accepted' %}bg-green-800 text-green-200{% elif submission.pretalx_state == 'rejected' %}bg-red-800 text-red-200{% elif submission.pretalx_state == 'confirmed' %}bg-blue-800 text-blue-200{% else %}bg-gray-600 text-gray-200{% endif %}">
                     {{ submission.get_pretalx_state_display }}
                 </span>
             </div>
             <div>
-                <span class="block mb-2 text-xs font-medium text-gray-400 uppercase">Decision</span>
+                <span class="mb-2 block text-xs font-medium text-gray-400 uppercase">Decision</span>
                 <select name="state"
-                        class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300"
+                        class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
                         hx-post="{% url 'thunderdome_submission_set_state' submission.pk %}"
                         hx-swap="none"
                         hx-include="this">

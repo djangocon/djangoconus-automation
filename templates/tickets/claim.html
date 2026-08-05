@@ -3,7 +3,7 @@
 {% block title %}Claim Your Ticket - DjangoCon US{% endblock %}
 
 {% block content %}
-    <div class="p-6 mx-auto max-w-2xl">
+    <div class="mx-auto max-w-2xl p-6">
         <div class="mb-8 text-center">
             <h1 class="mb-4 text-4xl font-bold">Claim Your Ticket</h1>
             <p class="text-lg text-gray-300">Enter your email address to claim a ticket or retrieve your existing one.</p>
@@ -19,12 +19,12 @@
             </div>
         {% endif %}
 
-        <div class="p-8 bg-green-800 bg-opacity-30 rounded-lg">
+        <div class="bg-opacity-30 rounded-lg bg-green-800 p-8">
             <form method="post" class="space-y-6">
                 {% csrf_token %}
 
                 <div>
-                    <label for="{{ form.email.id_for_label }}" class="block mb-3 text-lg font-medium">
+                    <label for="{{ form.email.id_for_label }}" class="mb-3 block text-lg font-medium">
                         {{ form.email.label }}
                     </label>
 
@@ -45,7 +45,7 @@
 
                 <div class="pt-4">
                     <button type="submit"
-                            class="py-3 px-6 w-full text-lg font-semibold text-white bg-green-600 rounded-lg transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                            class="w-full rounded-lg bg-green-600 px-6 py-3 text-lg font-semibold text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                         Get My Ticket
                     </button>
                 </div>

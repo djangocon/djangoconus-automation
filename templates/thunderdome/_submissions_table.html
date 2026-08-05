@@ -1,17 +1,17 @@
 {% if submissions %}
-    <div class="flex gap-3 items-center mb-3">
+    <div class="mb-3 flex items-center gap-3">
         <form id="bulk-action-form" method="post" action="{% url 'thunderdome_bulk_state' %}"
               onsubmit="collectSelectedPks(this)">
             {% csrf_token %}
-            <div class="flex gap-3 items-center">
-                <select name="bulk_state" class="py-1 px-2 text-sm text-gray-900 rounded border border-gray-300">
+            <div class="flex items-center gap-3">
+                <select name="bulk_state" class="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900">
                     <option value="">-- Set decision --</option>
                     {% for value, label in states %}
                         <option value="{{ value }}">{{ label }}</option>
                     {% endfor %}
                 </select>
                 <button type="submit"
-                        class="py-1 px-3 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
+                        class="rounded-lg bg-green-600 px-3 py-1 text-sm font-semibold text-white hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-green-900 focus:outline-none">
                     Apply
                 </button>
                 <span class="text-sm text-gray-400" id="selected-count"></span>
@@ -20,43 +20,43 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
-            <thead class="bg-green-700 bg-opacity-50">
+        <table class="bg-opacity-30 w-full overflow-hidden rounded-lg bg-green-800">
+            <thead class="bg-opacity-50 bg-green-700">
                 <tr>
-                    <th class="py-3 px-3 w-8">
+                    <th class="w-8 px-3 py-3">
                         <input type="checkbox" id="select-all" class="rounded"
                                onchange="document.querySelectorAll('input.row-select').forEach(c => c.checked = this.checked); updateSelectedCount();">
                     </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">
+                    <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">
                         <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == 'id' %}-id{% else %}id{% endif %}'); return false;">
                             ID{% if current_sort == 'id' %} &#9650;{% elif current_sort == '-id' %} &#9660;{% endif %}
                         </a>
                     </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">
+                    <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">
                         <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == 'title' %}-title{% else %}title{% endif %}'); return false;">
                             Title{% if current_sort == 'title' %} &#9650;{% elif current_sort == '-title' %} &#9660;{% endif %}
                         </a>
                     </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Speakers</th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
+                    <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Speakers</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase">
                         <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-duration' %}duration{% else %}-duration{% endif %}'); return false;">
                             Duration{% if current_sort == 'duration' %} &#9650;{% elif current_sort == '-duration' %} &#9660;{% endif %}
                         </a>
                     </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
+                    <th class="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase">
                         <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-reviews' %}reviews{% else %}-reviews{% endif %}'); return false;">
                             Reviews{% if current_sort == 'reviews' %} &#9650;{% elif current_sort == '-reviews' %} &#9660;{% endif %}
                         </a>
                     </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">
+                    <th class="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase">
                         <a href="#" class="text-gray-200 hover:text-white" onclick="setSort('{% if current_sort == '-mean' %}mean{% else %}-mean{% endif %}'); return false;">
                             Mean{% if current_sort == 'mean' %} &#9650;{% elif current_sort == '-mean' %} &#9660;{% endif %}
                         </a>
                     </th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Tags</th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Grant</th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Pretalx</th>
-                    <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Decision</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium tracking-wider uppercase">Tags</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase">Grant</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase">Pretalx</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium tracking-wider uppercase">Decision</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-green-700">
@@ -67,7 +67,7 @@
         </table>
     </div>
 {% else %}
-    <div class="py-12 text-center bg-green-800 bg-opacity-30 rounded-lg">
+    <div class="bg-opacity-30 rounded-lg bg-green-800 py-12 text-center">
         <p class="text-xl text-gray-300">No submissions found.</p>
     </div>
 {% endif %}
