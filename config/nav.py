@@ -46,6 +46,7 @@ NAV_ITEMS = [
         permissions=["is_authenticated"],
         items=[
             NavItem(title="Django Admin", url="admin:index", permissions=["is_staff"]),
+            NavItem(title="Email Previews", url="email_previews", permissions=["is_staff"]),
             NavItem(title="Sign Out", url="account_logout"),
         ],
     ),

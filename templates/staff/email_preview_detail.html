@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block body_class %}flex flex-col p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock body_class %}
+{% block main_class %}flex-1 mx-auto w-full text-white{% endblock main_class %}
+
+{% block title %}{{ preview.label }} - Email Previews{% endblock title %}
+
+{% block content %}
+    <div class="mx-auto max-w-5xl p-6">
+        <div class="mb-6">
+            <a href="{% url 'email_previews' %}" class="text-sm text-gray-400 hover:text-gray-200">&larr; All email previews</a>
+            <h1 class="text-3xl font-bold">{{ preview.label }}</h1>
+            <p class="mt-1 text-sm text-gray-400">{{ preview.description }}</p>
+        </div>
+
+        <div class="mb-6 flex flex-wrap gap-2">
+            {% for other in previews %}
+                <a href="{% url 'email_preview' other.slug %}"
+                   class="rounded-full border px-3 py-1 text-sm {% if other.slug == preview.slug %}border-yellow-300 bg-yellow-300 font-semibold text-green-900{% else %}border-green-700 bg-green-800 text-green-100 hover:bg-green-700{% endif %}">
+                    {{ other.label }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <dl class="mb-6 grid gap-3 rounded-lg border border-green-700 bg-green-800/50 p-4 text-sm sm:grid-cols-2">
+            <div>
+                <dt class="text-xs uppercase tracking-wide text-gray-400">Subject</dt>
+                <dd class="mt-1 font-semibold text-yellow-200">{{ rendered.subject }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs uppercase tracking-wide text-gray-400">To</dt>
+                <dd class="mt-1 text-gray-200">{{ preview.recipient }}</dd>
+            </div>
+            <div class="sm:col-span-2">
+                <dt class="text-xs uppercase tracking-wide text-gray-400">Sent by</dt>
+                <dd class="mt-1 text-gray-200">{{ preview.trigger }}</dd>
+            </div>
+            <div class="sm:col-span-2">
+                <dt class="text-xs uppercase tracking-wide text-gray-400">Templates</dt>
+                <dd class="mt-1 font-mono text-xs text-gray-300">
+                    {% for template in preview.all_templates %}{{ template }}{% if not forloop.last %} &middot; {% endif %}{% endfor %}
+                </dd>
+            </div>
+        </dl>
+
+        {% if rendered.html_body %}
+            <div class="mb-6">
+                <div class="mb-2 flex items-baseline justify-between">
+                    <h2 class="text-xl font-semibold text-yellow-200">HTML part</h2>
+                    <a href="?part=html" target="_blank" rel="noopener" class="text-sm text-yellow-300 underline hover:text-yellow-200">
+                        Open standalone &nearr;
+                    </a>
+                </div>
+                {% comment %}
+                    force_escape is required: render_to_string returns a SafeString, so without it the
+                    body's own quotes close the srcdoc attribute early and the iframe renders blank.
+                    sandbox: the preview is our own markup, but it should never be able to script this page.
+                {% endcomment %}
+                <iframe title="HTML preview of {{ preview.label }}"
+                        sandbox
+                        srcdoc="{{ rendered.html_body|force_escape }}"
+                        class="h-[36rem] w-full rounded-lg border border-green-700 bg-white"></iframe>
+            </div>
+        {% endif %}
+
+        <div>
+            <h2 class="mb-2 text-xl font-semibold text-yellow-200">
+                {% if rendered.html_body %}Plain text part{% else %}Plain text{% endif %}
+            </h2>
+            <pre class="overflow-x-auto rounded-lg border border-green-700 bg-black/40 p-4 text-sm whitespace-pre-wrap text-gray-100">{{ rendered.text_body }}</pre>
+        </div>
+    </div>
+{% endblock content %}
