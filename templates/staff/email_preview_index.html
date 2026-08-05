@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block body_class %}flex flex-col p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock body_class %}
+{% block main_class %}flex-1 mx-auto w-full text-white{% endblock main_class %}
+
+{% block title %}Email Previews - DjangoCon US Automation{% endblock title %}
+
+{% block content %}
+    <div class="mx-auto max-w-5xl p-6">
+        <div class="mb-6">
+            <a href="{% url 'home' %}" class="text-sm text-gray-400 hover:text-gray-200">&larr; Home</a>
+            <h1 class="text-3xl font-bold">Email Previews</h1>
+            <p class="mt-1 text-sm text-gray-400">
+                Every email this app sends, rendered with sample data. Nothing here touches the database
+                or sends mail &mdash; the contents are fabricated, so no attendee data can appear.
+            </p>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            {% for preview in previews %}
+                <a href="{% url 'email_preview' preview.slug %}"
+                   class="block rounded-lg border border-green-700 bg-green-800/50 p-4 hover:border-yellow-300">
+                    <div class="flex flex-wrap items-baseline justify-between gap-2">
+                        <p class="text-lg font-semibold text-yellow-200">{{ preview.label }}</p>
+                        <div class="flex gap-2">
+                            {% if preview.html_template %}
+                                <span class="rounded-full bg-green-700 px-2 py-0.5 text-xs text-green-100">HTML + text</span>
+                            {% else %}
+                                <span class="rounded-full bg-green-700 px-2 py-0.5 text-xs text-green-100">text only</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-300">{{ preview.description }}</p>
+                    <p class="mt-2 text-xs text-gray-400">
+                        <span class="text-gray-500">To:</span> {{ preview.recipient }}
+                        &middot;
+                        <span class="text-gray-500">Sent by:</span> {{ preview.trigger }}
+                    </p>
+                </a>
+            {% empty %}
+                <p class="text-gray-400">No emails are registered.</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock content %}
