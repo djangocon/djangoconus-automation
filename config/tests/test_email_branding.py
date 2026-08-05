@@ -105,9 +105,7 @@ class TestVolunteerEmailBranding:
     def test_uncovered_alert_is_branded(self, user, shift, hostile_site, settings):
         settings.VOLUNTEER_COORDINATOR_EMAILS = ["coordinator@example.com"]
         signup = VolunteerSignup.objects.create(shift=shift, user=user, cancelled=True)
-        VolunteerSignup.objects.filter(pk=signup.pk).update(
-            created_at=timezone.now() - datetime.timedelta(minutes=120)
-        )
+        VolunteerSignup.objects.filter(pk=signup.pk).update(created_at=timezone.now() - datetime.timedelta(minutes=120))
         assert notify_shift_uncovered(signup.pk) is True
         assert_branded(mail.outbox[0])
 

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from config import __version__
-from config.views import homepage_view
+from config.views import email_preview_detail_view, email_preview_index_view, homepage_view
 from thunderdome.views import (
     bulk_set_state_view,
     grants_view,
@@ -39,6 +39,8 @@ urlpatterns = [
     path("", homepage_view, name="home"),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
+    path("staff/emails/", email_preview_index_view, name="email_previews"),
+    path("staff/emails/<slug:slug>/", email_preview_detail_view, name="email_preview"),
     path("titowebhook/", tito_webhook),
     path("tickets/", tickets_info, name="tickets_info"),
     path("tickets/create/", create_tickets_view, name="create_tickets"),
