@@ -188,6 +188,12 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 # Passwordless sign-in: allauth emails a short-lived code (and our email template
 # adds a clickable link that prefills it). See #91/#99.
 ACCOUNT_LOGIN_BY_CODE_ENABLED = True
+# Allauth only mails a code to accounts that already exist; an unknown address
+# gets a "no such account" email and a dead end. Attendees have no reason to
+# have signed up first, so this form creates the account and carries on. The
+# code still only goes to the address that was typed, which is what makes it
+# safe to skip a password. See config/account_forms.py.
+ACCOUNT_FORMS = {"request_login_code": "config.account_forms.AutoSignupRequestLoginCodeForm"}
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 # NOTE: do not set ACCOUNT_USER_MODEL_USERNAME_FIELD = None. We use the stock
