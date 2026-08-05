@@ -24,19 +24,19 @@
 
         <dl class="mb-6 grid gap-3 rounded-lg border border-green-700 bg-green-800/50 p-4 text-sm sm:grid-cols-2">
             <div>
-                <dt class="text-xs uppercase tracking-wide text-gray-400">Subject</dt>
+                <dt class="text-xs tracking-wide text-gray-400 uppercase">Subject</dt>
                 <dd class="mt-1 font-semibold text-yellow-200">{{ rendered.subject }}</dd>
             </div>
             <div>
-                <dt class="text-xs uppercase tracking-wide text-gray-400">To</dt>
+                <dt class="text-xs tracking-wide text-gray-400 uppercase">To</dt>
                 <dd class="mt-1 text-gray-200">{{ preview.recipient }}</dd>
             </div>
             <div class="sm:col-span-2">
-                <dt class="text-xs uppercase tracking-wide text-gray-400">Sent by</dt>
+                <dt class="text-xs tracking-wide text-gray-400 uppercase">Sent by</dt>
                 <dd class="mt-1 text-gray-200">{{ preview.trigger }}</dd>
             </div>
             <div class="sm:col-span-2">
-                <dt class="text-xs uppercase tracking-wide text-gray-400">Templates</dt>
+                <dt class="text-xs tracking-wide text-gray-400 uppercase">Templates</dt>
                 <dd class="mt-1 font-mono text-xs text-gray-300">
                     {% for template in preview.all_templates %}{{ template }}{% if not forloop.last %} &middot; {% endif %}{% endfor %}
                 </dd>
