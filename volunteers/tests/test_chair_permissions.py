@@ -94,7 +94,7 @@ def test_superusers_keep_access_to_everything(client, db):
 
 
 def test_chair_can_manage_the_dashboard(chair_client, db):
-    """"Manage," not just "see" — the dashboard's POST actions open up too."""
+    """ "Manage," not just "see" — the dashboard's POST actions open up too."""
     role = Role.objects.create(name="Registration Desk")
     shift = Shift.objects.create(
         role=role,
@@ -131,18 +131,19 @@ def test_chairs_appear_on_my_shifts(client, db, chair):
 
 
 def test_chairs_line_uses_the_shared_address_not_personal_email(client, db, chair, settings):
-    """Chairs are named, but the mailto is the shared volunteers@ alias."""
-    settings.VOLUNTEER_CONTACT_EMAIL = "volunteers@djangocon.us"
+    """Chairs are named, but the mailto is the shared address, not a personal one."""
+    settings.VOLUNTEER_CONTACT_EMAIL = "volunteers@example.com"
     volunteer = User.objects.create_user(username="vol", email="vol@example.com", password="pw12345!")
     client.force_login(volunteer)
 
     body = client.get(reverse("volunteers:my_shifts")).content.decode()
 
-    assert "mailto:volunteers@djangocon.us" in body
+    assert "mailto:volunteers@example.com" in body
     assert "chair@example.com" not in body
 
 
 def test_chairs_line_drops_the_link_when_no_shared_address_is_set(client, db, chair, settings):
+    """The default: no address configured, so the names show without a mailto."""
     settings.VOLUNTEER_CONTACT_EMAIL = ""
     volunteer = User.objects.create_user(username="vol", email="vol@example.com", password="pw12345!")
     client.force_login(volunteer)

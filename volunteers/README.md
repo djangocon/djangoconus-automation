@@ -67,8 +67,8 @@ personal inbox. Checks live in `volunteers/permissions.py`.
 ## Settings
 
 - `VOLUNTEER_MAX_HOURS` (env, default `8`) — per-person hour cap.
-- `VOLUNTEER_CONTACT_EMAIL` (env, default `volunteers@djangocon.us`) — shared
-  address for the chairs line. Blank hides the link.
+- `VOLUNTEER_CONTACT_EMAIL` (env, no default) — shared address for the chairs
+  line, set per environment. Blank hides the link.
 
 ## Setup
 
