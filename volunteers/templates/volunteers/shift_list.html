@@ -26,6 +26,17 @@
             {% endif %}
         </div>
 
+        {% if days %}
+            <nav aria-label="Jump to a day" class="flex flex-wrap gap-2 justify-center print-hide">
+                {% for day, shifts in days %}
+                    <a href="#day-{{ day|date:'Y-m-d' }}"
+                       class="py-1 px-3 text-sm font-medium text-yellow-200 bg-green-800 rounded-full border border-green-700 hover:bg-green-700 hover:text-yellow-100">
+                        {{ day|date:"D, M j" }}
+                    </a>
+                {% endfor %}
+            </nav>
+        {% endif %}
+
         {% if my_upcoming %}
             <section class="p-4 bg-green-800 rounded-lg border border-yellow-300 print-hide">
                 <h2 class="mb-2 text-lg font-semibold text-yellow-300">Your upcoming shifts</h2>
@@ -75,7 +86,7 @@
         </form>
 
         {% for day, shifts in days %}
-            <section class="p-6 bg-green-800 rounded-lg border border-green-700">
+            <section id="day-{{ day|date:'Y-m-d' }}" class="p-6 bg-green-800 rounded-lg border border-green-700 scroll-mt-4">
                 <h2 class="mb-4 text-2xl font-semibold text-yellow-300">{{ day|date:"l, F j" }}</h2>
                 {% regroup shifts by starts_at as time_groups %}
                 <div class="flex flex-col gap-6">
