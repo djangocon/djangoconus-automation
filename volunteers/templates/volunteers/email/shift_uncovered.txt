@@ -10,4 +10,4 @@ This upcoming volunteer shift just lost its only volunteer and is now uncovered:
 
 You may want to find a replacement or cover it from the dashboard.
 
-— The DjangoCon US Automation
+— The DjangoCon US Team

@@ -1,0 +1,4 @@
+{% load i18n %}
+{% autoescape off %}
+{% blocktranslate %}Your DjangoCon US sign-in code{% endblocktranslate %}
+{% endautoescape %}

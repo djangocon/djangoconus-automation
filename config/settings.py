@@ -185,6 +185,12 @@ AUTHENTICATION_BACKENDS = [
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_EMAIL_VERIFICATION = "none"
+# Left unset, allauth prefixes every subject with "[{Site.name}] " — which in
+# production is the bare hostname, so sign-in codes arrived as
+# "[automation.defna.org] Sign-In Code". Our own emails carry the brand in the
+# subject itself (see tickets/tasks.py SUBJECTS), so drop the prefix entirely
+# and name DjangoCon US in the overridden *_subject.txt templates instead.
+ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
 # Passwordless sign-in: allauth emails a short-lived code (and our email template
 # adds a clickable link that prefills it). See #91/#99.
 ACCOUNT_LOGIN_BY_CODE_ENABLED = True

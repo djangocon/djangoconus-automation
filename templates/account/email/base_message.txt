@@ -1,0 +1,10 @@
+{% load i18n %}{% autoescape off %}{% block greeting %}Hi there,{% endblock greeting %}
+
+{% block content %}{% endblock content %}
+
+— The DjangoCon US Team
+
+--
+{% block footer %}Questions? Reply to this email and we'll help you out.
+DjangoCon US is organized by DEFNA, the Django Events Foundation North America.{% endblock footer %}
+{% endautoescape %}

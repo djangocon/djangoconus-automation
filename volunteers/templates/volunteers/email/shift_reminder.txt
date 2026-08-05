@@ -10,3 +10,7 @@ Thanks so much for helping out! If you can no longer make it, please cancel your
 signup so someone else can fill the spot.
 
 — The DjangoCon US Team
+
+--
+Questions? Reply to this email and we'll help you out.
+DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
