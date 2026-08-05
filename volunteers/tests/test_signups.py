@@ -137,6 +137,51 @@ def test_shift_list_shows_role_documentation(client, role):
     assert "https://docs.example.com/reg-desk/" in resp.content.decode()
 
 
+def test_shift_list_shows_role_description(client, role):
+    role.description = "Monitor public chat. Enforce the Code of Conduct."
+    role.save()
+    make_shift(role, title="Reg Desk")
+
+    body = client.get(reverse("volunteers:shifts")).content.decode()
+
+    assert "Monitor public chat. Enforce the Code of Conduct." in body
+
+
+def test_shift_list_role_description_is_collapsed(client, role):
+    """Duties repeat on every shift for a role, so they must not render inline
+    and swamp the list. Collapsed in a <details> keeps the overview compact."""
+    role.description = "Monitor public chat."
+    role.save()
+    make_shift(role, title="Reg Desk")
+
+    body = client.get(reverse("volunteers:shifts")).content.decode()
+
+    assert "<details" in body
+    assert "What this role involves" in body
+
+
+def test_shift_list_omits_description_block_when_role_has_none(client, role):
+    role.description = ""
+    role.save()
+    make_shift(role, title="Reg Desk")
+
+    body = client.get(reverse("volunteers:shifts")).content.decode()
+
+    assert "What this role involves" not in body
+
+
+def test_my_shifts_shows_role_description(auth_client, user, role):
+    role.description = "Monitor public chat."
+    role.save()
+    shift = make_shift(role, title="Reg Desk")
+    VolunteerSignup.objects.create(shift=shift, user=user)
+
+    body = auth_client.get(reverse("volunteers:my_shifts")).content.decode()
+
+    assert "Monitor public chat." in body
+    assert "<details" in body
+
+
 def test_shift_list_shows_talk_url(client, role):
     from volunteers.models import Talk
 

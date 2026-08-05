@@ -37,6 +37,12 @@
                             <time datetime="{{ signup.shift.starts_at|date:'c' }}">{{ signup.shift.starts_at|date:"l, F j," }} <span class="whitespace-nowrap">{{ signup.shift.starts_at|date:"g:i A" }}</span></time>–<time datetime="{{ signup.shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ signup.shift.ends_at|date:"g:i A" }}</time>
                             {% if signup.shift.location %} · {{ signup.shift.location }}{% endif %}
                         </p>
+                        {% if signup.shift.role.description %}
+                            <details class="mt-1 text-xs">
+                                <summary class="cursor-pointer text-yellow-300 select-none">What this role involves</summary>
+                                <p class="mt-1 text-sm whitespace-pre-line text-green-200">{{ signup.shift.role.description }}</p>
+                            </details>
+                        {% endif %}
                         {% if signup.shift.role.documentation_url %}
                             <p class="mt-1 text-xs">
                                 <a href="{{ signup.shift.role.documentation_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">
