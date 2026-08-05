@@ -59,11 +59,24 @@ def _ticket_fields(payload: dict, event_slug: str, year: int, source: str) -> di
     state_name = (payload.get("state_name") or payload.get("state") or "").lower()
     voided = bool(payload.get("void")) or state_name in VOID_STATES
 
+    # Ti.to sends the buyer's address on the ticket once it is claimed; on the
+    # /tickets API it can also arrive nested under "assignee". Unclaimed tickets
+    # legitimately have no address at all, so blank is normal, not an error.
+    assignee = payload.get("assignee") or {}
+    email = (payload.get("email") or assignee.get("email") or "").strip().lower()
+    name = (
+        payload.get("name")
+        or assignee.get("name")
+        or " ".join(filter(None, [payload.get("first_name"), payload.get("last_name")])).strip()
+    )
+
     return {
         "ticket_slug": ticket_slug,
         "event_slug": event_slug,
         "year": year,
         "reference": (payload.get("reference") or "")[:64],
+        "email": email[:254],
+        "name": (name or "")[:256],
         "release_title": (payload.get("release_title") or release.get("title") or "")[:256],
         "release_id": payload.get("release_id") or release.get("id"),
         "release_price": _money(payload.get("release_price")),

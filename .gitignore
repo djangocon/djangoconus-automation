@@ -170,3 +170,9 @@ staticfiles
 
 # Kept on disk for local reference, not part of the PR diff
 /docs/screenshots/
+
+# Local database dumps, never committed
+*.dump
+
+# Tailwind CLI build output (TAILWIND_CLI_SRC_CSS is frontend/index.css)
+/frontend/css/

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block body_class %}flex flex-col p-4 min-h-screen text-white bg-green-900 bg-gradient-to-b from-green-900 to-black via-green-950{% endblock %}
+{% block main_class %}flex-1 mx-auto w-full text-white{% endblock %}
+
+{% block title %}Ticket Email Log - DjangoCon US Automation{% endblock %}
+
+{% block content %}
+    <div class="p-6 mx-auto max-w-6xl">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <a href="{% url 'online_attendees' %}" class="text-sm text-gray-400 hover:text-gray-200">&larr; Online Attendees</a>
+                <h1 class="text-3xl font-bold">Ticket Email Log</h1>
+                <p class="mt-1 text-sm text-gray-400">Every ticket-link email we've queued, newest first (last 500).</p>
+            </div>
+        </div>
+
+        <div class="p-4 mb-6 bg-green-800 bg-opacity-50 rounded-lg">
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-2xl font-bold text-green-400">{{ sent_count }}</p>
+                    <p class="text-sm text-gray-300">Sent</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-yellow-400">{{ queued_count }}</p>
+                    <p class="text-sm text-gray-300">Queued</p>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-red-400">{{ failed_count }}</p>
+                    <p class="text-sm text-gray-300">Failed</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4 text-sm">
+            <a href="?" class="py-1 px-3 rounded-full {% if status == 'all' %}bg-green-600 text-white{% else %}bg-green-800 bg-opacity-40 text-gray-300 hover:bg-opacity-70{% endif %}">All</a>
+            <a href="?status=sent" class="py-1 px-3 rounded-full {% if status == 'sent' %}bg-green-600 text-white{% else %}bg-green-800 bg-opacity-40 text-gray-300 hover:bg-opacity-70{% endif %}">Sent</a>
+            <a href="?status=queued" class="py-1 px-3 rounded-full {% if status == 'queued' %}bg-green-600 text-white{% else %}bg-green-800 bg-opacity-40 text-gray-300 hover:bg-opacity-70{% endif %}">Queued</a>
+            <a href="?status=failed" class="py-1 px-3 rounded-full {% if status == 'failed' %}bg-green-600 text-white{% else %}bg-green-800 bg-opacity-40 text-gray-300 hover:bg-opacity-70{% endif %}">Failed</a>
+        </div>
+
+        {% if logs %}
+            <div class="overflow-x-auto">
+                <table class="overflow-hidden w-full bg-green-800 bg-opacity-30 rounded-lg">
+                    <thead class="bg-green-700 bg-opacity-50">
+                        <tr>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Recipient</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Kind</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-center uppercase">Status</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Queued</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">Sent</th>
+                            <th class="py-3 px-4 text-xs font-medium tracking-wider text-left uppercase">By</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-green-700">
+                        {% for log in logs %}
+                            <tr class="transition-colors hover:bg-green-700 hover:bg-opacity-30">
+                                <td class="py-3 px-4 text-sm">
+                                    <span class="block text-blue-300">{{ log.to_email }}</span>
+                                    {% if log.error %}
+                                        <span class="block max-w-md text-xs text-red-300 truncate" title="{{ log.error }}">{{ log.error }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-300">{{ log.get_kind_display }}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="inline-flex py-1 px-3 text-xs font-semibold rounded-full {% if log.status == 'sent' %}text-green-200 bg-green-800{% elif log.status == 'failed' %}text-red-200 bg-red-800{% else %}text-yellow-200 bg-yellow-800{% endif %}">
+                                        {{ log.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-sm whitespace-nowrap">{{ log.date_queued|date:"M d, Y g:i A" }}</td>
+                                <td class="py-3 px-4 text-sm whitespace-nowrap">
+                                    {% if log.date_sent %}{{ log.date_sent|date:"M d, Y g:i A" }}{% else %}<span class="text-gray-500">—</span>{% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-300">{{ log.sent_by|default:"system" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="py-12 text-center bg-green-800 bg-opacity-30 rounded-lg">
+                <p class="text-xl text-gray-300">No emails match this filter.</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
