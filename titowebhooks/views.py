@@ -23,6 +23,7 @@ from tickets.sync import record_webhook_attendee
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
 from titowebhooks.sales_curve import sales_curves
 from volunteers.models import VolunteerSignup
+from volunteers.permissions import volunteer_interest_required
 
 logger = logging.getLogger(__name__)
 
@@ -635,7 +636,7 @@ def _volunteer_interest_csv(people: list[dict]) -> HttpResponse:
     return response
 
 
-@superuser_required
+@volunteer_interest_required
 def volunteer_interest_view(request: HttpRequest) -> HttpResponse:
     people = _extract_volunteer_interest()
 

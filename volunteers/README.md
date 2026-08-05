@@ -47,9 +47,28 @@ python manage.py import_shifts shifts.csv --dry-run # validate only
 python manage.py send_volunteer_reminders
 ```
 
+## Volunteer chairs
+
+The **"Volunteer Chair"** group (seeded by migration `0010`) carries the two
+permissions on `VolunteerChairPermissions`:
+
+- `volunteers.view_volunteer_dashboard` — the dashboard, the roster, and every
+  action on them (sync, merge, split, delete, contact info).
+- `volunteers.view_volunteer_interest` — the volunteer interest report.
+
+Add a chair by dropping their user into the group in the Django admin. They need
+no `is_staff`, which keeps them out of the admin and the ticket/sprint tooling.
+Staff keep dashboard access and superusers keep everything, exactly as before.
+
+Group members are listed as the volunteer chairs on `/volunteers/mine/`, with a
+`mailto:` to the shared `VOLUNTEER_CONTACT_EMAIL` address rather than to anyone's
+personal inbox. Checks live in `volunteers/permissions.py`.
+
 ## Settings
 
 - `VOLUNTEER_MAX_HOURS` (env, default `8`) — per-person hour cap.
+- `VOLUNTEER_CONTACT_EMAIL` (env, no default) — shared address for the chairs
+  line, set per environment. Blank hides the link.
 
 ## Setup
 

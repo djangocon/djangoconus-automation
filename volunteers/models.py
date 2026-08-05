@@ -215,6 +215,24 @@ class CalendarToken(models.Model):
         return f"calendar token for {self.user}"
 
 
+class VolunteerChairPermissions(models.Model):
+    """Permission-only model: no table, no rows — just a home for the chair permissions.
+
+    The coordinator tooling isn't owned by any one model (the dashboard spans
+    shifts, signups, and contact info; the interest report reads Tito data), so
+    the permissions hang here instead of being bolted onto an unrelated model.
+    Granted via the "Volunteer Chair" group seeded in migration 0010.
+    """
+
+    class Meta:
+        managed = False
+        default_permissions = ()
+        permissions = [
+            ("view_volunteer_dashboard", "Can view and manage the volunteer dashboard"),
+            ("view_volunteer_interest", "Can view the volunteer interest report"),
+        ]
+
+
 def total_volunteer_hours(user):
     """Total hours a user is currently signed up for (excludes cancelled)."""
     hours = 0.0
