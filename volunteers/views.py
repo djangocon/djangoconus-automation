@@ -3,7 +3,6 @@ from io import StringIO
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.management import call_command
 from django.db.models import Count, Q
@@ -28,6 +27,7 @@ from .models import (
     split_shift,
     total_volunteer_hours,
 )
+from .permissions import dashboard_required, volunteer_chairs
 
 
 def max_volunteer_hours():
@@ -36,6 +36,10 @@ def max_volunteer_hours():
 
 def volunteer_handbook_url():
     return getattr(settings, "VOLUNTEER_HANDBOOK_URL", "")
+
+
+def volunteer_contact_email():
+    return getattr(settings, "VOLUNTEER_CONTACT_EMAIL", "")
 
 
 def _return_url(request):
@@ -121,14 +125,16 @@ def my_shifts_view(request):
         "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
         "handbook_url": volunteer_handbook_url(),
         "contact_info": SiteContactInfo.get_solo().contact_info,
+        "chairs": volunteer_chairs(),
+        "volunteer_contact_email": volunteer_contact_email(),
     }
     return render(request, "volunteers/my_shifts.html", context)
 
 
-@staff_member_required
+@dashboard_required
 @require_POST
 def update_contact_view(request):
-    """Save the site-wide volunteer coordinator contact info (staff only)."""
+    """Save the site-wide volunteer coordinator contact info (chairs and staff)."""
     contact = SiteContactInfo.get_solo()
     contact.contact_info = request.POST.get("contact_info", "").strip()
     contact.save(update_fields=["contact_info", "updated_at"])
@@ -207,7 +213,7 @@ def cancel_view(request, pk):
     return redirect(_return_url(request))
 
 
-@staff_member_required
+@dashboard_required
 def dashboard_view(request):
     """Coordinator view: coverage per shift plus a roster of who's signed up.
 
@@ -285,7 +291,7 @@ def dashboard_view(request):
     return render(request, "volunteers/dashboard.html", context)
 
 
-@staff_member_required
+@dashboard_required
 @require_POST
 def merge_shifts_view(request):
     """Merge the selected schedule shifts into one sign-up block."""
@@ -299,7 +305,7 @@ def merge_shifts_view(request):
     return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
 
 
-@staff_member_required
+@dashboard_required
 @require_POST
 def delete_shift_view(request, pk):
     """Delete a shift (and its sign-ups). Its talks are detached, not deleted."""
@@ -310,7 +316,7 @@ def delete_shift_view(request, pk):
     return redirect(_return_url(request) if request.POST.get("next") else "volunteers:dashboard")
 
 
-@staff_member_required
+@dashboard_required
 @require_POST
 def split_shift_view(request, pk):
     """Split a block back into one shift per talk."""
@@ -326,7 +332,7 @@ def split_shift_view(request, pk):
 VOLUNTEER_SORTS = {"name", "hours", "shifts"}
 
 
-@staff_member_required
+@dashboard_required
 def volunteers_list_view(request):
     """Roster of everyone signed up, with how many shifts/hours each has taken."""
     sort = request.GET.get("sort", "name")
@@ -370,7 +376,7 @@ def volunteers_list_view(request):
     return render(request, "volunteers/volunteers_list.html", context)
 
 
-@staff_member_required
+@dashboard_required
 @require_POST
 def sync_schedule_view(request):
     """Re-import shifts from the conference schedule ICS feed.

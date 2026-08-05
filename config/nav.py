@@ -1,5 +1,7 @@
 from django_simple_nav.nav import Nav, NavGroup, NavItem
 
+from volunteers.permissions import nav_can_manage_dashboard, nav_can_view_volunteer_interest
+
 NAV_ITEMS = [
     NavGroup(
         title="Ticket Management",
@@ -37,8 +39,12 @@ NAV_ITEMS = [
         items=[
             NavItem(title="Sign Up to Volunteer", url="volunteers:shifts"),
             NavItem(title="My Shifts", url="volunteers:my_shifts"),
-            NavItem(title="Volunteer Dashboard", url="volunteers:dashboard", permissions=["is_staff"]),
-            NavItem(title="Volunteer Interest Report", url="volunteer_interest", permissions=["is_superuser"]),
+            NavItem(title="Volunteer Dashboard", url="volunteers:dashboard", permissions=[nav_can_manage_dashboard]),
+            NavItem(
+                title="Volunteer Interest Report",
+                url="volunteer_interest",
+                permissions=[nav_can_view_volunteer_interest],
+            ),
         ],
     ),
     NavGroup(

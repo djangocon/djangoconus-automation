@@ -329,6 +329,10 @@ VOLUNTEER_UNCOVERED_ALERT_WINDOW_HOURS = env.int("VOLUNTEER_UNCOVERED_ALERT_WIND
 # buffer — a quick change of mind isn't worth an email.
 VOLUNTEER_UNCOVERED_ALERT_BUFFER_MINUTES = env.int("VOLUNTEER_UNCOVERED_ALERT_BUFFER_MINUTES", default=60)
 
+# Shared address for the volunteer chairs, shown on a volunteer's own page so
+# nobody's personal inbox is published. Blank hides the link.
+VOLUNTEER_CONTACT_EMAIL = env.str("VOLUNTEER_CONTACT_EMAIL", default="volunteers@djangocon.us")
+
 # General volunteer handbook, shown alongside role-specific docs.
 VOLUNTEER_HANDBOOK_URL = env.str(
     "VOLUNTEER_HANDBOOK_URL",
