@@ -86,7 +86,7 @@ def notify_shift_uncovered(signup_id):
     )
     try:
         send_mail(
-            subject=f"Volunteer needed: “{shift.title}” just lost its only volunteer",
+            subject=f"DjangoCon US volunteer needed: “{shift.title}” just lost its only volunteer",
             message=body,
             from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
             recipient_list=recipients,
