@@ -52,6 +52,21 @@ class Shift(models.Model):
         return f"{self.title} ({self.starts_at:%a %b %d %H:%M})"
 
     @property
+    def display_title(self):
+        """The title, or blank when it only repeats the role name.
+
+        Shift titles are conventionally "<Role> · <Day> <time>", and the card
+        prints the role, the time and the day right underneath — so showing both
+        stutters ("In-person sprints welcomer · Thu 9:00 AM" above "In-person
+        sprints welcomer · 9:00 AM–11:00 AM"). Titles that say something the
+        role name doesn't, like "Morning Session Manager", still show.
+        """
+        title = self.title.strip()
+        if title.casefold().startswith(self.role.name.casefold()):
+            return ""
+        return title
+
+    @property
     def covered_talks(self):
         return self.talks.order_by("starts_at", "title")
 
