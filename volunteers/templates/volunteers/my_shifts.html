@@ -31,9 +31,9 @@
             {% for signup in signups %}
                 <div class="shift-card flex flex-col gap-2 rounded-lg border border-green-700 bg-green-800 p-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p class="text-lg font-semibold text-yellow-100">{{ signup.shift.title }}</p>
+                        <p class="text-lg font-semibold text-yellow-100">{{ signup.shift.display_title|default:signup.shift.role.name }}</p>
                         <p class="text-sm text-green-300">
-                            {{ signup.shift.role.name }} ·
+                            {% if signup.shift.display_title %}{{ signup.shift.role.name }} · {% endif %}
                             <time datetime="{{ signup.shift.starts_at|date:'c' }}">{{ signup.shift.starts_at|date:"l, F j," }} <span class="whitespace-nowrap">{{ signup.shift.starts_at|date:"g:i A" }}</span></time>–<time datetime="{{ signup.shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ signup.shift.ends_at|date:"g:i A" }}</time>
                             {% if signup.shift.location %} · {{ signup.shift.location }}{% endif %}
                         </p>
@@ -46,7 +46,7 @@
                         {% if signup.shift.role.documentation_url %}
                             <p class="mt-1 text-xs">
                                 <a href="{{ signup.shift.role.documentation_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">
-                                    📄 {{ signup.shift.role.name }} documentation
+                                    📄 Role documentation
                                 </a>
                             </p>
                         {% endif %}
