@@ -100,7 +100,9 @@ class TestVolunteerEmailBranding:
     def test_shift_reminder_is_branded(self, user, shift, hostile_site):
         VolunteerSignup.objects.create(shift=shift, user=user)
         assert send_shift_reminders() == 1
-        assert_branded(mail.outbox[0])
+        # The "manage your shifts" link legitimately contains the domain; the
+        # branding must not — same allowance as the sign-in email.
+        assert_branded(mail.outbox[0], allow_domain_in_body=True)
 
     def test_uncovered_alert_is_branded(self, user, shift, hostile_site, settings):
         settings.VOLUNTEER_COORDINATOR_EMAILS = ["coordinator@example.com"]

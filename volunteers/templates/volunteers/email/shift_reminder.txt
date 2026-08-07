@@ -6,11 +6,23 @@ This is a friendly reminder about your upcoming DjangoCon US volunteer shift:
   {{ shift.starts_at|date:"l, F j" }} from {{ shift.starts_at|date:"g:i A" }} to {{ shift.ends_at|date:"g:i A" }}
 {% if shift.location %}  Location: {{ shift.location }}
 {% endif %}
+{% if role_documentation_url %}What this role involves:
+
+  {{ role_documentation_url }}
+{% elif handbook_url %}The volunteer handbook:
+
+  {{ handbook_url }}
+{% endif %}
+Need to make a change? You can review or cancel your shifts here:
+
+  {{ my_shifts_url }}
+
 Thanks so much for helping out! If you can no longer make it, please cancel your
 signup so someone else can fill the spot.
 
 — The DjangoCon US Team
 
 --
-Questions? Reply to this email and we'll help you out.
-DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
+{% if contact_email %}Questions? Email {{ contact_email }} and we'll help you out.
+{% else %}Questions? Reply to this email and we'll help you out.
+{% endif %}DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
