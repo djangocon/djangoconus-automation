@@ -106,9 +106,9 @@
                                 {% for shift in slot.list %}
                                     <div class="flex flex-col gap-2 p-4 bg-green-900 rounded-lg border {% if shift.id in my_shift_ids %}border-yellow-300{% else %}border-green-700{% endif %} shift-card">
                                         <div>
-                                            <p class="text-lg font-semibold text-yellow-100">{{ shift.title }}</p>
+                                            <p class="text-lg font-semibold text-yellow-100">{{ shift.display_title|default:shift.role.name }}</p>
                                             <p class="text-sm text-green-300">
-                                                {{ shift.role.name }} ·
+                                                {% if shift.display_title %}{{ shift.role.name }} · {% endif %}
                                                 <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
                                                 {% if shift.location %} · {{ shift.location }}{% endif %}
                                             </p>
@@ -134,7 +134,7 @@
                                             {% if shift.role.documentation_url %}
                                                 <p class="mt-1 text-xs">
                                                     <a href="{{ shift.role.documentation_url }}" target="_blank" rel="noopener" class="text-yellow-300 underline">
-                                                        📄 {{ shift.role.name }} documentation
+                                                        📄 Role documentation
                                                     </a>
                                                 </p>
                                             {% endif %}
