@@ -122,8 +122,10 @@
                                                 </p>
                                             {% endfor %}
                                             {% if shift.role.description %}
-                                                {# Collapsed by default: a role's duties repeat across every one of its
-                                                   shifts, so rendering them inline would swamp the list. #}
+                                                {% comment %}
+                                                    Collapsed by default: a role's duties repeat across every one of its
+                                                    shifts, so rendering them inline would swamp the list.
+                                                {% endcomment %}
                                                 <details class="mt-1 text-xs">
                                                     <summary class="cursor-pointer text-yellow-300 select-none">What this role involves</summary>
                                                     <p class="mt-1 text-sm whitespace-pre-line text-green-200">{{ shift.role.description }}</p>
