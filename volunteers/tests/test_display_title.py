@@ -16,9 +16,7 @@ from volunteers.models import Role, Shift
 def make_shift(role_name, title):
     role = Role.objects.create(name=role_name)
     start = timezone.now() + datetime.timedelta(hours=2)
-    return Shift.objects.create(
-        role=role, title=title, starts_at=start, ends_at=start + datetime.timedelta(hours=2)
-    )
+    return Shift.objects.create(role=role, title=title, starts_at=start, ends_at=start + datetime.timedelta(hours=2))
 
 
 @pytest.mark.django_db
