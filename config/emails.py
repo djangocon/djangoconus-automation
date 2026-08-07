@@ -96,7 +96,9 @@ def _sample_shift():
         title="Registration Desk — morning",
         role=SimpleNamespace(
             name="Registration Desk",
-            documentation_url="https://example.com/handbook#registration-desk",
+            # The real handbook: a preview is easier to judge when the links go
+            # where the actual email's links go.
+            documentation_url=settings.VOLUNTEER_HANDBOOK_URL,
         ),
         location="Convention Center, Lobby B",
         starts_at=start,
@@ -123,11 +125,20 @@ def _sample_user():
     )
 
 
+def _shift_uncovered_context():
+    return {
+        "shift": _sample_shift(),
+        "user": _sample_user(),
+        "dashboard_url": "https://automation.defna.org/volunteers/dashboard/",
+        "contact_email": settings.VOLUNTEER_CONTACT_EMAIL,
+    }
+
+
 def _ticket_context(**overrides):
     context = {
         "attendee": None,
         "name": "Ada Lovelace",
-        "ticket_link": "https://example.com/online/ticket/sample-preview-link",
+        "ticket_link": "https://automation.defna.org/online/ticket/sample-preview-link",
         "kind": "initial",
         "is_reissue": False,
         "is_resend": False,
@@ -205,6 +216,7 @@ EMAIL_PREVIEWS: list[EmailPreview] = [
         recipient="Volunteer with an upcoming shift",
         subject="Reminder: your DjangoCon US volunteer shift “Registration Desk — morning”",
         text_template="volunteers/email/shift_reminder.txt",
+        html_template="volunteers/email/shift_reminder.html",
         context=_shift_reminder_context,
     ),
     EmailPreview(
@@ -215,7 +227,8 @@ EMAIL_PREVIEWS: list[EmailPreview] = [
         recipient="VOLUNTEER_COORDINATOR_EMAILS",
         subject="DjangoCon US volunteer needed: “Registration Desk — morning” just lost its only volunteer",
         text_template="volunteers/email/shift_uncovered.txt",
-        context=lambda: {"shift": _sample_shift(), "user": _sample_user()},
+        html_template="volunteers/email/shift_uncovered.html",
+        context=_shift_uncovered_context,
     ),
 ]
 

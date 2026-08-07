@@ -1,0 +1,36 @@
+{% extends "email/base.html" %}
+
+{% block title %}A DjangoCon US volunteer shift is uncovered{% endblock title %}
+
+{% block preheader %}
+    {{ shift.title }} on {{ shift.starts_at|date:"l, F j" }} just lost its only volunteer.
+{% endblock preheader %}
+
+{% block header_subtitle %}Uncovered shift{% endblock header_subtitle %}
+
+{% block content %}
+    <p style="margin:0 0 16px; font-size:16px; line-height:1.5;">Heads up,</p>
+
+    <p style="margin:0 0 20px; font-size:16px; line-height:1.5;">
+        This upcoming volunteer shift just lost its only volunteer and is now uncovered.
+    </p>
+
+    {% include "email/_shift_details.html" with shift=shift %}
+
+    <p style="margin:20px 0 24px; font-size:16px; line-height:1.5;">
+        <strong>{{ user.get_full_name|default:user.email }}</strong> cancelled their signup.
+    </p>
+
+    {% if dashboard_url %}
+        {% include "email/_button.html" with url=dashboard_url label="Open the volunteer dashboard" %}
+        <p style="margin:16px 0 0; font-size:15px; line-height:1.6; color:#5c6b73;">
+            You may want to find a replacement or cover it yourself.
+        </p>
+    {% else %}
+        <p style="margin:0; font-size:15px; line-height:1.6; color:#5c6b73;">
+            You may want to find a replacement or cover it from the dashboard.
+        </p>
+    {% endif %}
+{% endblock content %}
+
+{% block signoff %}Thanks,{% endblock signoff %}

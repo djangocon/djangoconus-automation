@@ -29,8 +29,17 @@ def email_preview_detail_view(request: HttpRequest, slug: str) -> HttpResponse:
             raise Http404("This email has no HTML part")
         return HttpResponse(rendered.html_body)
 
+    # Rich and plain are the two things a client might show, so the page shows
+    # one at a time rather than stacking them. Text-only emails have no rich
+    # version to fall back from.
+    view = request.GET.get("view")
+    if view not in {"rich", "text"}:
+        view = "rich" if rendered.html_body else "text"
+    if view == "rich" and not rendered.html_body:
+        view = "text"
+
     return render(
         request,
         "staff/email_preview_detail.html",
-        {"preview": preview, "rendered": rendered, "previews": EMAIL_PREVIEWS},
+        {"preview": preview, "rendered": rendered, "previews": EMAIL_PREVIEWS, "view": view},
     )

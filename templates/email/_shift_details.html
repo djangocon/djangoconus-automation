@@ -1,0 +1,21 @@
+{% comment %}
+    The what/when/where of a shift, as a bordered panel. Shared by the reminder
+    and the uncovered-shift alert so one shift never renders two different ways.
+{% endcomment %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f7f4; border-left:4px solid #93d7b7; border-radius:6px;">
+    <tr>
+        <td style="padding:16px 20px;">
+            <p style="margin:0; font-size:17px; font-weight:700; line-height:1.4; color:#20303c;">
+                {{ shift.title }}
+            </p>
+            <p style="margin:4px 0 0; font-size:14px; color:#5c6b73;">
+                {{ shift.role.name }}
+            </p>
+            <p style="margin:12px 0 0; font-size:15px; line-height:1.6; color:#20303c;">
+                {{ shift.starts_at|date:"l, F j" }}<br>
+                {{ shift.starts_at|date:"g:i A" }} &ndash; {{ shift.ends_at|date:"g:i A" }}
+                {% if shift.location %}<br>{{ shift.location }}{% endif %}
+            </p>
+        </td>
+    </tr>
+</table>
