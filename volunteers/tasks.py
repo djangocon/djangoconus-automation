@@ -3,7 +3,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
@@ -25,6 +25,24 @@ def absolute_url(url_name: str) -> str:
     """
     protocol = getattr(settings, "ACCOUNT_DEFAULT_HTTP_PROTOCOL", "https")
     return f"{protocol}://{Site.objects.get_current().domain}{reverse(url_name)}"
+
+
+def send_rich_email(*, subject: str, template_base: str, context: dict, recipients: list[str]) -> None:
+    """Send a text email with an HTML alternative.
+
+    ``template_base`` names the pair without its extension, e.g.
+    ``volunteers/email/shift_reminder`` for ``.txt`` plus ``.html``. Text is the
+    body and HTML the alternative, so a client that refuses HTML still gets a
+    readable email.
+    """
+    message = EmailMultiAlternatives(
+        subject=subject,
+        body=render_to_string(f"{template_base}.txt", context),
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        to=recipients,
+    )
+    message.attach_alternative(render_to_string(f"{template_base}.html", context), "text/html")
+    message.send(fail_silently=False)
 
 
 def send_shift_reminders():
@@ -54,9 +72,10 @@ def send_shift_reminders():
         if not email:
             continue
 
-        body = render_to_string(
-            "volunteers/email/shift_reminder.txt",
-            {
+        send_rich_email(
+            subject=f"Reminder: your DjangoCon US volunteer shift “{signup.shift.title}”",
+            template_base="volunteers/email/shift_reminder",
+            context={
                 "signup": signup,
                 "shift": signup.shift,
                 "my_shifts_url": my_shifts_url,
@@ -66,13 +85,7 @@ def send_shift_reminders():
                 "handbook_url": handbook_url,
                 "contact_email": contact_email,
             },
-        )
-        send_mail(
-            subject=f"Reminder: your DjangoCon US volunteer shift “{signup.shift.title}”",
-            message=body,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[email],
-            fail_silently=False,
+            recipients=[email],
         )
         signup.reminded = True
         signup.save(update_fields=["reminded"])
@@ -109,17 +122,17 @@ def notify_shift_uncovered(signup_id):
     if now - cancelled_signup.created_at < buffer:
         return False
 
-    body = render_to_string(
-        "volunteers/email/shift_uncovered.txt",
-        {"shift": shift, "user": cancelled_signup.user},
-    )
     try:
-        send_mail(
+        send_rich_email(
             subject=f"DjangoCon US volunteer needed: “{shift.title}” just lost its only volunteer",
-            message=body,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=recipients,
-            fail_silently=False,
+            template_base="volunteers/email/shift_uncovered",
+            context={
+                "shift": shift,
+                "user": cancelled_signup.user,
+                "dashboard_url": absolute_url("volunteers:dashboard"),
+                "contact_email": settings.VOLUNTEER_CONTACT_EMAIL,
+            },
+            recipients=recipients,
         )
     except Exception:
         # Never let a broken mail server break the volunteer's cancel action.

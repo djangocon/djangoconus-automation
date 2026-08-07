@@ -109,7 +109,8 @@ class TestVolunteerEmailBranding:
         signup = VolunteerSignup.objects.create(shift=shift, user=user, cancelled=True)
         VolunteerSignup.objects.filter(pk=signup.pk).update(created_at=timezone.now() - datetime.timedelta(minutes=120))
         assert notify_shift_uncovered(signup.pk) is True
-        assert_branded(mail.outbox[0])
+        # The dashboard link legitimately contains the domain; the branding must not.
+        assert_branded(mail.outbox[0], allow_domain_in_body=True)
 
 
 @pytest.mark.django_db

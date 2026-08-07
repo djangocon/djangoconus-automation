@@ -17,8 +17,13 @@ User = get_user_model()
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
-# Subject lines and the shared base aren't emails in their own right.
+# Subject lines and the shared bases aren't emails in their own right.
 NOT_AN_EMAIL_BODY = ("_subject.txt", "base_message.txt", "base_notification.txt")
+
+# Neither is shared chrome: templates/email/ holds the HTML skeleton every rich
+# email extends plus the partials they include. A leading underscore marks a
+# partial, the same convention the site templates use.
+SHARED_CHROME = {"base.html"}
 
 
 @pytest.fixture
@@ -39,6 +44,8 @@ def find_email_templates() -> set[str]:
             continue
         for path in base.glob("**/email/*"):
             if not path.is_file() or path.name.endswith(NOT_AN_EMAIL_BODY):
+                continue
+            if path.name.startswith("_") or path.name in SHARED_CHROME:
                 continue
             found.add(str(path.relative_to(base)))
     return found
@@ -108,8 +115,9 @@ class TestEmailPreviewRendering:
         assert "force_escape is required" not in content
 
     def test_html_part_404s_for_text_only_email(self, client, staff):
+        """The allauth emails are still text-only; the volunteer ones are not."""
         client.force_login(staff)
-        response = client.get(reverse("email_preview", args=["shift-reminder"]), {"part": "html"})
+        response = client.get(reverse("email_preview", args=["login-code"]), {"part": "html"})
         assert response.status_code == 404
 
     def test_previews_use_no_real_data(self, client, staff, volunteer):

@@ -8,6 +8,13 @@ This upcoming volunteer shift just lost its only volunteer and is now uncovered:
 {% endif %}
 {{ user.get_full_name|default:user.email }} cancelled their signup.
 
-You may want to find a replacement or cover it from the dashboard.
-
+You may want to find a replacement or cover it from the dashboard:
+{% if dashboard_url %}
+  {{ dashboard_url }}
+{% endif %}
 — The DjangoCon US Team
+
+--
+{% if contact_email %}Questions? Email {{ contact_email }} and we'll help you out.
+{% else %}Questions? Reply to this email and we'll help you out.
+{% endif %}DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
