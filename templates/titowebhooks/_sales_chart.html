@@ -45,9 +45,11 @@ copying the rendered SVG - there is no second rendering path to drift out of syn
 
         {% for line in chart.lines %}
             {% for marker in line.markers %}
-                {# Hit target first: the dot is a following sibling so CSS can grow it,
-                   and .chart-dot ignores pointer events so hovering the dot still
-                   lands on this generous transparent circle. #}
+                {% comment %}
+                    Hit target first: the dot is a following sibling so CSS can grow it,
+                    and .chart-dot ignores pointer events so hovering the dot still
+                    lands on this generous transparent circle.
+                {% endcomment %}
                 <circle class="chart-hit"
                         cx="{{ marker.x|floatformat:1 }}"
                         cy="{{ marker.y|floatformat:1 }}"
