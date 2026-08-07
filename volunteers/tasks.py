@@ -2,8 +2,10 @@ import datetime
 import logging
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from rich import print
 
@@ -13,6 +15,16 @@ logger = logging.getLogger(__name__)
 
 # How far ahead of a shift we send the reminder.
 REMINDER_WINDOW_HOURS = 24
+
+
+def absolute_url(url_name: str) -> str:
+    """Build a full URL for an email.
+
+    Tasks run on the worker with no request to hang ``build_absolute_uri`` off,
+    so the host comes from the Site and the scheme from allauth's setting.
+    """
+    protocol = getattr(settings, "ACCOUNT_DEFAULT_HTTP_PROTOCOL", "https")
+    return f"{protocol}://{Site.objects.get_current().domain}{reverse(url_name)}"
 
 
 def send_shift_reminders():
@@ -31,13 +43,30 @@ def send_shift_reminders():
         shift__starts_at__lte=window_end,
     ).select_related("user", "shift", "shift__role")
 
+    # Same for every recipient, so build them once rather than per signup.
+    my_shifts_url = absolute_url("volunteers:my_shifts")
+    handbook_url = settings.VOLUNTEER_HANDBOOK_URL
+    contact_email = settings.VOLUNTEER_CONTACT_EMAIL
+
     sent = 0
     for signup in signups:
         email = signup.user.email
         if not email:
             continue
 
-        body = render_to_string("volunteers/email/shift_reminder.txt", {"signup": signup, "shift": signup.shift})
+        body = render_to_string(
+            "volunteers/email/shift_reminder.txt",
+            {
+                "signup": signup,
+                "shift": signup.shift,
+                "my_shifts_url": my_shifts_url,
+                # The role's own guide when it has one; the general handbook is
+                # the fallback so the email is never left without a link.
+                "role_documentation_url": signup.shift.role.documentation_url,
+                "handbook_url": handbook_url,
+                "contact_email": contact_email,
+            },
+        )
         send_mail(
             subject=f"Reminder: your DjangoCon US volunteer shift “{signup.shift.title}”",
             message=body,

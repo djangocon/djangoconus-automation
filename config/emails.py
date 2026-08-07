@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Callable
 
+from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -93,11 +94,26 @@ def _sample_shift():
     start += datetime.timedelta(days=1)
     return SimpleNamespace(
         title="Registration Desk — morning",
-        role=SimpleNamespace(name="Registration Desk"),
+        role=SimpleNamespace(
+            name="Registration Desk",
+            documentation_url="https://example.com/handbook#registration-desk",
+        ),
         location="Convention Center, Lobby B",
         starts_at=start,
         ends_at=start + datetime.timedelta(hours=2),
     )
+
+
+def _shift_reminder_context():
+    shift = _sample_shift()
+    return {
+        "shift": shift,
+        "signup": SimpleNamespace(shift=shift),
+        "my_shifts_url": "https://automation.defna.org/volunteers/mine/",
+        "role_documentation_url": shift.role.documentation_url,
+        "handbook_url": settings.VOLUNTEER_HANDBOOK_URL,
+        "contact_email": settings.VOLUNTEER_CONTACT_EMAIL,
+    }
 
 
 def _sample_user():
@@ -108,8 +124,6 @@ def _sample_user():
 
 
 def _ticket_context(**overrides):
-    from django.conf import settings
-
     context = {
         "attendee": None,
         "name": "Ada Lovelace",
@@ -183,12 +197,15 @@ EMAIL_PREVIEWS: list[EmailPreview] = [
     EmailPreview(
         slug="shift-reminder",
         label="Volunteer shift reminder",
-        description="Reminder sent to a volunteer 24 hours before their shift.",
+        description=(
+            "Reminder sent to a volunteer 24 hours before their shift. Carries the role's own "
+            "handbook link and a link to manage their shifts."
+        ),
         trigger="Hourly schedule → volunteers.tasks.send_shift_reminders",
         recipient="Volunteer with an upcoming shift",
         subject="Reminder: your DjangoCon US volunteer shift “Registration Desk — morning”",
         text_template="volunteers/email/shift_reminder.txt",
-        context=lambda: {"shift": _sample_shift(), "signup": SimpleNamespace(shift=_sample_shift())},
+        context=_shift_reminder_context,
     ),
     EmailPreview(
         slug="shift-uncovered",
