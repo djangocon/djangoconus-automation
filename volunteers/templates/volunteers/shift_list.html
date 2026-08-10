@@ -10,7 +10,12 @@
             <h1 class="mb-2 text-4xl font-bold text-yellow-200">Volunteer Sign-up</h1>
             {% if user.is_authenticated %}
                 <p class="text-green-200">
-                    You're signed up for <strong>{{ my_hours|floatformat:1 }}</strong> of {{ max_hours }} volunteer hours.
+                    You're signed up for <strong>{{ my_hours|floatformat:1 }}</strong> volunteer hours
+                    {% if my_hours > max_hours %}
+                        — more than the {{ max_hours }} we suggest, and that's okay.
+                    {% else %}
+                        (we suggest around {{ max_hours }}).
+                    {% endif %}
                     <a href="{% url 'volunteers:my_shifts' %}" class="text-yellow-300 underline">View my shifts</a>.
                 </p>
             {% else %}

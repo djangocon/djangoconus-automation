@@ -9,7 +9,12 @@
         <div class="text-center">
             <h1 class="mb-2 text-4xl font-bold text-yellow-200">My Volunteer Shifts</h1>
             <p class="text-green-200">
-                Total: <strong>{{ my_hours|floatformat:1 }}</strong> of {{ max_hours }} hours.
+                Total: <strong>{{ my_hours|floatformat:1 }}</strong> hours
+                {% if my_hours > max_hours %}
+                    — more than the {{ max_hours }} we suggest, and that's okay.
+                {% else %}
+                    (we suggest around {{ max_hours }}).
+                {% endif %}
                 <a href="{% url 'volunteers:shifts' %}" class="text-yellow-300 underline">Browse more shifts</a>.
             </p>
             {% if handbook_url %}

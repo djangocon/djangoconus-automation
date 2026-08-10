@@ -73,11 +73,12 @@ def test_signup_blocked_on_time_conflict(auth_client, user, role):
     assert conflicting_shifts(user, shift_b) == [shift_a]
 
 
-def test_signup_blocked_over_hours_cap(auth_client, user, role, settings):
+def test_signup_allowed_over_hours_cap(auth_client, user, role, settings):
+    """The hour budget warns but never blocks (#139) — see test_hour_limit.py."""
     settings.VOLUNTEER_MAX_HOURS = 3
     long_shift = make_shift(role, length_hours=4, title="Long")
     auth_client.post(reverse("volunteers:signup", args=[long_shift.id]))
-    assert not VolunteerSignup.objects.filter(user=user, cancelled=False).exists()
+    assert VolunteerSignup.objects.filter(user=user, cancelled=False).exists()
 
 
 def test_cancel_marks_cancelled(auth_client, user, role):
