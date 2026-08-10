@@ -74,6 +74,20 @@ class TestHourBudgetIsSoft:
         assert len(warnings) == 1
         assert "6.0 volunteer hours" in warnings[0]
 
+    def test_the_warning_fires_only_on_the_signup_that_crosses(self, client, user, role, settings):
+        """Already been told once; adding more shouldn't nag again."""
+        settings.VOLUNTEER_MAX_HOURS = 4
+        for offset in (10, 20):
+            VolunteerSignup.objects.create(shift=make_shift(role, offset_hours=offset), user=user)
+        client.force_login(user)
+
+        crossing = sign_up(client, make_shift(role, offset_hours=30))
+        assert len(messages_of(crossing, "warning")) == 1, "the crossing signup should warn"
+
+        already_over = sign_up(client, make_shift(role, offset_hours=40))
+        assert not messages_of(already_over, "warning"), "shouldn't warn again once they're over"
+        assert total_volunteer_hours(user) == 8
+
     def test_staying_under_the_budget_says_nothing(self, client, user, role, settings):
         settings.VOLUNTEER_MAX_HOURS = 8
         client.force_login(user)
