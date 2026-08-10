@@ -179,13 +179,7 @@ def signup_view(request, pk):
         messages.error(request, f"This overlaps a shift you're already on: {names}.")
         return redirect(return_url)
 
-    projected = total_volunteer_hours(request.user) + shift.duration_hours
-    if projected > max_volunteer_hours():
-        messages.error(
-            request,
-            f"That would put you at {projected:.1f} volunteer hours; the limit is {max_volunteer_hours()}.",
-        )
-        return redirect(return_url)
+    hours_before = total_volunteer_hours(request.user)
 
     # Reuse a cancelled row if one exists, otherwise create a fresh signup.
     signup, created = VolunteerSignup.objects.get_or_create(shift=shift, user=request.user)
@@ -198,6 +192,22 @@ def signup_view(request, pk):
         signup.save(update_fields=["cancelled", "reminded", "created_at"])
 
     messages.success(request, f"You're signed up for “{shift.title}.” Thank you!")
+
+    # The hour budget is guidance, never a gate — same as capacity. Blocking it
+    # stranded people who cancelled one shift and couldn't pick up another (#139),
+    # so say something and get out of the way.
+    #
+    # Only on the signup that crosses the line: someone who has already been told
+    # doesn't need it again every time they add a shift.
+    hours_after = total_volunteer_hours(request.user)
+    if hours_before <= max_volunteer_hours() < hours_after:
+        messages.warning(
+            request,
+            f"Heads up: you're now at {hours_after:.1f} volunteer hours, past the "
+            f"{max_volunteer_hours()} we suggest. That's allowed and we're grateful — "
+            "just don't sign up for so much that you miss the conference.",
+        )
+
     return redirect(return_url)
 
 
