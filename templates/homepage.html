@@ -5,7 +5,7 @@
 {% block title %}DjangoCon US - Homepage{% endblock title %}
 
 {% block content %}
-    <div class="mx-auto flex max-w-3xl flex-col gap-8 rounded-xl bg-green-900 p-12 text-center text-green-200 shadow-inner">
+    <div class="mx-auto flex max-w-5xl flex-col gap-8 rounded-xl bg-green-900 p-12 text-center text-green-200 shadow-inner">
         <div class="text-6xl font-bold sm:tracking-tight">
             <div class="text-yellow-200">DjangoCon US</div>
             <div class="text-green-300">Automations</div>
@@ -47,7 +47,7 @@
                     {% for report in reports %}
                         <li>
                             <a href="{{ report.url }}"
-                               class="flex flex-col rounded-lg border border-green-700 bg-green-900 px-4 py-3 hover:border-yellow-300">
+                               class="flex h-full flex-col rounded-lg border border-green-700 bg-green-900 px-4 py-3 hover:border-yellow-300">
                                 <span class="font-semibold text-yellow-200">⬇ {{ report.label }}</span>
                                 <span class="text-xs text-green-300">{{ report.description }}</span>
                             </a>
@@ -58,10 +58,6 @@
         {% endif %}
 
         {% if user.is_authenticated %}
-            <a href="{% url 'volunteers:my_shifts' %}" class="text-sm text-yellow-300 underline hover:text-yellow-200">
-                View my shifts
-            </a>
-
             {% django_simple_nav "config.nav.MainNav" %}
         {% else %}
             <a href="{% url 'account_login' %}"
