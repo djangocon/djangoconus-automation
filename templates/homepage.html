@@ -31,6 +31,32 @@
             </a>
         </div>
 
+        {% if user.is_staff %}
+            {% comment %}
+                Every link here downloads a CSV directly — no landing page in
+                between. They all share the same first four columns
+                (Name, Email, Ticket Type, Ticket Date); see titowebhooks/reports.py.
+            {% endcomment %}
+            <div class="rounded-xl border border-green-700 bg-green-800 p-6 text-left">
+                <h2 class="mb-1 text-2xl font-bold text-yellow-200">Reports</h2>
+                <p class="mb-4 text-sm text-green-300">
+                    Each link downloads a CSV. Every report starts with the same columns:
+                    <span class="font-mono text-xs">Name, Email, Ticket Type, Ticket Date</span>.
+                </p>
+                <ul class="grid gap-2 sm:grid-cols-2">
+                    {% for report in reports %}
+                        <li>
+                            <a href="{{ report.url }}"
+                               class="flex flex-col rounded-lg border border-green-700 bg-green-900 px-4 py-3 hover:border-yellow-300">
+                                <span class="font-semibold text-yellow-200">⬇ {{ report.label }}</span>
+                                <span class="text-xs text-green-300">{{ report.description }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         {% if user.is_authenticated %}
             <a href="{% url 'volunteers:my_shifts' %}" class="text-sm text-yellow-300 underline hover:text-yellow-200">
                 View my shifts

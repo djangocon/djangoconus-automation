@@ -1,12 +1,84 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.urls import reverse
 
 from config.emails import EMAIL_PREVIEWS, get_preview
+from volunteers.permissions import can_view_volunteer_interest
+
+
+def _is_staff(user) -> bool:
+    return user.is_active and user.is_staff
+
+
+# The CSV exports, listed in one place so the homepage and any future index stay
+# in step with each other. Each URL downloads a file directly — no page in
+# between — and every report shares the columns in titowebhooks.reports.
+#
+# ``can_view`` mirrors the decorator on the view itself. The reports don't all
+# share one rule — the volunteer interest report is superusers and volunteer
+# chairs, not staff at large — so listing a report someone can't open would just
+# hand them a 403.
+REPORTS = [
+    {
+        "label": "Online attendees",
+        "description": "Who bought an online ticket, their link, and whether we've emailed it.",
+        "url_name": "online_attendees",
+        "query": "format=csv",
+        "can_view": _is_staff,
+    },
+    {
+        "label": "Speakers",
+        "description": "Everyone holding a Speaker ticket.",
+        "url_name": "report_speakers",
+        "can_view": _is_staff,
+    },
+    {
+        "label": "Sponsors",
+        "description": "Everyone holding a Sponsor ticket, in person or online.",
+        "url_name": "report_sponsors",
+        "can_view": _is_staff,
+    },
+    {
+        "label": "Sprint tickets",
+        "description": "In-person sprinters for this year, by day.",
+        "url_name": "sprint_tickets",
+        "query": "format=csv",
+        "can_view": _is_staff,
+    },
+    {
+        "label": "Sprint tickets — historical",
+        "description": "Sprinters across the last few conference years.",
+        "url_name": "sprint_tickets",
+        "query": "scope=historical&format=csv",
+        "can_view": _is_staff,
+    },
+    {
+        "label": "Volunteer interest",
+        "description": "Attendees who said yes to volunteering on their ticket.",
+        "url_name": "volunteer_interest",
+        "query": "format=csv",
+        "can_view": can_view_volunteer_interest,
+    },
+]
+
+
+def available_reports(user) -> list[dict]:
+    """The reports ``user`` may actually download, with their URLs built."""
+    reports = []
+    for report in REPORTS:
+        if not report["can_view"](user):
+            continue
+        url = reverse(report["url_name"])
+        query = report.get("query")
+        reports.append({**report, "url": f"{url}?{query}" if query else url})
+    return reports
 
 
 def homepage_view(request: HttpRequest) -> HttpResponse:
-    return render(request, "homepage.html")
+    # The views enforce their own access; this only decides what to link.
+    reports = available_reports(request.user) if request.user.is_authenticated else []
+    return render(request, "homepage.html", {"reports": reports})
 
 
 @staff_member_required
