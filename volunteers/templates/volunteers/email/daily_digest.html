@@ -1,0 +1,77 @@
+{% extends "email/base.html" %}
+
+{% block title %}Your DjangoCon US volunteer shifts today{% endblock title %}
+
+{% block preheader %}
+    {% for shift in shifts %}{{ shift.starts_at|date:"g:i A" }} {{ shift.title }}{% if not forloop.last %} · {% endif %}{% endfor %}
+{% endblock preheader %}
+
+{% block header_subtitle %}Today &mdash; {{ today|date:"l, F j" }}{% endblock header_subtitle %}
+
+{% block content %}
+    <p style="margin:0 0 16px; font-size:16px; line-height:1.5;">Good morning,</p>
+
+    <p style="margin:0 0 20px; font-size:16px; line-height:1.5;">
+        {% if shifts|length == 1 %}
+            Here's the volunteer shift you're on today:
+        {% else %}
+            Here are the {{ shifts|length }} volunteer shifts you're on today:
+        {% endif %}
+    </p>
+
+    {% for shift in shifts %}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px; background-color:#f0f7f4; border-left:4px solid #93d7b7; border-radius:6px;">
+            <tr>
+                <td style="padding:16px 20px;">
+                    <p style="margin:0; font-size:18px; font-weight:700; color:#0c4b33;">
+                        {{ shift.starts_at|date:"g:i A" }} &ndash; {{ shift.ends_at|date:"g:i A" }}
+                    </p>
+                    <p style="margin:6px 0 0; font-size:16px; font-weight:700; line-height:1.4; color:#20303c;">
+                        {{ shift.title }}
+                    </p>
+                    <p style="margin:2px 0 0; font-size:14px; color:#5c6b73;">
+                        {{ shift.role.name }}{% if shift.location %} &middot; {{ shift.location }}{% endif %}
+                    </p>
+                    {% if shift.role.documentation_url %}
+                        <p style="margin:10px 0 0; font-size:14px;">
+                            <a href="{{ shift.role.documentation_url }}" style="color:#0c4b33;">Role guide &nearr;</a>
+                        </p>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    {% endfor %}
+
+    <p style="margin:20px 0 8px; font-size:16px; line-height:1.5;">
+        Thank you &mdash; have a good one.
+    </p>
+
+    <p style="margin:0 0 20px; font-size:15px; line-height:1.5;">
+        <a href="{{ my_shifts_url }}" style="color:#0c4b33;">Your shifts</a>, if anything needs to change.
+    </p>
+
+    {% comment %}
+        A count and a link, never a list of what still needs filling: this email
+        goes to people who already signed up, and turning their reminder into a
+        recruiting drive is how you make volunteering feel like an obligation.
+    {% endcomment %}
+    {% if open_shift_count %}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f6f5; border-radius:6px;">
+            <tr>
+                <td style="padding:14px 18px;">
+                    <p style="margin:0; font-size:14px; line-height:1.6; color:#5c6b73;">
+                        {% if open_shift_count == 1 %}
+                            There's <strong>1 shift</strong> still open this week
+                        {% else %}
+                            There are <strong>{{ open_shift_count }} shifts</strong> still open this week
+                        {% endif %}
+                        if you'd like to <a href="{{ shifts_url }}" style="color:#0c4b33;">pick up another</a>.
+                        Absolutely no pressure — you're already helping.
+                    </p>
+                </td>
+            </tr>
+        </table>
+    {% endif %}
+{% endblock content %}
+
+{% block signoff %}Thanks again,{% endblock signoff %}

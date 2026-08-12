@@ -299,6 +299,11 @@ Q_CLUSTER = {
     "workers": 2,
 }
 
+# When the "your shifts today" digest goes out, as cron in TIME_ZONE. A plain
+# DAILY schedule would fire at whatever time the cluster first created it — i.e.
+# whenever we happened to deploy — so this one is pinned to the morning.
+VOLUNTEER_DIGEST_CRON = env.str("VOLUNTEER_DIGEST_CRON", default="0 7 * * *")
+
 Q_SCHEDULES = {
     "emailoctopus-sync-campaigns": {
         "func": "emailoctopus.utils.sync_campaigns",
@@ -311,6 +316,11 @@ Q_SCHEDULES = {
     "volunteer-shift-reminders": {
         "func": "volunteers.tasks.send_shift_reminders",
         "schedule_type": "HOURLY",
+    },
+    "volunteer-daily-digest": {
+        "func": "volunteers.tasks.send_daily_shift_digest",
+        "schedule_type": "CRON",
+        "cron": VOLUNTEER_DIGEST_CRON,
     },
 }
 
@@ -333,6 +343,7 @@ VOLUNTEER_UNCOVERED_ALERT_BUFFER_MINUTES = env.int("VOLUNTEER_UNCOVERED_ALERT_BU
 # nobody's personal inbox is published. Set per environment; blank (the default)
 # hides the link.
 VOLUNTEER_CONTACT_EMAIL = env.str("VOLUNTEER_CONTACT_EMAIL", default="")
+
 
 # General volunteer handbook, shown alongside role-specific docs.
 VOLUNTEER_HANDBOOK_URL = env.str(

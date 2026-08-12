@@ -1,15 +1,17 @@
 import datetime
 import logging
+from collections import defaultdict
 
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
+from django.db.models import Count, F, Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from rich import print
 
-from volunteers.models import VolunteerSignup
+from volunteers.models import Shift, VolunteerSignup
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +142,101 @@ def send_shift_reminders():
         sent += 1
 
     print(f"[green]Sent {sent} volunteer shift reminder(s).[/green]")
+    return sent
+
+
+def open_shifts_this_week(now=None):
+    """Shifts in the next week that nobody has taken yet.
+
+    Only used for a one-line mention at the end of the digest, so it counts
+    rather than lists — the point is "there's more if you want it", not a
+    to-do list aimed at people who already showed up.
+    """
+    now = now or timezone.now()
+    return (
+        Shift.objects.filter(
+            signups_open=True,
+            starts_at__gte=now,
+            starts_at__lte=now + datetime.timedelta(days=7),
+        )
+        .annotate(taken=Count("signups", filter=Q(signups__cancelled=False)))
+        .filter(taken__lt=F("capacity"))
+    )
+
+
+def send_daily_shift_digest():
+    """Tell volunteers what they're on for today (#133 follow-up).
+
+    Only goes to people who actually have a shift today. Someone with nothing
+    scheduled hears nothing — a daily email to a volunteer with no shift is
+    nagging, not a reminder — and a day with no shifts at all sends nothing to
+    anybody.
+
+    Scheduled by cron via Q_SCHEDULES so it lands in the morning rather than at
+    whatever hour the cluster happened to start.
+    """
+    now = timezone.now()
+    today = timezone.localdate(now)
+    start = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min))
+    end = start + datetime.timedelta(days=1)
+
+    signups = (
+        VolunteerSignup.objects.filter(
+            cancelled=False,
+            digested=False,
+            shift__starts_at__gte=start,
+            shift__starts_at__lt=end,
+        )
+        .select_related("user", "shift", "shift__role")
+        .order_by("shift__starts_at")
+    )
+
+    by_user = defaultdict(list)
+    for signup in signups:
+        by_user[signup.user].append(signup)
+
+    if not by_user:
+        print("[green]No volunteer shifts today; no digests sent.[/green]")
+        return 0
+
+    openings = open_shifts_this_week(now).count()
+    shifts_url = absolute_url("volunteers:shifts")
+    my_shifts_url = absolute_url("volunteers:my_shifts")
+
+    sent = 0
+    for user, user_signups in by_user.items():
+        if not user.email:
+            continue
+
+        shifts = [signup.shift for signup in user_signups]
+        try:
+            send_rich_email(
+                subject=(
+                    "Your DjangoCon US volunteer shift today"
+                    if len(shifts) == 1
+                    else f"Your {len(shifts)} DjangoCon US volunteer shifts today"
+                ),
+                template_base="volunteers/email/daily_digest",
+                context={
+                    "shifts": shifts,
+                    "today": today,
+                    "my_shifts_url": my_shifts_url,
+                    "shifts_url": shifts_url,
+                    "open_shift_count": openings,
+                    "handbook_url": settings.VOLUNTEER_HANDBOOK_URL,
+                    "contact_email": settings.VOLUNTEER_CONTACT_EMAIL,
+                },
+                recipients=[user.email],
+            )
+        except Exception:
+            # One bad address shouldn't cost everyone else their digest.
+            logger.exception("Failed to send daily digest to %s", user.pk)
+            continue
+
+        VolunteerSignup.objects.filter(pk__in=[s.pk for s in user_signups]).update(digested=True)
+        sent += 1
+
+    print(f"[green]Sent {sent} daily volunteer digest(s).[/green]")
     return sent
 
 
