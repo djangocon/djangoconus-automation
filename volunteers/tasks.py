@@ -45,6 +45,58 @@ def send_rich_email(*, subject: str, template_base: str, context: dict, recipien
     message.send(fail_silently=False)
 
 
+def shift_email_context(signup) -> dict:
+    """What both volunteer-facing emails need to say.
+
+    The confirmation and the reminder show the same shift, the same role guide
+    and the same "change your shifts" link — so they build that context here
+    rather than drifting apart.
+    """
+    return {
+        "signup": signup,
+        "shift": signup.shift,
+        "my_shifts_url": absolute_url("volunteers:my_shifts"),
+        # The role's own guide when it has one; the general handbook is the
+        # fallback so the email is never left without a link.
+        "role_documentation_url": signup.shift.role.documentation_url,
+        "handbook_url": settings.VOLUNTEER_HANDBOOK_URL,
+        "contact_email": settings.VOLUNTEER_CONTACT_EMAIL,
+    }
+
+
+def send_signup_confirmation(signup_id):
+    """Confirm a shift the moment someone takes it (#133).
+
+    Dispatched with async_task from the signup view, so a mail server having a
+    bad day can never break a signup. Sent per shift rather than only on the
+    first: the role guide is the point of the email, and someone signing up for
+    a second, different role would otherwise never receive theirs.
+    """
+    signup = VolunteerSignup.objects.select_related("user", "shift", "shift__role").filter(pk=signup_id).first()
+    if signup is None:
+        logger.warning("VolunteerSignup %s disappeared before its confirmation could be sent", signup_id)
+        return False
+    if signup.cancelled:
+        # Signed up and cancelled again before the worker got to it.
+        return False
+
+    email = signup.user.email
+    if not email:
+        return False
+
+    try:
+        send_rich_email(
+            subject=f"You're signed up: DjangoCon US volunteer shift “{signup.shift.title}”",
+            template_base="volunteers/email/signup_confirmation",
+            context=shift_email_context(signup),
+            recipients=[email],
+        )
+    except Exception:
+        logger.exception("Failed to send signup confirmation for signup %s", signup_id)
+        return False
+    return True
+
+
 def send_shift_reminders():
     """Email volunteers whose shift starts within the next 24 hours.
 
@@ -61,11 +113,6 @@ def send_shift_reminders():
         shift__starts_at__lte=window_end,
     ).select_related("user", "shift", "shift__role")
 
-    # Same for every recipient, so build them once rather than per signup.
-    my_shifts_url = absolute_url("volunteers:my_shifts")
-    handbook_url = settings.VOLUNTEER_HANDBOOK_URL
-    contact_email = settings.VOLUNTEER_CONTACT_EMAIL
-
     sent = 0
     for signup in signups:
         email = signup.user.email
@@ -75,16 +122,7 @@ def send_shift_reminders():
         send_rich_email(
             subject=f"Reminder: your DjangoCon US volunteer shift “{signup.shift.title}”",
             template_base="volunteers/email/shift_reminder",
-            context={
-                "signup": signup,
-                "shift": signup.shift,
-                "my_shifts_url": my_shifts_url,
-                # The role's own guide when it has one; the general handbook is
-                # the fallback so the email is never left without a link.
-                "role_documentation_url": signup.shift.role.documentation_url,
-                "handbook_url": handbook_url,
-                "contact_email": contact_email,
-            },
+            context=shift_email_context(signup),
             recipients=[email],
         )
         signup.reminded = True

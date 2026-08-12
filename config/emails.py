@@ -206,6 +206,20 @@ EMAIL_PREVIEWS: list[EmailPreview] = [
         context=lambda: _ticket_context(kind="reissue", is_reissue=True),
     ),
     EmailPreview(
+        slug="signup-confirmation",
+        label="Volunteer signup confirmation",
+        description=(
+            "Confirms a shift as soon as a volunteer takes it, with the guide for that "
+            "role and a link to manage their shifts."
+        ),
+        trigger="Signing up for a shift → volunteers.tasks.send_signup_confirmation",
+        recipient="The volunteer who just signed up",
+        subject="You're signed up: DjangoCon US volunteer shift “Registration Desk — morning”",
+        text_template="volunteers/email/signup_confirmation.txt",
+        html_template="volunteers/email/signup_confirmation.html",
+        context=_shift_reminder_context,
+    ),
+    EmailPreview(
         slug="shift-reminder",
         label="Volunteer shift reminder",
         description=(
