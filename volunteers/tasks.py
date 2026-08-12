@@ -64,17 +64,21 @@ def shift_email_context(signup) -> dict:
     }
 
 
-def send_signup_confirmation(signup_id):
-    """Confirm a shift the moment someone takes it (#133).
+def send_volunteer_welcome(signup_id):
+    """Welcome someone to the volunteer team the first time they sign up (#133).
+
+    A welcome, not a per-shift receipt: it goes out once, on the signup that
+    made them a volunteer, and carries the guide for that role, the handbook and
+    the link to manage their shifts.
 
     Dispatched with async_task from the signup view, so a mail server having a
-    bad day can never break a signup. Sent per shift rather than only on the
-    first: the role guide is the point of the email, and someone signing up for
-    a second, different role would otherwise never receive theirs.
+    bad day can never break a signup. ``welcomed`` is set on the user's signups
+    rather than counted, so cancelling everything and starting again doesn't
+    trigger a second welcome.
     """
     signup = VolunteerSignup.objects.select_related("user", "shift", "shift__role").filter(pk=signup_id).first()
     if signup is None:
-        logger.warning("VolunteerSignup %s disappeared before its confirmation could be sent", signup_id)
+        logger.warning("VolunteerSignup %s disappeared before the welcome could be sent", signup_id)
         return False
     if signup.cancelled:
         # Signed up and cancelled again before the worker got to it.
@@ -84,16 +88,22 @@ def send_signup_confirmation(signup_id):
     if not email:
         return False
 
+    if VolunteerSignup.objects.filter(user=signup.user, welcomed=True).exists():
+        return False
+
     try:
         send_rich_email(
-            subject=f"You're signed up: DjangoCon US volunteer shift “{signup.shift.title}”",
-            template_base="volunteers/email/signup_confirmation",
+            subject="Welcome to the DjangoCon US volunteer team",
+            template_base="volunteers/email/volunteer_welcome",
             context=shift_email_context(signup),
             recipients=[email],
         )
     except Exception:
-        logger.exception("Failed to send signup confirmation for signup %s", signup_id)
+        logger.exception("Failed to send volunteer welcome for signup %s", signup_id)
         return False
+
+    signup.welcomed = True
+    signup.save(update_fields=["welcomed"])
     return True
 
 

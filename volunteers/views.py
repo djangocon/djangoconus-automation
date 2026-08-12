@@ -191,8 +191,9 @@ def signup_view(request, pk):
         signup.created_at = timezone.now()
         signup.save(update_fields=["cancelled", "reminded", "created_at"])
 
-    # On the worker: a mail server having a bad day must not break a signup (#133).
-    async_task("volunteers.tasks.send_signup_confirmation", signup.pk)
+    # First-signup welcome, on the worker: a mail server having a bad day must
+    # not break a signup (#133). The task decides whether this is their first.
+    async_task("volunteers.tasks.send_volunteer_welcome", signup.pk)
 
     messages.success(request, f"You're signed up for “{shift.title}.” Thank you!")
 

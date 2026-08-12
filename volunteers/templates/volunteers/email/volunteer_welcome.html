@@ -1,0 +1,67 @@
+{% extends "email/base.html" %}
+
+{% block title %}Welcome to the DjangoCon US volunteer team{% endblock title %}
+
+{% block preheader %}
+    Thanks for volunteering! Here's your first shift and what to expect.
+{% endblock preheader %}
+
+{% block header_subtitle %}Welcome to the volunteer team{% endblock header_subtitle %}
+
+{% block content %}
+    <p style="margin:0 0 16px; font-size:16px; line-height:1.5;">Hi,</p>
+
+    <p style="margin:0 0 20px; font-size:16px; line-height:1.5;">
+        Welcome to the DjangoCon US volunteer team, and thank you! Conferences like this one
+        only happen because people like you pitch in.
+    </p>
+
+    <p style="margin:0 0 12px; font-size:16px; line-height:1.5;">
+        Here's the first shift you signed up for:
+    </p>
+
+    {% include "email/_shift_details.html" with shift=shift %}
+
+    {% if role_documentation_url %}
+        <p style="margin:24px 0 12px; font-size:16px; line-height:1.5;">
+            Your role guide walks through what this shift involves — worth a read before the day:
+        </p>
+        {% include "email/_button.html" with url=role_documentation_url label="Read the role guide" %}
+        {% comment %}
+            Only when it's a different page: some roles point their guide straight
+            at the handbook, and offering the same link twice just reads as a bug.
+        {% endcomment %}
+        {% if handbook_url and handbook_url != role_documentation_url %}
+            <p style="margin:16px 0 0; font-size:14px; line-height:1.6; text-align:center; color:#5c6b73;">
+                There's also a
+                <a href="{{ handbook_url }}" style="color:#0c4b33;">general volunteer handbook</a>.
+            </p>
+        {% endif %}
+    {% elif handbook_url %}
+        <p style="margin:24px 0 12px; font-size:16px; line-height:1.5;">
+            The volunteer handbook walks through what to expect — worth a read before the day:
+        </p>
+        {% include "email/_button.html" with url=handbook_url label="Read the handbook" %}
+    {% endif %}
+
+    <p style="margin:24px 0 8px; font-size:16px; line-height:1.5;">
+        Your shifts live here — you can add more, or cancel, at any time:
+    </p>
+    <p style="margin:0 0 20px; font-size:15px; line-height:1.5; word-break:break-all;">
+        <a href="{{ my_shifts_url }}" style="color:#0c4b33;">{{ my_shifts_url }}</a>
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f7f4; border-radius:6px;">
+        <tr>
+            <td style="padding:16px 20px;">
+                <p style="margin:0 0 8px; font-size:14px; font-weight:700; color:#20303c;">A few things worth knowing</p>
+                <p style="margin:0; font-size:14px; line-height:1.7; color:#20303c;">
+                    We'll email you a reminder the day before each shift.<br>
+                    If your plans change, please cancel so someone else can take the spot.<br>
+                    More than one shift is welcome &mdash; just don't sign up for so much that you
+                    miss the conference itself.
+                </p>
+            </td>
+        </tr>
+    </table>
+{% endblock content %}

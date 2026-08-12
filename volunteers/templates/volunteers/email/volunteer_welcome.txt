@@ -1,6 +1,9 @@
 Hi,
 
-Thanks for signing up to volunteer at DjangoCon US! Here's the shift you just took:
+Welcome to the DjangoCon US volunteer team, and thank you! Conferences like this
+one only happen because people like you pitch in.
+
+Here's the first shift you signed up for:
 
   {{ shift.title }} ({{ shift.role.name }})
   {{ shift.starts_at|date:"l, F j" }} from {{ shift.starts_at|date:"g:i A" }} to {{ shift.ends_at|date:"g:i A" }}
@@ -12,13 +15,21 @@ Thanks for signing up to volunteer at DjangoCon US! Here's the shift you just to
 {% elif handbook_url %}The volunteer handbook:
 
   {{ handbook_url }}
+{% endif %}{% if role_documentation_url and handbook_url and handbook_url != role_documentation_url %}
+The general volunteer handbook:
+
+  {{ handbook_url }}
 {% endif %}
-Need to make a change? You can review or cancel your shifts here:
+Your shifts live here — you can add more, or cancel, at any time:
 
   {{ my_shifts_url }}
 
-We'll send you a reminder the day before. If your plans change, please cancel so
-someone else can take the spot.
+A few things worth knowing:
+
+  * We'll email you a reminder the day before each shift.
+  * If your plans change, please cancel so someone else can take the spot.
+  * Signing up for more than one shift is welcome, but don't sign up for so
+    much that you miss the conference itself.
 
 — The DjangoCon US Team
 
