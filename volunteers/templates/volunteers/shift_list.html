@@ -14,7 +14,7 @@
                     {% if my_hours > max_hours %}
                         — more than the {{ max_hours }} we suggest, and that's okay.
                     {% else %}
-                        (we suggest around {{ max_hours }}).
+                        (we suggest less than {{ max_hours }} hours).
                     {% endif %}
                     <a href="{% url 'volunteers:my_shifts' %}" class="text-yellow-300 underline">View my shifts</a>.
                 </p>
