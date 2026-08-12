@@ -1,19 +1,35 @@
-<nav class="w-full">
+{% comment %}
+    Rendered on the homepage under the Volunteers/Traveling cards and the
+    Reports panel, so it borrows their shapes rather than inventing a third:
+    a group is a bordered panel with a yellow heading, and each link inside is
+    a card on the darker green, same as a report row.
+{% endcomment %}
+{% comment %}
+    items-start: panels size to their own content, so a one-link group next to a
+    four-link one does not inherit its height as empty space.
+{% endcomment %}
+<nav class="grid w-full items-start gap-6 text-left md:grid-cols-2">
     {% for item in items %}
         {% if item.items %}
-            <div class="space-y-2 text-2xl {% if not forloop.first %}mt-4 pt-4 border-t border-green-700{% endif %}">
-                <h3 class="mb-4 text-3xl font-semibold text-green-100">{{ item.title }}</h3>
-                {% for child in item.items %}
-                    <div>
-                        <a class="p-2 text-yellow-300 underline hover:text-yellow-200" href="{{ child.url }}">{{ child.title }}</a>
-                    </div>
-                {% endfor %}
+            <div class="rounded-xl border border-green-700 bg-green-800 p-6">
+                <h2 class="mb-4 text-2xl font-bold text-yellow-200">{{ item.title }}</h2>
+                <ul class="grid gap-2">
+                    {% for child in item.items %}
+                        <li>
+                            <a href="{{ child.url }}"
+                               class="flex h-full items-center rounded-lg border border-green-700 bg-green-900 px-4 py-3 font-semibold text-yellow-200 hover:border-yellow-300">
+                                {{ child.title }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
             </div>
         {% else %}
             {% if not item.anonymous_only or not request.user.is_authenticated %}
-                <div class="text-2xl">
-                    <a class="p-2 text-yellow-300 underline" href="{{ item.url }}">{{ item.title }}</a>
-                </div>
+                <a href="{{ item.url }}"
+                   class="mx-auto block w-full max-w-md rounded-lg bg-green-600 px-6 py-4 text-center text-xl font-semibold text-white shadow hover:bg-green-700 md:col-span-2">
+                    {{ item.title }}
+                </a>
             {% endif %}
         {% endif %}
     {% endfor %}
