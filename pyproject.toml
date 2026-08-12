@@ -12,6 +12,7 @@ dependencies = [
     "django-click",
     "django-health-check",
     "django-prodserver[gunicorn]",
+    "croniter",
     "django-q2",
     "django-simple-nav",
     "django-tailwind-cli",

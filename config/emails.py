@@ -120,6 +120,28 @@ def _shift_reminder_context():
     }
 
 
+def _daily_digest_context():
+    shift = _sample_shift()
+    later = SimpleNamespace(
+        title="Room Monitor — Sauganash",
+        role=SimpleNamespace(name="Room Monitor", documentation_url=""),
+        location="Sauganash Ballroom",
+        starts_at=shift.starts_at + datetime.timedelta(hours=5),
+        ends_at=shift.starts_at + datetime.timedelta(hours=7),
+    )
+    return {
+        # Two shifts, one with a role guide and one without: the digest has to
+        # read well either way, and a single-shift sample would hide that.
+        "shifts": [shift, later],
+        "today": timezone.localdate(shift.starts_at),
+        "my_shifts_url": "https://automation.defna.org/volunteers/mine/",
+        "shifts_url": "https://automation.defna.org/volunteers/",
+        "open_shift_count": 4,
+        "handbook_url": settings.VOLUNTEER_HANDBOOK_URL,
+        "contact_email": settings.VOLUNTEER_CONTACT_EMAIL,
+    }
+
+
 def _sample_user():
     return SimpleNamespace(
         email="volunteer@example.com",
@@ -220,6 +242,20 @@ EMAIL_PREVIEWS: list[EmailPreview] = [
         text_template="volunteers/email/volunteer_welcome.txt",
         html_template="volunteers/email/volunteer_welcome.html",
         context=_shift_reminder_context,
+    ),
+    EmailPreview(
+        slug="daily-digest",
+        label="Daily shift digest",
+        description=(
+            "Sent each morning to volunteers who have a shift that day — and to nobody else. "
+            "Mentions open shifts as a count, never a list."
+        ),
+        trigger="Daily cron (VOLUNTEER_DIGEST_CRON) → volunteers.tasks.send_daily_shift_digest",
+        recipient="A volunteer with a shift today",
+        subject="Your 2 DjangoCon US volunteer shifts today",
+        text_template="volunteers/email/daily_digest.txt",
+        html_template="volunteers/email/daily_digest.html",
+        context=_daily_digest_context,
     ),
     EmailPreview(
         slug="shift-reminder",

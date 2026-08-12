@@ -1,0 +1,25 @@
+Good morning,
+
+{% if shifts|length == 1 %}Here's the volunteer shift you're on today, {{ today|date:"l, F j" }}:{% else %}Here are the {{ shifts|length }} volunteer shifts you're on today, {{ today|date:"l, F j" }}:{% endif %}
+{% for shift in shifts %}
+  {{ shift.starts_at|date:"g:i A" }}–{{ shift.ends_at|date:"g:i A" }} · {{ shift.title }} ({{ shift.role.name }})
+{% if shift.location %}    {{ shift.location }}
+{% endif %}{% if shift.role.documentation_url %}    Role guide: {{ shift.role.documentation_url }}
+{% endif %}{% endfor %}
+Thank you — have a good one.
+
+Your shifts, if anything needs to change:
+
+  {{ my_shifts_url }}
+{% if open_shift_count %}
+{% if open_shift_count == 1 %}There's 1 shift still open this week{% else %}There are {{ open_shift_count }} shifts still open this week{% endif %} if you'd like to
+pick up another. Absolutely no pressure — you're already helping.
+
+  {{ shifts_url }}
+{% endif %}
+— The DjangoCon US Team
+
+--
+{% if contact_email %}Questions? Email {{ contact_email }} and we'll help you out.
+{% else %}Questions? Reply to this email and we'll help you out.
+{% endif %}DjangoCon US is organized by DEFNA, the Django Events Foundation North America.

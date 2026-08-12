@@ -188,6 +188,10 @@ class VolunteerSignup(models.Model):
         default=False,
         help_text="The welcome email was sent off the back of this signup — the volunteer's first.",
     )
+    digested = models.BooleanField(
+        default=False,
+        help_text="This signup has appeared in a 'your shifts today' digest.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
