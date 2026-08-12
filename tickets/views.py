@@ -1,4 +1,3 @@
-import csv
 import logging
 
 from django.contrib import messages
@@ -6,6 +5,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
+
+from titowebhooks.reports import normalized_csv
 
 from .forms import AssignByEmailForm, BulkTicketCreationForm, ClaimTicketForm
 from .models import OnlineAttendee, TicketEmailLog, TicketLink
@@ -222,25 +223,22 @@ def _handle_bulk_action(request: HttpRequest, action: str) -> None:
 
 
 def _attendees_csv(attendees, year: int) -> HttpResponse:
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = f'attachment; filename="online_attendees_{year}.csv"'
-    writer = csv.writer(response)
-    writer.writerow(["Name", "Email", "Release", "Purchased", "Ticket Link", "Emails Sent", "Last Emailed"])
-    for attendee in attendees:
-        link = attendee.active_ticket_link
-        last_emailed = attendee.last_emailed_at
-        writer.writerow(
-            [
-                attendee.name,
-                attendee.email,
-                attendee.release_title,
-                attendee.purchased_at.isoformat() if attendee.purchased_at else "",
-                link.link if link else "",
-                attendee.sent_email_count,
-                last_emailed.isoformat() if last_emailed else "",
-            ]
-        )
-    return response
+    return normalized_csv(
+        f"online_attendees_{year}.csv",
+        ["Ticket Link", "Emails Sent", "Last Emailed"],
+        [
+            {
+                "Name": attendee.name,
+                "Email": attendee.email,
+                "Ticket Type": attendee.release_title,
+                "Ticket Date": attendee.purchased_at,
+                "Ticket Link": attendee.active_ticket_link.link if attendee.active_ticket_link else "",
+                "Emails Sent": attendee.sent_email_count,
+                "Last Emailed": attendee.last_emailed_at,
+            }
+            for attendee in attendees
+        ],
+    )
 
 
 @staff_member_required

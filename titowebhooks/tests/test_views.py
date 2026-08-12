@@ -303,7 +303,10 @@ class TestHistoricalSprintTicketsCsv(TestCase):
         body = self._download()
 
         header = body.splitlines()[0]
-        assert header.startswith("Year,Event,Name,Email")
+        # Year and Event moved after the shared core columns so every report
+        # starts the same way; they are still present, just at the end.
+        assert header.startswith("Name,Email,Ticket Type,Ticket Date")
+        assert header.endswith("Year,Event")
         assert "DjangoCon US 2024" in body
         assert "DjangoCon US 2026" in body
         assert "alice@example.com" in body
@@ -378,7 +381,8 @@ class TestHistoricalSprintTicketsCsv(TestCase):
         body = self._download()
         rows = [line for line in body.splitlines()[1:] if "repeat@example.com" in line]
         assert len(rows) == 2
-        merged_2025 = next(r for r in rows if r.startswith("2025"))
+        # Year is now the second-to-last column rather than the first.
+        merged_2025 = next(r for r in rows if r.split(",")[-2] == "2025")
         # Both Thursday (leading) and Friday (joining) captured on one row.
         assert merged_2025.count("Yes") >= 2
 

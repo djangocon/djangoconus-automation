@@ -1,5 +1,4 @@
 import base64
-import csv
 import hashlib
 import hmac
 import json
@@ -21,6 +20,12 @@ from rich import print
 from emailoctopus.models import Campaign
 from tickets.sync import record_webhook_attendee
 from titowebhooks.models import TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
+from titowebhooks.reports import (
+    matches_speaker,
+    matches_sponsor,
+    normalized_csv,
+    ticket_holders,
+)
 from titowebhooks.sales_curve import sales_curves
 from volunteers.models import VolunteerSignup
 from volunteers.permissions import volunteer_interest_required
@@ -316,45 +321,57 @@ def _extract_sprint_tickets(include_online: bool = False):
     return sorted(people.values(), key=lambda t: t["created_at"], reverse=True)
 
 
+SPRINT_EXTRA_COLUMNS = [
+    "Thursday",
+    "Thursday Leading",
+    "Thursday Joining",
+    "Friday",
+    "Friday Leading",
+    "Friday Joining",
+    "Online",
+]
+
+
+def _sprint_row(row: dict) -> dict:
+    """A sprint person in the shared column shape.
+
+    The sprint reports never carried a ticket type of their own — the release
+    title was decomposed into Thursday/Friday/Online flags and then discarded.
+    Rebuilding it from those flags keeps the core columns honest.
+    """
+    days = [day for day, present in (("Thursday", row["thursday"]), ("Friday", row["friday"])) if present]
+    kind = "Online Sprint" if row["online"] else "Sprint"
+    ticket_type = f"{kind} — {' & '.join(days)}" if days else kind
+    return {
+        "Name": row["name"],
+        "Email": row["email"],
+        "Ticket Type": ticket_type,
+        "Ticket Date": row["created_at"],
+        "Thursday": bool(row["thursday"]),
+        "Thursday Leading": row["thursday_leading"],
+        "Thursday Joining": row["thursday_joining"],
+        "Friday": bool(row["friday"]),
+        "Friday Leading": row["friday_leading"],
+        "Friday Joining": row["friday_joining"],
+        "Online": bool(row["online"]),
+    }
+
+
 def _historical_sprints_csv(include_online: bool) -> HttpResponse:
     rows = _extract_historical_sprints(include_online=include_online)
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = 'attachment; filename="sprint_tickets_historical.csv"'
-    writer = csv.writer(response)
-    writer.writerow(
-        [
-            "Year",
-            "Event",
-            "Name",
-            "Email",
-            "Thursday",
-            "Thursday Leading",
-            "Thursday Joining",
-            "Friday",
-            "Friday Leading",
-            "Friday Joining",
-            "Online",
-            "Ticket Date",
-        ]
-    )
+    people = []
     for row in rows:
-        writer.writerow(
-            [
-                row["year"],
-                row["event_title"],
-                row["name"],
-                row["email"],
-                "Yes" if row["thursday"] else "",
-                row["thursday_leading"],
-                row["thursday_joining"],
-                "Yes" if row["friday"] else "",
-                row["friday_leading"],
-                row["friday_joining"],
-                "Yes" if row["online"] else "",
-                row["created_at"].isoformat() if row["created_at"] else "",
-            ]
-        )
-    return response
+        person = _sprint_row(row)
+        # Year and Event are what makes this report historical, but they go after
+        # the core columns so "column 0 is the name" holds here too.
+        person["Year"] = row["year"]
+        person["Event"] = row["event_title"]
+        people.append(person)
+    return normalized_csv(
+        "sprint_tickets_historical.csv",
+        SPRINT_EXTRA_COLUMNS + ["Year", "Event"],
+        people,
+    )
 
 
 @staff_member_required
@@ -367,39 +384,11 @@ def sprint_tickets_view(request: HttpRequest) -> HttpResponse:
     sprint_tickets = _extract_sprint_tickets(include_online=include_online)
 
     if request.GET.get("format") == "csv":
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="sprint_tickets.csv"'
-        writer = csv.writer(response)
-        writer.writerow(
-            [
-                "Name",
-                "Email",
-                "Thursday",
-                "Thursday Leading",
-                "Thursday Joining",
-                "Friday",
-                "Friday Leading",
-                "Friday Joining",
-                "Online",
-                "Ticket Date",
-            ]
+        return normalized_csv(
+            "sprint_tickets.csv",
+            SPRINT_EXTRA_COLUMNS,
+            [_sprint_row(ticket) for ticket in sprint_tickets],
         )
-        for ticket in sprint_tickets:
-            writer.writerow(
-                [
-                    ticket["name"],
-                    ticket["email"],
-                    "Yes" if ticket["thursday"] else "",
-                    ticket["thursday_leading"],
-                    ticket["thursday_joining"],
-                    "Yes" if ticket["friday"] else "",
-                    ticket["friday_leading"],
-                    ticket["friday_joining"],
-                    "Yes" if ticket["online"] else "",
-                    ticket["created_at"].isoformat() if ticket["created_at"] else "",
-                ]
-            )
-        return response
 
     leaders_count = sum(1 for t in sprint_tickets if t["thursday_leading"] == "Yes" or t["friday_leading"] == "Yes")
     joiners_count = sum(1 for t in sprint_tickets if t["thursday_joining"] == "Yes" or t["friday_joining"] == "Yes")
@@ -618,22 +607,21 @@ def _extract_volunteer_interest() -> list[dict]:
 
 
 def _volunteer_interest_csv(people: list[dict]) -> HttpResponse:
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = 'attachment; filename="volunteer_interest.csv"'
-    writer = csv.writer(response)
-    writer.writerow(["Name", "Email", "Company", "Ticket Reference", "Ticket Type", "Ticket Date"])
-    for person in people:
-        writer.writerow(
-            [
-                person["name"],
-                person["email"],
-                person["company_name"],
-                person["reference"],
-                person["release_title"],
-                person["created_at"].isoformat() if person["created_at"] else "",
-            ]
-        )
-    return response
+    return normalized_csv(
+        "volunteer_interest.csv",
+        ["Company", "Ticket Reference"],
+        [
+            {
+                "Name": person["name"],
+                "Email": person["email"],
+                "Ticket Type": person["release_title"],
+                "Ticket Date": person["created_at"],
+                "Company": person["company_name"],
+                "Ticket Reference": person["reference"],
+            }
+            for person in people
+        ],
+    )
 
 
 @volunteer_interest_required
@@ -658,3 +646,17 @@ def volunteer_interest_view(request: HttpRequest) -> HttpResponse:
         "not_signed_up_count": sum(1 for p in people if not p["has_signed_up"]),
     }
     return render(request, "titowebhooks/volunteer_interest.html", context)
+
+
+@staff_member_required
+def speakers_report_view(request: HttpRequest) -> HttpResponse:
+    """Speaker ticket holders, as a CSV download."""
+    people = ticket_holders(matches_speaker, event_slug=EVENT_SLUG)
+    return normalized_csv("speakers.csv", ["Company", "Ticket Reference", "Online"], people)
+
+
+@staff_member_required
+def sponsors_report_view(request: HttpRequest) -> HttpResponse:
+    """Sponsor ticket holders, as a CSV download."""
+    people = ticket_holders(matches_sponsor, event_slug=EVENT_SLUG)
+    return normalized_csv("sponsors.csv", ["Company", "Ticket Reference", "Online"], people)

@@ -21,6 +21,8 @@ from tickets.views import (
     tickets_list_view,
 )
 from titowebhooks.views import (
+    speakers_report_view,
+    sponsors_report_view,
     sprint_tickets_view,
     tito_sales_dashboard_view,
     tito_sync_tickets_view,
@@ -49,6 +51,8 @@ urlpatterns = [
     path("tickets/attendees/", online_attendees_view, name="online_attendees"),
     path("tickets/emails/", ticket_emails_view, name="ticket_emails"),
     path("sprints/tickets/", sprint_tickets_view, name="sprint_tickets"),
+    path("reports/speakers.csv", speakers_report_view, name="report_speakers"),
+    path("reports/sponsors.csv", sponsors_report_view, name="report_sponsors"),
     path("tito/sales/", tito_sales_dashboard_view, name="tito_sales_dashboard"),
     path("tito/volunteer-interest/", volunteer_interest_view, name="volunteer_interest"),
     path("tito/sync/", tito_sync_view, name="tito_sync"),
