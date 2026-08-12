@@ -184,6 +184,10 @@ class VolunteerSignup(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="volunteer_signups")
     cancelled = models.BooleanField(default=False)
     reminded = models.BooleanField(default=False, help_text="A reminder email has been sent for this signup.")
+    welcomed = models.BooleanField(
+        default=False,
+        help_text="The welcome email was sent off the back of this signup — the volunteer's first.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

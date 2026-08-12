@@ -1,0 +1,39 @@
+Hi,
+
+Welcome to the DjangoCon US volunteer team, and thank you! Conferences like this
+one only happen because people like you pitch in.
+
+Here's the first shift you signed up for:
+
+  {{ shift.title }} ({{ shift.role.name }})
+  {{ shift.starts_at|date:"l, F j" }} from {{ shift.starts_at|date:"g:i A" }} to {{ shift.ends_at|date:"g:i A" }}
+{% if shift.location %}  Location: {{ shift.location }}
+{% endif %}
+{% if role_documentation_url %}What this role involves:
+
+  {{ role_documentation_url }}
+{% elif handbook_url %}The volunteer handbook:
+
+  {{ handbook_url }}
+{% endif %}{% if role_documentation_url and handbook_url and handbook_url != role_documentation_url %}
+The general volunteer handbook:
+
+  {{ handbook_url }}
+{% endif %}
+Your shifts live here — you can add more, or cancel, at any time:
+
+  {{ my_shifts_url }}
+
+A few things worth knowing:
+
+  * We'll email you a reminder the day before each shift.
+  * If your plans change, please cancel so someone else can take the spot.
+  * Signing up for more than one shift is welcome, but don't sign up for so
+    much that you miss the conference itself.
+
+— The DjangoCon US Team
+
+--
+{% if contact_email %}Questions? Email {{ contact_email }} and we'll help you out.
+{% else %}Questions? Reply to this email and we'll help you out.
+{% endif %}DjangoCon US is organized by DEFNA, the Django Events Foundation North America.

@@ -96,9 +96,11 @@ def _sample_shift():
         title="Registration Desk — morning",
         role=SimpleNamespace(
             name="Registration Desk",
-            # The real handbook: a preview is easier to judge when the links go
-            # where the actual email's links go.
-            documentation_url=settings.VOLUNTEER_HANDBOOK_URL,
+            # The real handbook, at a per-role anchor — which is how the live
+            # roles are set up. Distinct from the plain handbook URL on purpose:
+            # the welcome email offers both, and a preview showing one link
+            # twice would look like a bug rather than the real thing.
+            documentation_url=f"{settings.VOLUNTEER_HANDBOOK_URL}#registration-desk",
         ),
         location="Convention Center, Lobby B",
         starts_at=start,
@@ -204,6 +206,20 @@ EMAIL_PREVIEWS: list[EmailPreview] = [
         text_template="tickets/email/ticket_link.txt",
         html_template="tickets/email/ticket_link.html",
         context=lambda: _ticket_context(kind="reissue", is_reissue=True),
+    ),
+    EmailPreview(
+        slug="volunteer-welcome",
+        label="Volunteer welcome",
+        description=(
+            "Sent once, the first time someone signs up to volunteer. Carries the guide for "
+            "the role they picked, the handbook, and where to manage their shifts."
+        ),
+        trigger="A volunteer's first signup → volunteers.tasks.send_volunteer_welcome",
+        recipient="Someone who just became a volunteer",
+        subject="Welcome to the DjangoCon US volunteer team",
+        text_template="volunteers/email/volunteer_welcome.txt",
+        html_template="volunteers/email/volunteer_welcome.html",
+        context=_shift_reminder_context,
     ),
     EmailPreview(
         slug="shift-reminder",
