@@ -94,8 +94,18 @@ class Shift(models.Model):
             self.title = talks[0].title
         else:
             self.title = f"{self.role.name} · {len(talks)} slots"
+
+        # Rooms get renamed and sessions get moved after the schedule is first
+        # imported, so the shift has to follow its talks — otherwise the card
+        # keeps sending volunteers to where the session used to be. Only when
+        # the feed actually names a room: a blank LOCATION shouldn't wipe one an
+        # organizer set by hand.
+        rooms = list(dict.fromkeys(talk.location for talk in talks if talk.location))
+        if rooms:
+            self.location = " / ".join(rooms)
+
         if save:
-            self.save(update_fields=["starts_at", "ends_at", "title"])
+            self.save(update_fields=["starts_at", "ends_at", "title", "location"])
 
     @property
     def active_signups(self):
