@@ -4,36 +4,6 @@ from volunteers.permissions import nav_can_manage_dashboard, nav_can_view_volunt
 
 NAV_ITEMS = [
     NavGroup(
-        title="Ticket Management",
-        permissions=["is_authenticated"],
-        items=[
-            NavItem(title="Create Tickets", url="create_tickets", permissions=["is_staff"]),
-            NavItem(title="View All Tickets", url="tickets_list", permissions=["is_staff"]),
-            NavItem(title="Ticket Info", url="tickets_info"),
-        ],
-    ),
-    NavGroup(
-        title="Thunderdome",
-        permissions=["is_staff"],
-        items=[
-            NavItem(title="Submissions", url="thunderdome_submissions"),
-        ],
-    ),
-    NavGroup(
-        title="Sprints",
-        permissions=["is_staff"],
-        items=[
-            NavItem(title="Sprint Tickets", url="sprint_tickets"),
-        ],
-    ),
-    NavGroup(
-        title="Sales",
-        permissions=["is_superuser"],
-        items=[
-            NavItem(title="Ticket Sales Dashboard", url="tito_sales_dashboard"),
-        ],
-    ),
-    NavGroup(
         title="Volunteers",
         permissions=["is_authenticated"],
         items=[
@@ -45,6 +15,36 @@ NAV_ITEMS = [
                 url="volunteer_interest",
                 permissions=[nav_can_view_volunteer_interest],
             ),
+        ],
+    ),
+    NavGroup(
+        title="Ticket Management",
+        permissions=["is_authenticated"],
+        items=[
+            NavItem(title="Create Tickets", url="create_tickets", permissions=["is_staff"]),
+            NavItem(title="View All Tickets", url="tickets_list", permissions=["is_staff"]),
+            NavItem(title="Ticket Info", url="tickets_info"),
+        ],
+    ),
+    NavGroup(
+        title="Sales",
+        permissions=["is_superuser"],
+        items=[
+            NavItem(title="Ticket Sales Dashboard", url="tito_sales_dashboard"),
+        ],
+    ),
+    NavGroup(
+        title="Sprints",
+        permissions=["is_staff"],
+        items=[
+            NavItem(title="Sprint Tickets", url="sprint_tickets"),
+        ],
+    ),
+    NavGroup(
+        title="Thunderdome",
+        permissions=["is_staff"],
+        items=[
+            NavItem(title="Submissions", url="thunderdome_submissions"),
         ],
     ),
     NavGroup(
