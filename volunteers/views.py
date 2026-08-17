@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
 from .ical import build_calendar
+from .management.commands.import_schedule import fetch_events
 from .models import (
     CalendarToken,
     Role,
@@ -28,6 +29,7 @@ from .models import (
     total_volunteer_hours,
 )
 from .permissions import dashboard_required, volunteer_chairs
+from .schedule_plan import build_plan
 
 
 def max_volunteer_hours():
@@ -391,27 +393,49 @@ def volunteers_list_view(request):
 
 
 @dashboard_required
+def sync_preview_view(request):
+    """Show what a schedule sync would change, before anything is written.
+
+    The importer matches talks by the feed's UID, and that UID encodes the start
+    time and title — so an upstream retitle looks like a brand-new talk and gets
+    its own shift alongside the block a coordinator already merged it into. This
+    screen surfaces those collisions so a person decides, rather than finding out
+    afterwards.
+    """
+    try:
+        events, skipped = fetch_events()
+    except Exception as exc:  # a dead feed shouldn't 500 the dashboard
+        messages.error(request, f"Couldn't read the conference schedule: {exc}")
+        return redirect("volunteers:dashboard")
+
+    plan = build_plan(events, skipped=skipped)
+    return render(
+        request,
+        "volunteers/sync_preview.html",
+        {"page_title": "Preview schedule sync", "plan": plan},
+    )
+
+
+@dashboard_required
 @require_POST
 def sync_schedule_view(request):
-    """Re-import shifts from the conference schedule ICS feed.
+    """Apply the schedule sync. Only reachable by confirming on the preview screen.
 
-    Idempotent: shifts are matched by their schedule UID, so existing slots
-    (and any signups on them) are updated in place rather than duplicated.
-
-    With ``dry_run`` set, reports what would be created/updated without writing.
+    Shifts are matched by their schedule UID, so existing slots (and any sign-ups
+    on them) are updated in place rather than duplicated — but a UID that churned
+    upstream looks like a new talk, which is what the preview screen warns about.
     """
-    dry_run = request.POST.get("dry_run") == "1"
+    if request.POST.get("confirm") != "1":
+        # Nothing should reach the importer without someone having seen the plan.
+        return redirect("volunteers:sync_preview")
+
     out = StringIO()
     try:
-        call_command("import_schedule", dry_run=dry_run, stdout=out, no_color=True)
+        call_command("import_schedule", stdout=out, no_color=True)
     except Exception as exc:  # surface the failure to the coordinator, don't 500
         messages.error(request, f"Schedule sync failed: {exc}")
         return redirect("volunteers:dashboard")
 
     summary = out.getvalue().strip().splitlines()
-    result = summary[-1] if summary else "Schedule synced."
-    if dry_run:
-        messages.info(request, f"Dry run — no changes made. {result}")
-    else:
-        messages.success(request, result)
+    messages.success(request, summary[-1] if summary else "Schedule synced.")
     return redirect("volunteers:dashboard")

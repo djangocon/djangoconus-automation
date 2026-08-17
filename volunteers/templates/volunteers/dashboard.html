@@ -11,20 +11,15 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
             <div class="flex gap-2">
-                <form method="post" action="{% url 'volunteers:sync_schedule' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="dry_run" value="1">
-                    <button type="submit" class="rounded-md border border-green-600 bg-green-700 px-3 py-2 text-sm font-medium text-green-100 hover:bg-green-600">
-                        Preview schedule sync
-                    </button>
-                </form>
-                <form method="post" action="{% url 'volunteers:sync_schedule' %}"
-                      onsubmit="return confirm('Sync shifts from the conference schedule? Existing slots and signups are kept.');">
-                    {% csrf_token %}
-                    <button type="submit" class="rounded-md bg-yellow-300 px-3 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
-                        Sync schedule now
-                    </button>
-                </form>
+                {% comment %}
+                    One route in: the preview screen. Syncing straight from here used
+                    to create duplicate shifts next to merged blocks with no warning,
+                    so the plan is now shown before anything is written.
+                {% endcomment %}
+                <a href="{% url 'volunteers:sync_preview' %}"
+                   class="rounded-md bg-yellow-300 px-3 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
+                    Review schedule sync
+                </a>
             </div>
         </div>
 

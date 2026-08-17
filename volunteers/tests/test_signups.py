@@ -322,22 +322,25 @@ def test_sync_schedule_runs_import(auth_client):
     auth_client.force_login(staff)
 
     with mock.patch("volunteers.views.call_command") as mock_call:
-        resp = auth_client.post(reverse("volunteers:sync_schedule"))
+        resp = auth_client.post(reverse("volunteers:sync_schedule"), {"confirm": "1"})
 
     assert resp.status_code == 302
     mock_call.assert_called_once()
-    assert mock_call.call_args.kwargs.get("dry_run") is False
+    # dry_run is gone: previewing is now its own screen, not a flag on the import.
+    assert "dry_run" not in mock_call.call_args.kwargs
 
 
-def test_sync_schedule_dry_run(auth_client):
+def test_sync_schedule_without_confirmation_changes_nothing(auth_client):
+    """The importer must not be reachable without someone seeing the plan first."""
     staff = User.objects.create_user(username="synner2", email="sync2@example.com", password="pw12345!", is_staff=True)
     auth_client.force_login(staff)
 
     with mock.patch("volunteers.views.call_command") as mock_call:
-        resp = auth_client.post(reverse("volunteers:sync_schedule"), {"dry_run": "1"})
+        resp = auth_client.post(reverse("volunteers:sync_schedule"))
 
+    mock_call.assert_not_called()
     assert resp.status_code == 302
-    assert mock_call.call_args.kwargs.get("dry_run") is True
+    assert resp.url == reverse("volunteers:sync_preview")
 
 
 def test_signup_preserves_filters_via_next(auth_client, user, role):
