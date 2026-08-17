@@ -3,6 +3,20 @@ from django.utils.html import format_html
 
 from .models import TravelRegistration
 
+# Badge colours for the changelist. Organizers work this list during the
+# conference and mostly need to spot the rows that are going wrong, so the two
+# failure states are red and everything settled is green.
+STATUS_COLORS = {
+    "pending_arrival": "#f59e0b",  # yellow
+    "arrived_safely": "#10b981",  # green
+    "pending_departure": "#3b82f6",  # blue
+    "all_checks_complete": "#059669",  # emerald
+    "check_failed": "#ef4444",  # red
+    "emergency_contact_notified": "#dc2626",  # red
+    "cancelled": "#6b7280",  # gray
+}
+DEFAULT_STATUS_COLOR = "#6b7280"
+
 
 @admin.register(TravelRegistration)
 class TravelRegistrationAdmin(admin.ModelAdmin):
@@ -19,6 +33,9 @@ class TravelRegistrationAdmin(admin.ModelAdmin):
         "email",
         "arrival_time_formatted",
         "departure_time_formatted",
+        # The badge is the at-a-glance read; the "status" column beside it is
+        # the list_editable dropdown that actually changes it.
+        "status_badge",
         "status",
         "preferred_contact",
         "created_at_formatted",
@@ -128,16 +145,7 @@ class TravelRegistrationAdmin(admin.ModelAdmin):
         ordering="status",
     )
     def status_badge(self, obj):
-        colors = {
-            "pending_arrival": "#f59e0b",  # yellow
-            "arrived_safely": "#10b981",  # green
-            "pending_departure": "#3b82f6",  # blue
-            "all_checks_complete": "#059669",  # emerald
-            "check_failed": "#ef4444",  # red
-            "emergency_contact_notified": "#dc2626",  # red
-            "cancelled": "#6b7280",  # gray
-        }
-        color = colors.get(obj.status, "#6b7280")
+        color = STATUS_COLORS.get(obj.status, DEFAULT_STATUS_COLOR)
         return format_html(
             '<span style="color: white; background-color: {}; padding: 3px 8px; border-radius: 4px; font-size: 11px;">{}</span>',
             color,
