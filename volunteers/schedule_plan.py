@@ -1,148 +1,224 @@
-"""Work out what a schedule sync would do, before it does it.
+"""What changed in the conference schedule since we last imported it.
 
-The importer matches talks by the feed's UID, and that UID is built from the
-talk's start time and title::
+Read-only. Nothing here writes, and the screen it feeds has no bulk apply — the
+importer matches talks by the feed's UID, and that UID encodes the start time
+and title::
 
     UID:19-00-t0-welcome-reception@https://2026.djangocon.us
 
-So retitling or moving a talk upstream mints a *new* UID, and the importer sees
-a brand-new talk: it creates a fresh single-talk shift while the original stays
-inside whatever block a coordinator merged it into. That is how duplicate slots
-at the same time appear, and how someone ends up signed up for a stray single
-instead of the block.
-
-Nothing here writes. It builds a plan the dashboard can show, with the
-collisions called out, so a coordinator can decide before anything changes.
+So a talk renamed or moved upstream arrives looking brand new, and a blind
+import creates a second shift beside the block a coordinator already merged.
+Showing the differences and linking to the admin lets a person fix the two or
+three things that actually moved, instead of re-running an import that would
+undo their merges.
 """
 
 from __future__ import annotations
 
 import dataclasses
+from urllib.parse import urlencode
+
+from django.urls import reverse
+from django.utils import timezone
 
 from volunteers.models import Shift, Talk
 
+# Feed field -> human label, in the order a person would want to read them.
+COMPARED_FIELDS = (
+    ("title", "Title"),
+    ("starts_at", "Starts"),
+    ("ends_at", "Ends"),
+    ("location", "Room"),
+)
+
 
 @dataclasses.dataclass(frozen=True)
-class PlannedTalk:
-    """One event from the feed and what importing it would do."""
+class FieldChange:
+    label: str
+    before: object
+    after: object
 
-    uid: str
+    @property
+    def is_time(self) -> bool:
+        return self.label in {"Starts", "Ends"}
+
+
+@dataclasses.dataclass(frozen=True)
+class NewTalk:
+    """In the feed, no talk in the app with that UID."""
+
     title: str
     starts_at: object
     ends_at: object
     location: str
-    action: str  # "create" or "update"
-    # Set when a create would land on top of a talk we already have. This is the
-    # duplicate case, and the only reason this screen exists.
-    collides_with_shift: Shift | None = None
-    collides_with_title: str = ""
-    collision_signups: int = 0
-    collision_talk_count: int = 0
+    # A shift already covering this slot means the UID churned rather than a new
+    # session appearing — importing would double up on it.
+    covered_by: Shift | None = None
+    covered_by_talk_count: int = 0
+    covered_by_signups: int = 0
 
     @property
-    def is_duplicate(self) -> bool:
-        return self.action == "create" and self.collides_with_shift is not None
+    def is_probably_a_rename(self) -> bool:
+        return self.covered_by is not None
+
+    @property
+    def add_url(self) -> str:
+        """Admin add form, prefilled. Admin splits datetimes into _0/_1."""
+        start = timezone.localtime(self.starts_at)
+        end = timezone.localtime(self.ends_at)
+        params = urlencode(
+            {
+                "title": self.title,
+                "location": self.location,
+                "starts_at_0": start.strftime("%Y-%m-%d"),
+                "starts_at_1": start.strftime("%H:%M:%S"),
+                "ends_at_0": end.strftime("%Y-%m-%d"),
+                "ends_at_1": end.strftime("%H:%M:%S"),
+            }
+        )
+        return f"{reverse('admin:volunteers_shift_add')}?{params}"
+
+    @property
+    def covered_by_edit_url(self) -> str:
+        return reverse("admin:volunteers_shift_change", args=[self.covered_by.pk]) if self.covered_by else ""
 
 
 @dataclasses.dataclass(frozen=True)
-class MissingTalk:
-    """A talk we hold that the feed no longer lists.
+class ChangedTalk:
+    """Same UID, but the feed now says something different."""
 
-    Never deleted — a coordinator may have merged it into a block, and it may
-    carry sign-ups. Shown so the drift is visible rather than silent.
+    talk: Talk
+    changes: list[FieldChange]
+
+    @property
+    def shift(self) -> Shift | None:
+        return self.talk.shift
+
+    @property
+    def edit_shift_url(self) -> str:
+        return reverse("admin:volunteers_shift_change", args=[self.shift.pk]) if self.shift else ""
+
+    @property
+    def edit_talk_url(self) -> str:
+        return reverse("admin:volunteers_talk_change", args=[self.talk.pk])
+
+
+@dataclasses.dataclass(frozen=True)
+class DroppedTalk:
+    """In the app, no longer in the feed.
+
+    Usually the other half of a rename. Never deleted automatically: it may be
+    merged into a block and carry sign-ups.
     """
 
-    title: str
-    starts_at: object
-    shift: Shift | None
+    talk: Talk
     signups: int
+
+    @property
+    def shift(self) -> Shift | None:
+        return self.talk.shift
+
+    @property
+    def edit_shift_url(self) -> str:
+        return reverse("admin:volunteers_shift_change", args=[self.shift.pk]) if self.shift else ""
+
+    @property
+    def delete_shift_url(self) -> str:
+        return reverse("admin:volunteers_shift_delete", args=[self.shift.pk]) if self.shift else ""
+
+    @property
+    def delete_talk_url(self) -> str:
+        return reverse("admin:volunteers_talk_delete", args=[self.talk.pk])
 
 
 @dataclasses.dataclass(frozen=True)
-class SyncPlan:
-    creates: list[PlannedTalk]
-    updates: list[PlannedTalk]
-    missing: list[MissingTalk]
+class ScheduleDiff:
+    new: list[NewTalk]
+    changed: list[ChangedTalk]
+    dropped: list[DroppedTalk]
+    unchanged: int
     skipped: int
 
     @property
-    def duplicates(self) -> list[PlannedTalk]:
-        return [talk for talk in self.creates if talk.is_duplicate]
+    def renames(self) -> list[NewTalk]:
+        return [talk for talk in self.new if talk.is_probably_a_rename]
 
     @property
-    def clean_creates(self) -> list[PlannedTalk]:
-        return [talk for talk in self.creates if not talk.is_duplicate]
+    def genuinely_new(self) -> list[NewTalk]:
+        return [talk for talk in self.new if not talk.is_probably_a_rename]
 
     @property
-    def signups_at_risk(self) -> int:
-        return sum(talk.collision_signups for talk in self.duplicates)
+    def has_changes(self) -> bool:
+        return bool(self.new or self.changed or self.dropped)
 
     @property
-    def is_empty(self) -> bool:
-        return not (self.creates or self.updates)
-
-    @property
-    def has_duplicates(self) -> bool:
-        return bool(self.duplicates)
+    def signups_affected(self) -> int:
+        return sum(talk.covered_by_signups for talk in self.renames)
 
 
-def build_plan(events, skipped: int = 0) -> SyncPlan:
-    """Compare parsed feed events against what's in the database."""
-    known_uids = set(Talk.objects.exclude(external_uid="").values_list("external_uid", flat=True))
+def _diff_fields(talk: Talk, event: dict) -> list[FieldChange]:
+    incoming = {
+        "title": event["summary"],
+        "starts_at": event["dtstart"],
+        "ends_at": event["dtend"],
+        "location": event.get("location", ""),
+    }
+    changes = []
+    for field, label in COMPARED_FIELDS:
+        before, after = getattr(talk, field), incoming[field]
+        if before != after:
+            changes.append(FieldChange(label=label, before=before, after=after))
+    return changes
+
+
+def build_diff(events, skipped: int = 0) -> ScheduleDiff:
+    """Compare the feed against what's in the database. Writes nothing."""
+    talks = list(Talk.objects.select_related("shift").exclude(external_uid=""))
+    by_uid = {talk.external_uid: talk for talk in talks}
     feed_uids = {event["uid"] for event in events}
 
-    # One query for everything the feed covers, so collision lookup is in memory.
     by_start: dict[object, list[Talk]] = {}
-    for talk in Talk.objects.select_related("shift").all():
+    for talk in talks:
         by_start.setdefault(talk.starts_at, []).append(talk)
 
-    signups_by_shift = {
-        shift.pk: shift.active_signups.count() for shift in Shift.objects.filter(talks__isnull=False).distinct()
-    }
-    talk_counts = {shift.pk: shift.talks.count() for shift in Shift.objects.filter(talks__isnull=False).distinct()}
+    shifts = Shift.objects.filter(talks__isnull=False).distinct()
+    signups_by_shift = {shift.pk: shift.active_signups.count() for shift in shifts}
+    talk_counts = {shift.pk: shift.talks.count() for shift in shifts}
 
-    creates, updates = [], []
+    new, changed, unchanged = [], [], 0
     for event in events:
-        is_new = event["uid"] not in known_uids
-        planned = {
-            "uid": event["uid"],
-            "title": event["summary"],
-            "starts_at": event["dtstart"],
-            "ends_at": event["dtend"],
-            "location": event.get("location", ""),
-            "action": "create" if is_new else "update",
-        }
-
-        if is_new:
-            # A talk already sitting at this start time means the UID churned
-            # rather than a genuinely new session appearing.
-            existing = [talk for talk in by_start.get(event["dtstart"], []) if talk.shift_id]
-            if existing:
-                clash = existing[0]
-                planned.update(
-                    collides_with_shift=clash.shift,
-                    collides_with_title=clash.title,
-                    collision_signups=signups_by_shift.get(clash.shift_id, 0),
-                    collision_talk_count=talk_counts.get(clash.shift_id, 1),
+        talk = by_uid.get(event["uid"])
+        if talk is None:
+            covering = next((t for t in by_start.get(event["dtstart"], []) if t.shift_id), None)
+            new.append(
+                NewTalk(
+                    title=event["summary"],
+                    starts_at=event["dtstart"],
+                    ends_at=event["dtend"],
+                    location=event.get("location", ""),
+                    covered_by=covering.shift if covering else None,
+                    covered_by_talk_count=talk_counts.get(covering.shift_id, 0) if covering else 0,
+                    covered_by_signups=signups_by_shift.get(covering.shift_id, 0) if covering else 0,
                 )
-            creates.append(PlannedTalk(**planned))
-        else:
-            updates.append(PlannedTalk(**planned))
+            )
+            continue
 
-    missing = [
-        MissingTalk(
-            title=talk.title,
-            starts_at=talk.starts_at,
-            shift=talk.shift,
-            signups=signups_by_shift.get(talk.shift_id, 0),
-        )
-        for talk in Talk.objects.select_related("shift").exclude(external_uid="")
+        diffs = _diff_fields(talk, event)
+        if diffs:
+            changed.append(ChangedTalk(talk=talk, changes=diffs))
+        else:
+            unchanged += 1
+
+    dropped = [
+        DroppedTalk(talk=talk, signups=signups_by_shift.get(talk.shift_id, 0))
+        for talk in talks
         if talk.external_uid not in feed_uids
     ]
 
-    return SyncPlan(
-        creates=sorted(creates, key=lambda t: t.starts_at),
-        updates=sorted(updates, key=lambda t: t.starts_at),
-        missing=sorted(missing, key=lambda t: t.starts_at),
+    return ScheduleDiff(
+        new=sorted(new, key=lambda t: t.starts_at),
+        changed=sorted(changed, key=lambda c: c.talk.starts_at),
+        dropped=sorted(dropped, key=lambda d: d.talk.starts_at),
+        unchanged=unchanged,
         skipped=skipped,
     )

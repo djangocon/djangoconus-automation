@@ -12,13 +12,14 @@
             <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
             <div class="flex gap-2">
                 {% comment %}
-                    One route in: the preview screen. Syncing straight from here used
-                    to create duplicate shifts next to merged blocks with no warning,
-                    so the plan is now shown before anything is written.
+                    No sync button. A bulk import matched talks by a UID that encodes
+                    the start time and title, so a renamed talk created a duplicate
+                    shift next to an already-merged block. This shows the differences
+                    and links each into the admin instead.
                 {% endcomment %}
-                <a href="{% url 'volunteers:sync_preview' %}"
+                <a href="{% url 'volunteers:schedule_changes' %}"
                    class="rounded-md bg-yellow-300 px-3 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
-                    Review schedule sync
+                    Schedule changes
                 </a>
             </div>
         </div>

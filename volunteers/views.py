@@ -1,10 +1,8 @@
 from collections import defaultdict
-from io import StringIO
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.management import call_command
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -29,7 +27,7 @@ from .models import (
     total_volunteer_hours,
 )
 from .permissions import dashboard_required, volunteer_chairs
-from .schedule_plan import build_plan
+from .schedule_plan import build_diff
 
 
 def max_volunteer_hours():
@@ -393,14 +391,14 @@ def volunteers_list_view(request):
 
 
 @dashboard_required
-def sync_preview_view(request):
-    """Show what a schedule sync would change, before anything is written.
+def schedule_changes_view(request):
+    """What the conference feed says that the app doesn't, and vice versa.
 
-    The importer matches talks by the feed's UID, and that UID encodes the start
-    time and title — so an upstream retitle looks like a brand-new talk and gets
-    its own shift alongside the block a coordinator already merged it into. This
-    screen surfaces those collisions so a person decides, rather than finding out
-    afterwards.
+    Read-only on purpose. A bulk import matches talks by the feed's UID, and
+    that UID encodes the start time and title — so a renamed talk looks new and
+    the import creates a second shift beside a coordinator's merged block. This
+    screen shows the differences and links each one into the admin, so the two
+    or three things that actually moved get fixed by hand.
     """
     try:
         events, skipped = fetch_events()
@@ -408,34 +406,9 @@ def sync_preview_view(request):
         messages.error(request, f"Couldn't read the conference schedule: {exc}")
         return redirect("volunteers:dashboard")
 
-    plan = build_plan(events, skipped=skipped)
+    diff = build_diff(events, skipped=skipped)
     return render(
         request,
-        "volunteers/sync_preview.html",
-        {"page_title": "Preview schedule sync", "plan": plan},
+        "volunteers/schedule_changes.html",
+        {"page_title": "Schedule changes", "diff": diff},
     )
-
-
-@dashboard_required
-@require_POST
-def sync_schedule_view(request):
-    """Apply the schedule sync. Only reachable by confirming on the preview screen.
-
-    Shifts are matched by their schedule UID, so existing slots (and any sign-ups
-    on them) are updated in place rather than duplicated — but a UID that churned
-    upstream looks like a new talk, which is what the preview screen warns about.
-    """
-    if request.POST.get("confirm") != "1":
-        # Nothing should reach the importer without someone having seen the plan.
-        return redirect("volunteers:sync_preview")
-
-    out = StringIO()
-    try:
-        call_command("import_schedule", stdout=out, no_color=True)
-    except Exception as exc:  # surface the failure to the coordinator, don't 500
-        messages.error(request, f"Schedule sync failed: {exc}")
-        return redirect("volunteers:dashboard")
-
-    summary = out.getvalue().strip().splitlines()
-    messages.success(request, summary[-1] if summary else "Schedule synced.")
-    return redirect("volunteers:dashboard")
