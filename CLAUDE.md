@@ -42,6 +42,19 @@ The web container runs `/src/start-web.sh`, the worker runs `/src/start-worker.s
 ssh defna-node1 'docker inspect -f "{{.Name}} {{.Config.Cmd}}" $(docker ps -q)'
 ```
 
+**Background jobs are not registered automatically.** `sync_schedules` creates
+django-q `Schedule` rows from `Q_SCHEDULES`, and it used to run on every worker
+boot — so a deploy could silently add a job. It no longer runs at startup.
+Schedules already in the database keep running; adding a new one is a deliberate,
+manual step:
+
+```bash
+ssh defna-node1 'docker exec -w /src <web-container> uv run --no-sync manage.py sync_schedules'
+```
+
+Note it only ever *creates* — it never updates or deletes an existing schedule,
+so correcting one means editing or deleting the row itself.
+
 Run Django management commands in the web container (app lives at `/src`, deps via uv):
 
 ```bash
