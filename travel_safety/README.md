@@ -44,10 +44,16 @@ Stores all attendee travel information with the following key fields:
 - `departure_airport` - Airport code/name
 - `departure_destination` - Final destination
 
+**Accommodation (Optional):**
+- `accommodation` - Where the attendee is staying in Chicago
+
 **Emergency Contact:**
 - `emergency_contact_name` - Contact person name
 - `emergency_contact_phone` - Contact person phone
 - `emergency_contact_relationship` - Relationship to attendee
+
+**Attendee Notes (Optional):**
+- `user_notes` - Anything else the attendee wants organizers to know
 
 **Status Tracking:**
 - `status` - Current status (see Status Workflow below)
@@ -137,17 +143,42 @@ The Django admin provides comprehensive tools for organizers:
 - Export functionality available through Django admin
 - Bulk status updates supported via admin actions
 
+## Data Retention
+
+A daily `django-q` schedule (`travel-safety-retention-policy`) runs
+`travel_safety.tasks.enforce_retention`. Nothing is deleted until
+`CONFERENCE_END_DATE + 30 days`; on and after that date every registration is
+deleted.
+
+`CONFERENCE_END_DATE` is a project setting (env-overridable). For DjangoCon US
+2026 the conference runs **August 24-28, 2026**, so the deletion date is
+**2026-09-27**.
+
+To preview or force a run:
+
+```bash
+manage.py enforce_travel_safety_retention --dry-run
+manage.py enforce_travel_safety_retention
+```
+
 ## Technical Details
 
-- **Framework**: Django 4.2.11
-- **Database**: PostgreSQL with proper indexing
+- **Framework**: Django 6.0
+- **Database**: PostgreSQL
 - **Frontend**: Tailwind CSS for styling
-- **Timezone**: US/Chicago (Central Time)
-- **Python**: 3.11 with type hints
+- **Timezone**: US/Chicago (Central Time) — form input is entered as local Chicago time
+- **Python**: 3.13+
 
 ## Development
 
 ### Running Tests
+
+Tests live in `travel_safety/tests/`:
+
+- `test_forms.py` - form validation rules
+- `test_views.py` - the public register → success flow
+- `test_retention.py` - the 30-day deletion policy
+
 ```bash
 just test travel_safety/
 ```
