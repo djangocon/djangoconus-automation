@@ -37,7 +37,7 @@ def sync_ticket_releases(year: int = DEFAULT_YEAR) -> dict:
     alone, because it represents somebody's deliberate choice in the admin and
     a re-sync should not undo it.
     """
-    seen = {}
+    seen: dict[str, int | None] = {}
     for release_id, title in TitoTicket.objects.filter(year=year).values_list("release_id", "release_title").distinct():
         if not title:
             continue
@@ -57,36 +57,37 @@ def sync_ticket_releases(year: int = DEFAULT_YEAR) -> dict:
     now = timezone.now()
     created = 0
     for title, release_id in seen.items():
-        _, was_created = TicketRelease.objects.get_or_create(
-            year=year,
+        release, was_created = TicketRelease.objects.get_or_create(
             title=title,
             defaults={
                 "release_id": release_id,
                 "grants_venueless_access": title.strip().lower() in DEFAULT_ELIGIBLE_TITLES,
-                "last_synced": now,
             },
         )
         if was_created:
             created += 1
 
-    TicketRelease.objects.filter(year=year).update(last_synced=now)
+        # Only ever moves forward, so re-syncing an old season cannot make a
+        # still-current ticket type look stale.
+        release.last_seen_year = max(release.last_seen_year or 0, year)
+        release.release_id = release.release_id or release_id
+        release.last_synced = now
+        release.save(update_fields=["last_seen_year", "release_id", "last_synced"])
     logger.info("Synced ticket releases for %s: %s created, %s total", year, created, len(seen))
     return {"year": year, "created": created, "total": len(seen)}
 
 
-def eligible_release_titles(year: int) -> set[str]:
-    """Lowercased titles of the year's ticket types that earn a Venueless link."""
+def eligible_release_titles() -> set[str]:
+    """Lowercased titles of every ticket type that earns a Venueless link."""
     return {
         title.strip().lower()
-        for title in TicketRelease.objects.filter(year=year, grants_venueless_access=True).values_list(
-            "title", flat=True
-        )
+        for title in TicketRelease.objects.filter(grants_venueless_access=True).values_list("title", flat=True)
     }
 
 
-def is_online_release(release_title: str, year: int = DEFAULT_YEAR) -> bool:
-    """Whether ``release_title`` earns a Venueless link in ``year``."""
-    return (release_title or "").strip().lower() in eligible_release_titles(year)
+def is_online_release(release_title: str) -> bool:
+    """Whether ``release_title`` earns a Venueless link."""
+    return (release_title or "").strip().lower() in eligible_release_titles()
 
 
 def _parse_dt(value):
@@ -106,7 +107,7 @@ def _year_from_slug(event_slug: str) -> int | None:
 def _candidates_from_tito_tickets(year: int) -> dict[str, dict]:
     """Online buyers as recorded by the Ti.to API sync."""
     candidates = {}
-    eligible = eligible_release_titles(year)
+    eligible = eligible_release_titles()
     tickets = TitoTicket.objects.filter(year=year, voided=False).exclude(email="")
     for ticket in tickets:
         if (ticket.release_title or "").strip().lower() not in eligible:
@@ -123,7 +124,7 @@ def _candidates_from_tito_tickets(year: int) -> dict[str, dict]:
 def _candidates_from_webhooks(year: int) -> dict[str, dict]:
     """Online buyers seen on ``ticket.completed`` webhooks."""
     candidates = {}
-    eligible = eligible_release_titles(year)
+    eligible = eligible_release_titles()
     for event in TitoWebhookEvent.objects.filter(trigger="ticket.completed").iterator():
         payload = event.payload
         if not payload:
@@ -196,14 +197,13 @@ def record_webhook_attendee(payload: dict) -> OnlineAttendee | None:
     if not payload:
         return None
 
-    # Eligibility is per-year, so the year has to be known before it can be
-    # asked --- an unparseable slug is not eligible for anything.
+    # The roster row is keyed by year, so an unparseable slug has nowhere to go.
     year = _year_from_slug((payload.get("event") or {}).get("slug", ""))
     if year is None:
         return None
 
     release_title = payload.get("release_title") or ""
-    if not is_online_release(release_title, year):
+    if not is_online_release(release_title):
         return None
 
     email = (payload.get("email") or "").strip().lower()

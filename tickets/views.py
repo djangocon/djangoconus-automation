@@ -223,6 +223,28 @@ def _handle_bulk_action(request: HttpRequest, action: str) -> None:
     succeeded = 0
     out_of_links = False
 
+    # "assign" is the silent one: tie the selected people to links and send
+    # nothing. Kept apart from the emailing actions so a bulk assignment can
+    # never surprise anyone with a send.
+    if action == "assign":
+        for attendee in attendees:
+            try:
+                assign_link(attendee.email, attendee=attendee)
+                succeeded += 1
+            except NoTicketsAvailable:
+                out_of_links = True
+                break
+            except Exception:
+                logger.exception("Failed to assign a link to attendee %s", attendee.pk)
+
+        if succeeded:
+            messages.success(request, f"Assigned {succeeded} link{'s' if succeeded != 1 else ''} (no emails sent).")
+        if out_of_links:
+            messages.error(request, "Ran out of unassigned ticket links partway through. Add more links and retry.")
+        if not succeeded and not out_of_links:
+            messages.warning(request, "Nothing to do for the selected attendees.")
+        return
+
     for attendee in attendees:
         # "email" only re-sends to people who already hold a link; it is the
         # safe bulk action for a nudge that shouldn't consume the pool.
@@ -286,7 +308,7 @@ def online_attendees_view(request: HttpRequest) -> HttpResponse:
             _handle_assign_one(request, assign_attendee_id)
         elif action == "assign_by_email":
             _handle_assign_by_email(request, year)
-        elif action in {"assign_and_email", "email", "reissue"}:
+        elif action in {"assign", "assign_and_email", "email", "reissue"}:
             _handle_bulk_action(request, action)
         else:
             messages.error(request, "Unknown action.")

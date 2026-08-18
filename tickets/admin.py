@@ -57,11 +57,11 @@ class TicketEmailLogAdmin(admin.ModelAdmin):
 
 @admin.register(TicketRelease)
 class TicketReleaseAdmin(admin.ModelAdmin):
-    list_display = ("title", "year", "grants_venueless_access", "release_id", "last_synced")
+    list_display = ("title", "grants_venueless_access", "last_seen_year", "release_id", "last_synced")
     # Editable straight from the list: toggling these is the reason the model
     # exists, and making staff open each row to flip one checkbox is friction.
     list_editable = ("grants_venueless_access",)
-    list_filter = ("year", "grants_venueless_access")
+    list_filter = ("grants_venueless_access", "last_seen_year")
     search_fields = ("title",)
     readonly_fields = ("date_created", "last_synced")
-    ordering = ("-year", "title")
+    ordering = ("title",)

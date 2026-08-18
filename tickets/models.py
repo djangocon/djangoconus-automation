@@ -12,10 +12,20 @@ class TicketRelease(models.Model):
     There is no rule hiding in the titles, so this makes it data instead --- one
     checkbox per ticket type, editable in admin, applying to past and future
     sales alike.
+
+    Deliberately not scoped by year. Ti.to reuses the same release titles season
+    after season, and a year-scoped row would mean re-ticking every box each
+    January; a ticked box just means "this ticket type earns a link". The year
+    is kept only to show when a type was last sold.
     """
 
-    year = models.PositiveIntegerField(db_index=True)
-    title = models.CharField(max_length=256)
+    title = models.CharField(max_length=256, unique=True)
+    last_seen_year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Most recent conference year this ticket type was sold in.",
+    )
     release_id = models.PositiveBigIntegerField(
         null=True,
         blank=True,
@@ -30,16 +40,10 @@ class TicketRelease(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-year", "title"]
-        constraints = [
-            # Titles are what the ticket feeds actually carry on every row;
-            # release_id is only populated on some of them, so the title is what
-            # can be relied on to be unique per year.
-            models.UniqueConstraint(fields=["year", "title"], name="unique_release_per_year"),
-        ]
+        ordering = ["title"]
 
     def __str__(self):
-        return f"{self.title} ({self.year})"
+        return self.title
 
 
 class OnlineAttendee(models.Model):

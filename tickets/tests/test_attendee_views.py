@@ -182,3 +182,30 @@ def test_row_assign_button_survives_a_bogus_id(staff_client, ticket_links):
 
     assert response.status_code == 200
     assert any("no longer exists" in str(m) for m in response.context["messages"])
+
+
+@pytest.mark.django_db
+def test_bulk_assign_sends_no_email(staff_client, ticket_links, attendee, queued_tasks):
+    response = staff_client.post(
+        "online_attendees",
+        data={"action": "assign", "attendee_ids": [attendee.pk]},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    attendee.refresh_from_db()
+    assert attendee.has_ticket
+    assert queued_tasks == []
+    assert TicketEmailLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_bulk_assign_reports_an_empty_pool(staff_client, attendee):
+    response = staff_client.post(
+        "online_attendees",
+        data={"action": "assign", "attendee_ids": [attendee.pk]},
+        follow=True,
+    )
+
+    assert not attendee.has_ticket
+    assert any("Ran out of unassigned ticket links" in str(m) for m in response.context["messages"])

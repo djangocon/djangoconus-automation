@@ -105,7 +105,7 @@ def test_sync_skips_other_years(db):
 
 @pytest.mark.django_db
 def test_record_webhook_attendee_creates_immediately(db):
-    TicketRelease.objects.create(year=2026, title="Online- Individual", grants_venueless_access=True)
+    TicketRelease.objects.create(title="Online- Individual", grants_venueless_access=True)
 
     attendee = record_webhook_attendee(
         {
@@ -151,9 +151,7 @@ def test_sync_ticket_releases_seeds_only_the_eligible_titles(db):
     result = sync_ticket_releases(year=2026)
 
     assert result["total"] == 3
-    eligible = set(
-        TicketRelease.objects.filter(year=2026, grants_venueless_access=True).values_list("title", flat=True)
-    )
+    eligible = set(TicketRelease.objects.filter(grants_venueless_access=True).values_list("title", flat=True))
     # Sprints contain "online" but are not a Venueless ticket; the old
     # substring rule swept them in.
     assert eligible == {"Online- Individual"}
@@ -170,7 +168,7 @@ def test_sync_ticket_releases_leaves_staff_edits_alone(db):
         release_title="Corporate (In-person)",
     )
     sync_ticket_releases(year=2026)
-    release = TicketRelease.objects.get(year=2026, title="Corporate (In-person)")
+    release = TicketRelease.objects.get(title="Corporate (In-person)")
     release.grants_venueless_access = True
     release.save()
 
@@ -194,3 +192,23 @@ def test_one_day_tickets_are_eligible_despite_being_in_person(db):
     sync_online_attendees(year=2026)
 
     assert OnlineAttendee.objects.filter(year=2026, email="oneday@example.com").exists()
+
+
+@pytest.mark.django_db
+def test_eligibility_is_not_scoped_by_year(db):
+    """A box ticked one season keeps applying the next, without re-ticking."""
+    TicketRelease.objects.create(title="Sponsor- Online", grants_venueless_access=True, last_seen_year=2026)
+    TitoTicket.objects.create(
+        ticket_slug="t1",
+        event_slug="djangocon-us-2027",
+        year=2027,
+        email="sponsor@example.com",
+        name="Sponsor",
+        release_title="Sponsor- Online",
+    )
+
+    sync_online_attendees(year=2027)
+
+    assert OnlineAttendee.objects.filter(year=2027, email="sponsor@example.com").exists()
+    assert TicketRelease.objects.filter(title="Sponsor- Online").count() == 1
+    assert TicketRelease.objects.get(title="Sponsor- Online").last_seen_year == 2027
