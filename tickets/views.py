@@ -194,6 +194,23 @@ def _handle_assign_by_email(request: HttpRequest, year: int) -> bool:
     return True
 
 
+def _handle_assign_one(request: HttpRequest, attendee_id: str) -> None:
+    """The per-row Assign button. Ties an address to a link, sends nothing."""
+    # The pk arrives as raw POST text, so a hand-crafted value must not 500.
+    attendee = OnlineAttendee.objects.filter(pk=attendee_id).first() if attendee_id.isdigit() else None
+    if attendee is None:
+        messages.error(request, "That attendee no longer exists.")
+        return
+
+    try:
+        assign_link(attendee.email, attendee=attendee)
+    except NoTicketsAvailable:
+        messages.error(request, "No unassigned ticket links are left. Add more links before assigning.")
+        return
+
+    messages.success(request, f"Assigned a ticket link to {attendee.email} (no email sent).")
+
+
 def _handle_bulk_action(request: HttpRequest, action: str) -> None:
     """Apply ``action`` to every attendee id checked in the table."""
     ids = request.POST.getlist("attendee_ids")
@@ -205,6 +222,28 @@ def _handle_bulk_action(request: HttpRequest, action: str) -> None:
     reissue = action == "reissue"
     succeeded = 0
     out_of_links = False
+
+    # "assign" is the silent one: tie the selected people to links and send
+    # nothing. Kept apart from the emailing actions so a bulk assignment can
+    # never surprise anyone with a send.
+    if action == "assign":
+        for attendee in attendees:
+            try:
+                assign_link(attendee.email, attendee=attendee)
+                succeeded += 1
+            except NoTicketsAvailable:
+                out_of_links = True
+                break
+            except Exception:
+                logger.exception("Failed to assign a link to attendee %s", attendee.pk)
+
+        if succeeded:
+            messages.success(request, f"Assigned {succeeded} link{'s' if succeeded != 1 else ''} (no emails sent).")
+        if out_of_links:
+            messages.error(request, "Ran out of unassigned ticket links partway through. Add more links and retry.")
+        if not succeeded and not out_of_links:
+            messages.warning(request, "Nothing to do for the selected attendees.")
+        return
 
     for attendee in attendees:
         # "email" only re-sends to people who already hold a link; it is the
@@ -262,9 +301,14 @@ def online_attendees_view(request: HttpRequest) -> HttpResponse:
 
     if request.method == "POST":
         action = request.POST.get("action", "")
-        if action == "assign_by_email":
+        # The per-row button posts only its own name/value, so it carries no
+        # action; check for it before falling through to the bulk dispatch.
+        assign_attendee_id = request.POST.get("assign_attendee_id")
+        if assign_attendee_id:
+            _handle_assign_one(request, assign_attendee_id)
+        elif action == "assign_by_email":
             _handle_assign_by_email(request, year)
-        elif action in {"assign_and_email", "email", "reissue"}:
+        elif action in {"assign", "assign_and_email", "email", "reissue"}:
             _handle_bulk_action(request, action)
         else:
             messages.error(request, "Unknown action.")

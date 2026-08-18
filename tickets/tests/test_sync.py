@@ -2,12 +2,12 @@ import datetime
 
 import pytest
 
-from tickets.models import OnlineAttendee
-from tickets.sync import record_webhook_attendee, sync_online_attendees
+from tickets.models import OnlineAttendee, TicketRelease
+from tickets.sync import record_webhook_attendee, sync_online_attendees, sync_ticket_releases
 from titowebhooks.models import TitoTicket, TitoWebhookEvent
 
 
-def _webhook(email, release_title="Conference (Online)", slug="djangocon-us-2026", name="Web Hooked"):
+def _webhook(email, release_title="Online- Individual", slug="djangocon-us-2026", name="Web Hooked"):
     return TitoWebhookEvent.objects.create(
         trigger="ticket.completed",
         payload={
@@ -28,7 +28,7 @@ def test_sync_picks_up_online_tickets_from_the_api(db):
         year=2026,
         email="api@example.com",
         name="API Buyer",
-        release_title="Conference (Online)",
+        release_title="Online- Individual",
         created_at=datetime.datetime(2026, 2, 1, tzinfo=datetime.timezone.utc),
     )
 
@@ -54,7 +54,7 @@ def test_sync_ignores_in_person_and_voided_tickets(db):
         event_slug="djangocon-us-2026",
         year=2026,
         email="voided@example.com",
-        release_title="Conference (Online)",
+        release_title="Online- Individual",
         voided=True,
     )
 
@@ -70,7 +70,7 @@ def test_sync_merges_both_sources(db):
         event_slug="djangocon-us-2026",
         year=2026,
         email="api@example.com",
-        release_title="Conference (Online)",
+        release_title="Online- Individual",
     )
     _webhook("hook@example.com")
 
@@ -105,11 +105,13 @@ def test_sync_skips_other_years(db):
 
 @pytest.mark.django_db
 def test_record_webhook_attendee_creates_immediately(db):
+    TicketRelease.objects.create(title="Online- Individual", grants_venueless_access=True)
+
     attendee = record_webhook_attendee(
         {
             "email": "Instant@Example.com",
             "name": "Instant Buyer",
-            "release_title": "Conference (Online)",
+            "release_title": "Online- Individual",
             "created_at": "2026-03-01T10:00:00Z",
             "event": {"slug": "djangocon-us-2026"},
         }
@@ -132,3 +134,81 @@ def test_record_webhook_attendee_ignores_in_person(db):
         )
         is None
     )
+
+
+@pytest.mark.django_db
+def test_sync_ticket_releases_seeds_only_the_eligible_titles(db):
+    for title in ["Online- Individual", "Online Sprint - Thursday (August 27)", "Corporate (In-person)"]:
+        TitoTicket.objects.create(
+            ticket_slug=f"t-{title}",
+            event_slug="djangocon-us-2026",
+            year=2026,
+            email=f"{title}@example.com",
+            name="Buyer",
+            release_title=title,
+        )
+
+    result = sync_ticket_releases(year=2026)
+
+    assert result["total"] == 3
+    eligible = set(TicketRelease.objects.filter(grants_venueless_access=True).values_list("title", flat=True))
+    # Sprints contain "online" but are not a Venueless ticket; the old
+    # substring rule swept them in.
+    assert eligible == {"Online- Individual"}
+
+
+@pytest.mark.django_db
+def test_sync_ticket_releases_leaves_staff_edits_alone(db):
+    TitoTicket.objects.create(
+        ticket_slug="t1",
+        event_slug="djangocon-us-2026",
+        year=2026,
+        email="buyer@example.com",
+        name="Buyer",
+        release_title="Corporate (In-person)",
+    )
+    sync_ticket_releases(year=2026)
+    release = TicketRelease.objects.get(title="Corporate (In-person)")
+    release.grants_venueless_access = True
+    release.save()
+
+    sync_ticket_releases(year=2026)
+
+    release.refresh_from_db()
+    assert release.grants_venueless_access is True
+
+
+@pytest.mark.django_db
+def test_one_day_tickets_are_eligible_despite_being_in_person(db):
+    TitoTicket.objects.create(
+        ticket_slug="t1",
+        event_slug="djangocon-us-2026",
+        year=2026,
+        email="oneday@example.com",
+        name="One Day Buyer",
+        release_title="One Day Individual (In-person)",
+    )
+
+    sync_online_attendees(year=2026)
+
+    assert OnlineAttendee.objects.filter(year=2026, email="oneday@example.com").exists()
+
+
+@pytest.mark.django_db
+def test_eligibility_is_not_scoped_by_year(db):
+    """A box ticked one season keeps applying the next, without re-ticking."""
+    TicketRelease.objects.create(title="Sponsor- Online", grants_venueless_access=True, last_seen_year=2026)
+    TitoTicket.objects.create(
+        ticket_slug="t1",
+        event_slug="djangocon-us-2027",
+        year=2027,
+        email="sponsor@example.com",
+        name="Sponsor",
+        release_title="Sponsor- Online",
+    )
+
+    sync_online_attendees(year=2027)
+
+    assert OnlineAttendee.objects.filter(year=2027, email="sponsor@example.com").exists()
+    assert TicketRelease.objects.filter(title="Sponsor- Online").count() == 1
+    assert TicketRelease.objects.get(title="Sponsor- Online").last_seen_year == 2027

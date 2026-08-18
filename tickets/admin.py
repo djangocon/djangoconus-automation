@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import OnlineAttendee, TicketEmailLog, TicketLink
+from .models import OnlineAttendee, TicketEmailLog, TicketLink, TicketRelease
 
 
 @admin.register(TicketLink)
@@ -53,3 +53,15 @@ class TicketEmailLogAdmin(admin.ModelAdmin):
     readonly_fields = ("date_queued", "date_sent")
     raw_id_fields = ("attendee", "ticket_link", "sent_by")
     ordering = ("-date_queued",)
+
+
+@admin.register(TicketRelease)
+class TicketReleaseAdmin(admin.ModelAdmin):
+    list_display = ("title", "grants_venueless_access", "last_seen_year", "release_id", "last_synced")
+    # Editable straight from the list: toggling these is the reason the model
+    # exists, and making staff open each row to flip one checkbox is friction.
+    list_editable = ("grants_venueless_access",)
+    list_filter = ("grants_venueless_access", "last_seen_year")
+    search_fields = ("title",)
+    readonly_fields = ("date_created", "last_synced")
+    ordering = ("title",)
