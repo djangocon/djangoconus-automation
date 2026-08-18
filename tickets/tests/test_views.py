@@ -64,3 +64,26 @@ def test_tickets_info_view_with_no_available_tickets(tp):
     assert "tickets_available" in response.context
     assert response.context["tickets_available"] is False
     assert b"No Tickets Available" in response.content
+
+
+@pytest.mark.django_db
+def test_tickets_info_view_shows_venueless_link(tp, ticket_links, settings):
+    settings.VENUELESS_URL = "https://dcus26.venueless.events"
+
+    response = tp.get("tickets_info")
+
+    assert response.status_code == 200
+    assert response.context["venueless_url"] == "https://dcus26.venueless.events"
+    # The button reads as a bare domain even though the setting carries a scheme.
+    assert response.context["venueless_label"] == "dcus26.venueless.events"
+    assert b"https://dcus26.venueless.events" in response.content
+
+
+@pytest.mark.django_db
+def test_tickets_info_view_hides_venueless_link_when_unset(tp, ticket_links, settings):
+    settings.VENUELESS_URL = ""
+
+    response = tp.get("tickets_info")
+
+    assert response.status_code == 200
+    assert b"Already registered?" not in response.content

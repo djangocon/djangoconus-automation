@@ -98,16 +98,18 @@
                             If you've already claimed a ticket, enter your email to retrieve it.
                         </p>
 
-                        <div class="bg-opacity-30 rounded-lg bg-blue-800 p-4">
-                            <p class="text-sm text-blue-200">
-                                <strong>Already registered?</strong> You can go directly to:
-                            </p>
-                            <a href="https://dcus25.venueless.events"
-                               target="_blank"
-                               class="mt-2 inline-block rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-green-900 transition-colors duration-300 hover:bg-yellow-400">
-                                dcus25.venueless.events
-                            </a>
-                        </div>
+                        {% if venueless_url %}
+                            <div class="bg-opacity-30 rounded-lg bg-blue-800 p-4">
+                                <p class="text-sm text-blue-200">
+                                    <strong>Already registered?</strong> You can go directly to:
+                                </p>
+                                <a href="{{ venueless_url }}"
+                                   target="_blank"
+                                   class="mt-2 inline-block rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-green-900 transition-colors duration-300 hover:bg-yellow-400">
+                                    {{ venueless_label|default:venueless_url }}
+                                </a>
+                            </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="py-8 text-center">
