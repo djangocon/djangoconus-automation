@@ -352,9 +352,9 @@ VOLUNTEER_HANDBOOK_URL = env.str(
 )
 
 # Venueless instance for the online conference, linked from the ticket-claim
-# page. It changes every year, so it is set per environment rather than pinned
-# in here; blank (the default) hides the link instead of shipping a stale one.
-VENUELESS_URL = env.str("VENUELESS_URL", default="")
+# page. The host changes every year, so it is overridable per environment;
+# blank hides the link rather than pointing people at a dead instance.
+VENUELESS_URL = env.str("VENUELESS_URL", default="https://dcus26.venueless.events")
 
 
 # Slack settings
