@@ -139,3 +139,46 @@ def test_email_log_view_filters_by_status(staff_client, ticket_links, attendee, 
     assert response.status_code == 200
     assert response.context["failed_count"] == 1
     assert len(response.context["logs"]) == 1
+
+
+@pytest.mark.django_db
+def test_row_assign_button_ties_a_link_without_emailing(staff_client, ticket_links, attendee, queued_tasks):
+    response = staff_client.post(
+        "online_attendees",
+        data={"assign_attendee_id": attendee.pk},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    attendee.refresh_from_db()
+    assert attendee.has_ticket
+    # Assigning is deliberately silent; emailing is its own step.
+    assert queued_tasks == []
+    assert TicketEmailLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_row_assign_button_is_idempotent(staff_client, ticket_links, attendee):
+    staff_client.post("online_attendees", data={"assign_attendee_id": attendee.pk})
+    first = attendee.active_ticket_link
+
+    staff_client.post("online_attendees", data={"assign_attendee_id": attendee.pk})
+
+    assert attendee.active_ticket_link.pk == first.pk
+    assert TicketLink.objects.filter(attendee_email__isnull=True).count() == len(ticket_links) - 1
+
+
+@pytest.mark.django_db
+def test_row_assign_button_reports_an_empty_pool(staff_client, attendee):
+    response = staff_client.post("online_attendees", data={"assign_attendee_id": attendee.pk}, follow=True)
+
+    assert not attendee.has_ticket
+    assert any("No unassigned ticket links" in str(m) for m in response.context["messages"])
+
+
+@pytest.mark.django_db
+def test_row_assign_button_survives_a_bogus_id(staff_client, ticket_links):
+    response = staff_client.post("online_attendees", data={"assign_attendee_id": "not-a-pk"}, follow=True)
+
+    assert response.status_code == 200
+    assert any("no longer exists" in str(m) for m in response.context["messages"])

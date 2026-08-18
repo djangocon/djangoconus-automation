@@ -3,6 +3,45 @@ from django.db import models
 from django.utils import timezone
 
 
+class TicketRelease(models.Model):
+    """A Ti.to ticket type, and whether buying it earns a Venueless link.
+
+    Eligibility used to be a substring match on the release title ("online" in
+    it), which both over- and under-matched: it swept in the online sprints and
+    missed the One Day passes, which are in-person but do get Venueless access.
+    There is no rule hiding in the titles, so this makes it data instead --- one
+    checkbox per ticket type, editable in admin, applying to past and future
+    sales alike.
+    """
+
+    year = models.PositiveIntegerField(db_index=True)
+    title = models.CharField(max_length=256)
+    release_id = models.PositiveBigIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Ti.to's own id for the release. Stable across title edits.",
+    )
+    grants_venueless_access = models.BooleanField(
+        default=False,
+        help_text="Buyers of this ticket type belong on the Venueless roster.",
+    )
+    last_synced = models.DateTimeField(null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-year", "title"]
+        constraints = [
+            # Titles are what the ticket feeds actually carry on every row;
+            # release_id is only populated on some of them, so the title is what
+            # can be relied on to be unique per year.
+            models.UniqueConstraint(fields=["year", "title"], name="unique_release_per_year"),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.year})"
+
+
 class OnlineAttendee(models.Model):
     """Someone who bought an online ticket for a given conference year.
 

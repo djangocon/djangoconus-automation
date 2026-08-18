@@ -12,7 +12,7 @@ from datetime import timezone as dt_timezone
 
 from django.utils import timezone
 
-from tickets.models import OnlineAttendee
+from tickets.models import OnlineAttendee, TicketRelease
 from titowebhooks.models import TitoTicket, TitoWebhookEvent
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,73 @@ logger = logging.getLogger(__name__)
 DEFAULT_YEAR = 2026
 
 
-def is_online_release(release_title: str) -> bool:
-    return "online" in (release_title or "").lower()
+# Seeded onto newly discovered releases so a fresh database is not a blank
+# slate. Staff edits are never overwritten --- see ``sync_ticket_releases``.
+DEFAULT_ELIGIBLE_TITLES = {
+    "online- individual",
+    "online- corporate",
+    "one day individual (in-person)",
+    "one day corporate (in-person)",
+}
+
+
+def sync_ticket_releases(year: int = DEFAULT_YEAR) -> dict:
+    """Discover the year's ticket types from sold tickets.
+
+    Only ever creates. An existing row's ``grants_venueless_access`` is left
+    alone, because it represents somebody's deliberate choice in the admin and
+    a re-sync should not undo it.
+    """
+    seen = {}
+    for release_id, title in TitoTicket.objects.filter(year=year).values_list("release_id", "release_title").distinct():
+        if not title:
+            continue
+        seen.setdefault(title, release_id)
+
+    # Webhooks are read too, for the same reason the roster reads both feeds: a
+    # type first sold after the last API sync exists only in a payload, and
+    # leaving it undiscovered would silently deny those buyers a link.
+    for event in TitoWebhookEvent.objects.filter(trigger="ticket.completed").iterator():
+        payload = event.payload or {}
+        if _year_from_slug((payload.get("event") or {}).get("slug", "")) != year:
+            continue
+        title = payload.get("release_title") or ""
+        if title:
+            seen.setdefault(title, payload.get("release_id"))
+
+    now = timezone.now()
+    created = 0
+    for title, release_id in seen.items():
+        _, was_created = TicketRelease.objects.get_or_create(
+            year=year,
+            title=title,
+            defaults={
+                "release_id": release_id,
+                "grants_venueless_access": title.strip().lower() in DEFAULT_ELIGIBLE_TITLES,
+                "last_synced": now,
+            },
+        )
+        if was_created:
+            created += 1
+
+    TicketRelease.objects.filter(year=year).update(last_synced=now)
+    logger.info("Synced ticket releases for %s: %s created, %s total", year, created, len(seen))
+    return {"year": year, "created": created, "total": len(seen)}
+
+
+def eligible_release_titles(year: int) -> set[str]:
+    """Lowercased titles of the year's ticket types that earn a Venueless link."""
+    return {
+        title.strip().lower()
+        for title in TicketRelease.objects.filter(year=year, grants_venueless_access=True).values_list(
+            "title", flat=True
+        )
+    }
+
+
+def is_online_release(release_title: str, year: int = DEFAULT_YEAR) -> bool:
+    """Whether ``release_title`` earns a Venueless link in ``year``."""
+    return (release_title or "").strip().lower() in eligible_release_titles(year)
 
 
 def _parse_dt(value):
@@ -41,9 +106,10 @@ def _year_from_slug(event_slug: str) -> int | None:
 def _candidates_from_tito_tickets(year: int) -> dict[str, dict]:
     """Online buyers as recorded by the Ti.to API sync."""
     candidates = {}
+    eligible = eligible_release_titles(year)
     tickets = TitoTicket.objects.filter(year=year, voided=False).exclude(email="")
     for ticket in tickets:
-        if not is_online_release(ticket.release_title):
+        if (ticket.release_title or "").strip().lower() not in eligible:
             continue
         candidates[ticket.email.strip().lower()] = {
             "name": ticket.name or "",
@@ -57,6 +123,7 @@ def _candidates_from_tito_tickets(year: int) -> dict[str, dict]:
 def _candidates_from_webhooks(year: int) -> dict[str, dict]:
     """Online buyers seen on ``ticket.completed`` webhooks."""
     candidates = {}
+    eligible = eligible_release_titles(year)
     for event in TitoWebhookEvent.objects.filter(trigger="ticket.completed").iterator():
         payload = event.payload
         if not payload:
@@ -67,7 +134,7 @@ def _candidates_from_webhooks(year: int) -> dict[str, dict]:
             continue
 
         release_title = payload.get("release_title") or ""
-        if not is_online_release(release_title):
+        if release_title.strip().lower() not in eligible:
             continue
 
         email = (payload.get("email") or "").strip().lower()
@@ -92,6 +159,11 @@ def _candidates_from_webhooks(year: int) -> dict[str, dict]:
 
 def sync_online_attendees(year: int = DEFAULT_YEAR) -> dict:
     """Upsert ``OnlineAttendee`` rows for ``year``. Returns a counts summary."""
+    # Pick up ticket types added since the last run; new ones arrive switched
+    # off unless they match a seeded title, so this can never widen the roster
+    # behind somebody's back.
+    sync_ticket_releases(year=year)
+
     # Webhooks are applied second so their fresher name/release wins a tie.
     merged = _candidates_from_tito_tickets(year)
     for email, data in _candidates_from_webhooks(year).items():
@@ -124,16 +196,18 @@ def record_webhook_attendee(payload: dict) -> OnlineAttendee | None:
     if not payload:
         return None
 
+    # Eligibility is per-year, so the year has to be known before it can be
+    # asked --- an unparseable slug is not eligible for anything.
+    year = _year_from_slug((payload.get("event") or {}).get("slug", ""))
+    if year is None:
+        return None
+
     release_title = payload.get("release_title") or ""
-    if not is_online_release(release_title):
+    if not is_online_release(release_title, year):
         return None
 
     email = (payload.get("email") or "").strip().lower()
     if not email:
-        return None
-
-    year = _year_from_slug((payload.get("event") or {}).get("slug", ""))
-    if year is None:
         return None
 
     attendee, _ = OnlineAttendee.objects.update_or_create(
