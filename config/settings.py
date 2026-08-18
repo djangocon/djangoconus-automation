@@ -351,6 +351,12 @@ VOLUNTEER_HANDBOOK_URL = env.str(
     default="https://docs.google.com/document/d/1jpRr5jUxiQCgeXvnX-RPee1AsB1parzHRzCg3YcLCXA/edit?usp=sharing",
 )
 
+# Venueless instance for the online conference, linked from the ticket-claim
+# page. It changes every year, so it is set per environment rather than pinned
+# in here; blank (the default) hides the link instead of shipping a stale one.
+VENUELESS_URL = env.str("VENUELESS_URL", default="")
+
+
 # Slack settings
 
 SLACK_OAUTH_TOKEN = env("SLACK_OAUTH_TOKEN", default="")

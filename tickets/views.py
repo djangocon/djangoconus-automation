@@ -1,5 +1,7 @@
 import logging
+from urllib.parse import urlparse
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpRequest, HttpResponse
@@ -37,11 +39,15 @@ def tickets_info(request: HttpRequest) -> HttpResponse:
     else:
         form = ClaimTicketForm()
 
+    venueless_url = settings.VENUELESS_URL
     context = {
         "tickets_available": tickets_available,
         "form": form,
         "ticket_link": ticket_link,
         "is_existing": is_existing,
+        "venueless_url": venueless_url,
+        # The button reads as a domain rather than a full URL, so drop the scheme.
+        "venueless_label": urlparse(venueless_url).netloc if venueless_url else "",
     }
     return render(request, "tickets/info.html", context)
 
