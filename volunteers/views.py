@@ -1,10 +1,8 @@
 from collections import defaultdict
-from io import StringIO
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.management import call_command
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +14,7 @@ from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
 from .ical import build_calendar
+from .management.commands.import_schedule import fetch_events
 from .models import (
     CalendarToken,
     Role,
@@ -28,6 +27,7 @@ from .models import (
     total_volunteer_hours,
 )
 from .permissions import dashboard_required, volunteer_chairs
+from .schedule_plan import build_diff
 
 
 def max_volunteer_hours():
@@ -391,27 +391,24 @@ def volunteers_list_view(request):
 
 
 @dashboard_required
-@require_POST
-def sync_schedule_view(request):
-    """Re-import shifts from the conference schedule ICS feed.
+def schedule_changes_view(request):
+    """What the conference feed says that the app doesn't, and vice versa.
 
-    Idempotent: shifts are matched by their schedule UID, so existing slots
-    (and any signups on them) are updated in place rather than duplicated.
-
-    With ``dry_run`` set, reports what would be created/updated without writing.
+    Read-only on purpose. A bulk import matches talks by the feed's UID, and
+    that UID encodes the start time and title — so a renamed talk looks new and
+    the import creates a second shift beside a coordinator's merged block. This
+    screen shows the differences and links each one into the admin, so the two
+    or three things that actually moved get fixed by hand.
     """
-    dry_run = request.POST.get("dry_run") == "1"
-    out = StringIO()
     try:
-        call_command("import_schedule", dry_run=dry_run, stdout=out, no_color=True)
-    except Exception as exc:  # surface the failure to the coordinator, don't 500
-        messages.error(request, f"Schedule sync failed: {exc}")
+        events, skipped = fetch_events()
+    except Exception as exc:  # a dead feed shouldn't 500 the dashboard
+        messages.error(request, f"Couldn't read the conference schedule: {exc}")
         return redirect("volunteers:dashboard")
 
-    summary = out.getvalue().strip().splitlines()
-    result = summary[-1] if summary else "Schedule synced."
-    if dry_run:
-        messages.info(request, f"Dry run — no changes made. {result}")
-    else:
-        messages.success(request, result)
-    return redirect("volunteers:dashboard")
+    diff = build_diff(events, skipped=skipped)
+    return render(
+        request,
+        "volunteers/schedule_changes.html",
+        {"page_title": "Schedule changes", "diff": diff},
+    )

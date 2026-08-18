@@ -11,20 +11,16 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-4xl font-bold text-yellow-200">Volunteer Dashboard</h1>
             <div class="flex gap-2">
-                <form method="post" action="{% url 'volunteers:sync_schedule' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="dry_run" value="1">
-                    <button type="submit" class="rounded-md border border-green-600 bg-green-700 px-3 py-2 text-sm font-medium text-green-100 hover:bg-green-600">
-                        Preview schedule sync
-                    </button>
-                </form>
-                <form method="post" action="{% url 'volunteers:sync_schedule' %}"
-                      onsubmit="return confirm('Sync shifts from the conference schedule? Existing slots and signups are kept.');">
-                    {% csrf_token %}
-                    <button type="submit" class="rounded-md bg-yellow-300 px-3 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
-                        Sync schedule now
-                    </button>
-                </form>
+                {% comment %}
+                    No sync button. A bulk import matched talks by a UID that encodes
+                    the start time and title, so a renamed talk created a duplicate
+                    shift next to an already-merged block. This shows the differences
+                    and links each into the admin instead.
+                {% endcomment %}
+                <a href="{% url 'volunteers:schedule_changes' %}"
+                   class="rounded-md bg-yellow-300 px-3 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
+                    Schedule changes
+                </a>
             </div>
         </div>
 

@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html>
     <head>
+        {% comment %}
+            Django sends charset=utf-8 in the Content-Type header, so browsers get
+            this right when served — but a saved or exported page has only the
+            markup to go on, and non-ASCII (⚠, —, curly quotes) turns to mojibake.
+        {% endcomment %}
+        <meta charset="utf-8">
         <title>{% block title %}DjangoCon US Automation{% endblock title %}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.tailwindcss.com?plugins=typography,aspect-ratio"></script>

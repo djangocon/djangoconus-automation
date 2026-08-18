@@ -1,6 +1,7 @@
 import re
 import urllib.request
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -21,6 +22,93 @@ DEFAULT_SKIP_KEYWORDS = [
     "registration",
     "reception",
 ]
+
+
+def fetch_events(url=DEFAULT_URL, skip_keywords=None):
+    """Fetch the feed and return (events, skipped_count).
+
+    Module-level so the dashboard's preview screen can build the same list the
+    command works from, rather than a second copy that drifts.
+    """
+    if skip_keywords is None:
+        skip_keywords = [k.lower() for k in DEFAULT_SKIP_KEYWORDS]
+
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            raw = response.read().decode("utf-8")
+    except Exception as exc:
+        raise CommandError(f"Failed to fetch ICS: {exc}") from exc
+
+    events = _parse_ics(raw)
+    if not skip_keywords:
+        return events, 0
+    kept = [ev for ev in events if not _should_skip(ev["summary"], skip_keywords)]
+    return kept, len(events) - len(kept)
+
+
+def _should_skip(summary, skip_keywords):
+    title = (summary or "").lower()
+    return any(keyword in title for keyword in skip_keywords)
+
+
+def _parse_dt(key, value):
+    """Parse DTSTART/DTEND with optional TZID parameter."""
+    tzid = None
+    if ";" in key:
+        for param in key.split(";")[1:]:
+            if param.upper().startswith("TZID="):
+                tzid = param.split("=", 1)[1]
+
+    value = value.replace("Z", "")
+    if "T" in value:
+        dt = datetime.strptime(value, "%Y%m%dT%H%M%S")
+    else:
+        dt = datetime.strptime(value, "%Y%m%d")
+
+    return dt.replace(tzinfo=ZoneInfo(tzid) if tzid else ZoneInfo("America/Chicago"))
+
+
+def _unescape(value):
+    """Unescape ICS text values."""
+    return value.replace("\\n", "\n").replace("\\N", "\n").replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
+
+
+def _parse_ics(raw):
+    """Minimal ICS parser — handles TZID datetimes and line unfolding."""
+    raw = re.sub(r"\r\n[ \t]", "", raw)
+    raw = raw.replace("\r\n", "\n").replace("\r", "\n")
+
+    events = []
+    current = None
+
+    for line in raw.split("\n"):
+        line = line.strip()
+        if line == "BEGIN:VEVENT":
+            current = {}
+        elif line == "END:VEVENT":
+            if current and "dtstart" in current and "dtend" in current and "summary" in current:
+                events.append(current)
+            current = None
+        elif current is not None:
+            key, _, value = line.partition(":")
+            key_lower = key.lower()
+
+            if key_lower.startswith("dtstart"):
+                current["dtstart"] = _parse_dt(key, value)
+            elif key_lower.startswith("dtend"):
+                current["dtend"] = _parse_dt(key, value)
+            elif key_lower == "summary":
+                current["summary"] = value
+            elif key_lower == "description":
+                current["description"] = _unescape(value)
+            elif key_lower == "location":
+                current["location"] = value
+            elif key_lower == "uid":
+                current["uid"] = value
+            elif key_lower == "url":
+                current["url"] = value
+
+    return events
 
 
 class Command(BaseCommand):
@@ -76,7 +164,7 @@ class Command(BaseCommand):
         except Exception as exc:
             raise CommandError(f"Failed to fetch ICS: {exc}") from exc
 
-        events = self._parse_ics(raw)
+        events = _parse_ics(raw)
         if not events:
             self.stdout.write(self.style.WARNING("No events found in feed."))
             return
@@ -84,7 +172,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Found {len(events)} event(s)")
 
         if skip_keywords:
-            kept = [ev for ev in events if not self._should_skip(ev["summary"], skip_keywords)]
+            kept = [ev for ev in events if not _should_skip(ev["summary"], skip_keywords)]
             skipped = len(events) - len(kept)
             if skipped:
                 self.stdout.write(f"Skipping {skipped} non-talk event(s) (keynotes, breaks, remarks, etc.)")
@@ -151,78 +239,4 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(f"Imported {created} new talk(s), updated {updated}; refreshed their shifts.")
-        )
-
-    def _should_skip(self, summary, skip_keywords):
-        title = (summary or "").lower()
-        return any(keyword in title for keyword in skip_keywords)
-
-    def _parse_ics(self, raw):
-        """Minimal ICS parser — handles TZID datetimes and line unfolding."""
-        raw = re.sub(r"\r\n[ \t]", "", raw)
-        raw = raw.replace("\r\n", "\n").replace("\r", "\n")
-
-        events = []
-        current = None
-
-        for line in raw.split("\n"):
-            line = line.strip()
-            if line == "BEGIN:VEVENT":
-                current = {}
-            elif line == "END:VEVENT":
-                if current and "dtstart" in current and "dtend" in current and "summary" in current:
-                    events.append(current)
-                current = None
-            elif current is not None:
-                key, _, value = line.partition(":")
-                key_lower = key.lower()
-
-                if key_lower.startswith("dtstart"):
-                    current["dtstart"] = self._parse_dt(key, value)
-                elif key_lower.startswith("dtend"):
-                    current["dtend"] = self._parse_dt(key, value)
-                elif key_lower == "summary":
-                    current["summary"] = value
-                elif key_lower == "description":
-                    current["description"] = self._unescape(value)
-                elif key_lower == "location":
-                    current["location"] = value
-                elif key_lower == "uid":
-                    current["uid"] = value
-                elif key_lower == "url":
-                    current["url"] = value
-
-        return events
-
-    def _parse_dt(self, key, value):
-        """Parse DTSTART/DTEND with optional TZID parameter."""
-        from zoneinfo import ZoneInfo
-
-        tzid = None
-        if ";" in key:
-            for param in key.split(";")[1:]:
-                if param.upper().startswith("TZID="):
-                    tzid = param.split("=", 1)[1]
-
-        value = value.replace("Z", "")
-        if "T" in value:
-            dt = datetime.strptime(value, "%Y%m%dT%H%M%S")
-        else:
-            dt = datetime.strptime(value, "%Y%m%d")
-
-        if tzid:
-            dt = dt.replace(tzinfo=ZoneInfo(tzid))
-        else:
-            dt = dt.replace(tzinfo=ZoneInfo("America/Chicago"))
-
-        return dt
-
-    def _unescape(self, value):
-        """Unescape ICS text values."""
-        return (
-            value.replace("\\n", "\n")
-            .replace("\\N", "\n")
-            .replace("\\,", ",")
-            .replace("\\;", ";")
-            .replace("\\\\", "\\")
         )
