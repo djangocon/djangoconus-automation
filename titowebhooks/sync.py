@@ -3,8 +3,15 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 
-from titowebhooks.models import TitoEvent, TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
-from titowebhooks.tito_api import DJANGOCON_EVENT_SLUGS, get_activities, get_event, get_releases, get_tickets
+from titowebhooks.models import TitoDiscountCode, TitoEvent, TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
+from titowebhooks.tito_api import (
+    DJANGOCON_EVENT_SLUGS,
+    get_activities,
+    get_discount_codes,
+    get_event,
+    get_releases,
+    get_tickets,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -142,12 +149,106 @@ def sync_tito_events():
         else:
             updated_count += 1
 
+    # Discount codes ride along with the event sync: it is one cheap request per
+    # event, and the dashboard reads the two together.
     summary = {
         "created": created_count,
         "updated": updated_count,
         "failed": failed_slugs,
+        "discount_codes": sync_tito_discount_codes(),
     }
     logger.info("Tito event sync complete: %s", summary)
+    return summary
+
+
+def _discount_code_fields(payload: dict, event_slug: str, year: int | None) -> dict | None:
+    """Flatten a Ti.to discount code into model fields."""
+    tito_id = payload.get("id")
+    code = (payload.get("code") or "").strip()
+    if not tito_id or not code:
+        return None
+
+    # A null quantity is Ti.to for "no cap", which is not the same as a cap of
+    # zero, so it has to survive the trip as None rather than becoming a 0.
+    quantity = payload.get("quantity")
+    quantity = int(quantity) if quantity is not None else None
+
+    return {
+        "tito_id": tito_id,
+        "event_slug": event_slug,
+        "year": year,
+        "code": code[:128],
+        "description": payload.get("description") or "",
+        "discount_type": (payload.get("discount_code_type") or payload.get("type") or "")[:64],
+        "value": _money(payload.get("value")),
+        "quantity": quantity,
+        "quantity_used": int(payload.get("quantity_used") or 0),
+        "tickets_count": int(payload.get("tickets_count") or 0),
+        "registrations_count": int(payload.get("registrations_count") or 0),
+        "state": (payload.get("state") or "")[:32],
+        "share_url": (payload.get("share_url") or "")[:512],
+        "start_at": _parse_dt(payload.get("start_at")),
+        "end_at": _parse_dt(payload.get("end_at")),
+        "last_synced": datetime.now(tz=timezone.utc),
+    }
+
+
+def sync_tito_discount_codes(slugs=None):
+    """Pull the discount codes Ti.to has on file for each event.
+
+    The ticket rows can only ever show codes somebody redeemed. This is the other
+    half - how many redemptions were issued and how many are still available -
+    and it is the only place an issued-but-never-used code shows up at all.
+
+    Codes deleted in Ti.to are dropped locally too, otherwise a code that was
+    pulled from circulation would sit on the dashboard forever looking available.
+    """
+    account_slug, api_token = _get_credentials()
+
+    if not api_token or not account_slug:
+        logger.error("No Tito API token or account slug configured.")
+        return {"error": "No Tito API credentials configured."}
+
+    created_count = 0
+    updated_count = 0
+    deleted_count = 0
+    failed_slugs = []
+    per_event = {}
+
+    for slug in slugs or DJANGOCON_EVENT_SLUGS:
+        year = _year_for_slug(slug)
+        codes = get_discount_codes(account_slug, slug, api_token)
+
+        if codes is None:
+            logger.warning("Failed to fetch discount codes for %s", slug)
+            failed_slugs.append(slug)
+            continue
+
+        seen_ids = []
+        for payload in codes:
+            fields = _discount_code_fields(payload, slug, year)
+            if not fields:
+                continue
+            tito_id = fields.pop("tito_id")
+            seen_ids.append(tito_id)
+            _, created = TitoDiscountCode.objects.update_or_create(event_slug=slug, tito_id=tito_id, defaults=fields)
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        removed, _ = TitoDiscountCode.objects.filter(event_slug=slug).exclude(tito_id__in=seen_ids).delete()
+        deleted_count += removed
+        per_event[slug] = len(seen_ids)
+
+    summary = {
+        "created": created_count,
+        "updated": updated_count,
+        "deleted": deleted_count,
+        "failed": failed_slugs,
+        "per_event": per_event,
+    }
+    logger.info("Tito discount code sync complete: %s", summary)
     return summary
 
 

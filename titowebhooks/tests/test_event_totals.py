@@ -163,6 +163,9 @@ def test_dashboard_shows_revenue_and_a_positive_discount(client):
     assert "Revenue" in body
     assert "revenue" in body
     assert "Collected" not in body
+    # Only the event summary is under test here; the discount-codes table below it
+    # signs its own figures deliberately.
+    summary = body.split("Discount codes")[0]
     # No hardcoded minus in front of the discount figure, and nothing like -$-1,234.
-    assert "&minus;$" not in body
-    assert "-$-" not in body
+    assert "&minus;$" not in summary
+    assert "-$-" not in summary

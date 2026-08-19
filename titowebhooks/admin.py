@@ -3,7 +3,7 @@ from django_q.tasks import async_task
 from rich import print
 
 from emailoctopus.models import Campaign
-from titowebhooks.models import TitoHistoricalEvent, TitoWebhookEvent
+from titowebhooks.models import TitoDiscountCode, TitoHistoricalEvent, TitoWebhookEvent
 
 
 @admin.action(description="Send Event to Email Octopus")
@@ -77,3 +77,22 @@ class TitoWebhookEventAdmin(admin.ModelAdmin):
             },
         ),
     ]
+
+
+@admin.register(TitoDiscountCode)
+class TitoDiscountCodeAdmin(admin.ModelAdmin):
+    list_display = ["code", "year", "discount_label", "quantity", "quantity_used", "remaining", "state", "last_synced"]
+    list_filter = ["year", "state", "discount_type"]
+    search_fields = ["code"]
+    ordering = ["-year", "code"]
+    # Everything here is a copy of Ti.to's state; editing it locally would only
+    # be undone by the next sync.
+    readonly_fields = [field.name for field in TitoDiscountCode._meta.fields]
+
+    @admin.display(description="Discount")
+    def discount_label(self, obj):
+        return obj.discount_label
+
+    @admin.display(description="Remaining")
+    def remaining(self, obj):
+        return "unlimited" if obj.unlimited else obj.remaining

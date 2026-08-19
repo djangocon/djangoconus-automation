@@ -19,7 +19,7 @@ from rich import print
 
 from emailoctopus.models import Campaign
 from tickets.sync import record_webhook_attendee
-from titowebhooks.models import TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
+from titowebhooks.models import TitoDiscountCode, TitoHistoricalEvent, TitoTicket, TitoWebhookEvent
 from titowebhooks.reports import (
     matches_speaker,
     matches_sponsor,
@@ -418,68 +418,87 @@ def _money(value) -> float:
         return 0.0
 
 
-def _latest_tickets_for_event(event_slug: str) -> list[dict]:
-    """Most recent payload per ticket for an event, with voided tickets dropped.
+def _release_prices(event_slug: str) -> dict[int, float]:
+    """List price per release id, from the event's synced release list.
 
-    Ti.to fires a webhook per ticket for every state change, so the same ticket
-    appears many times. We keep the last event per ticket slug and then drop the
-    ones whose final state was a void - those were never really sold.
+    The /tickets API leaves release_price off the ticket itself, so this is the
+    only place face value can come from for API-sourced rows. Comp and sponsor
+    releases carry a null price - they map to 0.0, which is why those rows show
+    no face value rather than a made-up one.
     """
-    events = TitoWebhookEvent.objects.filter(payload__event__slug=event_slug).order_by("timestamp")
-
-    latest_by_ticket: dict[str, TitoWebhookEvent] = {}
-    for event in events:
-        payload = event.payload or {}
-        key = payload.get("slug") or payload.get("reference") or str(payload.get("id") or "")
-        if key:
-            latest_by_ticket[key] = event  # ascending order, so the last write wins
-
-    tickets = []
-    for event in latest_by_ticket.values():
-        if event.trigger == "ticket.voided":
-            continue
-        payload = event.payload or {}
-        if (payload.get("state_name") or "").lower() in {"void", "voided"}:
-            continue
-        tickets.append(payload)
-
-    return tickets
+    event = TitoHistoricalEvent.objects.filter(slug=event_slug).first()
+    prices = {}
+    for release in (event.releases if event else None) or []:
+        if release_id := release.get("id"):
+            prices[release_id] = _money(release.get("price"))
+    return prices
 
 
 def _discount_breakdown(event_slug: str) -> dict:
-    """Group the current event's tickets by the discount code used.
+    """What each discount code was redeemed for, and how much of it is left.
 
-    Face value comes from `release_price` (the list price of the release) and what
-    the attendee actually paid from `price`; the gap between them is what the code
-    was worth. Tickets bought without a code are reported as their own row so the
-    totals still reconcile against the sales table.
+    Two sources, joined on the code, because neither one can answer the question
+    alone. Ticket rows say what was *used*: how many tickets, at what face value,
+    for what the attendee actually paid. TitoDiscountCode says what was *issued*:
+    the cap Ti.to put on the code and how much of that cap is spent. A code
+    nobody has redeemed appears only in the second, with a zero-ticket row, which
+    is the whole point - "unused" and "never issued" look identical otherwise.
+
+    The two ticket counts can legitimately disagree. Ti.to's quantity_used counts
+    redemptions against the cap, which is not the same as tickets carrying the
+    code - an organizer issuing tickets straight off a release can produce one
+    without the other. Both numbers are reported rather than reconciled.
     """
+    prices = _release_prices(event_slug)
     groups: dict[str, dict] = {}
 
-    for payload in _latest_tickets_for_event(event_slug):
-        code = (payload.get("discount_code_used") or "").strip()
-        group = groups.setdefault(
-            code,
-            {"code": code, "count": 0, "face_value": 0.0, "paid": 0.0, "releases": set()},
+    def group_for(code: str) -> dict:
+        return groups.setdefault(
+            code.lower(),
+            {"code": code, "count": 0, "face_value": 0.0, "paid": 0.0, "releases": set(), "record": None},
         )
-        face = _money(payload.get("release_price"))
-        paid = _money(payload.get("price"))
+
+    for ticket in TitoTicket.objects.filter(event_slug=event_slug, voided=False).iterator():
+        group = group_for(ticket.discount_code.strip())
+        # Webhook-sourced rows carry the price on the ticket; API rows need the lookup.
+        face = ticket.release_price or prices.get(ticket.release_id, 0.0)
         group["count"] += 1
         group["face_value"] += face
-        group["paid"] += paid
-        if title := payload.get("release_title"):
-            group["releases"].add(title)
+        group["paid"] += ticket.price
+        if ticket.release_title:
+            group["releases"].add(ticket.release_title)
+
+    codes = list(TitoDiscountCode.objects.filter(event_slug=event_slug))
+    for record in codes:
+        group = group_for(record.code)
+        group["code"] = record.code  # Ti.to's casing wins over whatever the ticket recorded
+        group["record"] = record
 
     rows = []
     for group in groups.values():
+        record = group.pop("record")
         group["discount"] = group["face_value"] - group["paid"]
         group["releases"] = sorted(group["releases"])
+        group["known"] = record is not None
+        group["issued"] = record.quantity if record else None
+        group["redeemed"] = record.quantity_used if record else None
+        group["remaining"] = record.remaining if record else None
+        group["unlimited"] = record.unlimited if record else False
+        group["used_up"] = record.used_up if record else False
+        group["state"] = record.state if record else ""
+        group["share_url"] = record.share_url if record else ""
+        group["label"] = record.discount_label if record else ""
+        # Ti.to's own count is the one that decides "has this been used at all",
+        # so a code redeemed outside our ticket data still reads as used.
+        group["unused"] = bool(group["code"]) and group["count"] == 0 and not (record.quantity_used if record else 0)
         rows.append(group)
 
-    # Codes first (biggest discount at the top), with the no-code row pinned last.
-    rows.sort(key=lambda r: (not r["code"], -r["discount"], r["code"].lower()))
+    # Redeemed codes first (biggest discount at the top), then the issued-but-unused
+    # ones alphabetically, with the no-code row pinned last.
+    rows.sort(key=lambda r: (not r["code"], r["unused"], -r["discount"], r["code"].lower()))
 
     discounted = [r for r in rows if r["code"]]
+    capped = [r for r in rows if r["issued"] is not None]
     return {
         "rows": rows,
         "has_data": bool(rows),
@@ -489,6 +508,14 @@ def _discount_breakdown(event_slug: str) -> dict:
         "total_face_value": sum(r["face_value"] for r in rows),
         "total_paid": sum(r["paid"] for r in rows),
         "total_discount": sum(r["discount"] for r in rows),
+        # Availability side: only meaningful once discount codes have been synced.
+        "has_code_data": bool(codes),
+        "issued_code_count": len(codes),
+        "unused_code_count": sum(1 for r in rows if r["unused"]),
+        "uncapped_code_count": sum(1 for r in rows if r["known"] and r["unlimited"]),
+        "total_issued": sum(r["issued"] for r in capped),
+        "total_redeemed": sum(r["redeemed"] or 0 for r in rows if r["known"]),
+        "total_remaining": sum(r["remaining"] for r in capped),
     }
 
 
