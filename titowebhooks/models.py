@@ -155,6 +155,72 @@ class TitoTicket(models.Model):
         return self.release_price - self.price
 
 
+class TitoDiscountCode(models.Model):
+    """A discount code as Ti.to knows it - how many redemptions were issued, and how many are left.
+
+    Ticket rows only record the codes that were *redeemed*, so a code nobody has
+    used yet leaves no trace there at all. These rows are what let the dashboard
+    tell "issued but unused" apart from "never existed".
+    """
+
+    event_slug = models.SlugField(max_length=128, db_index=True)
+    year = models.PositiveIntegerField(db_index=True)
+    tito_id = models.PositiveBigIntegerField()
+    code = models.CharField(max_length=128)
+    description = models.TextField(
+        blank=True, help_text='Ti.to\'s own summary, e.g. "Sell for 100.0% less. 2/4 available."'
+    )
+    discount_type = models.CharField(
+        max_length=64, blank=True, help_text="PercentOffDiscountCode or MoneyOffDiscountCode"
+    )
+    value = models.FloatField(default=0.0, help_text="Percent off, or dollars off, depending on discount_type")
+    quantity = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Redemptions issued; null means Ti.to placed no cap on this code"
+    )
+    quantity_used = models.PositiveIntegerField(default=0, help_text="Redemptions Ti.to has counted against the cap")
+    tickets_count = models.PositiveIntegerField(default=0)
+    registrations_count = models.PositiveIntegerField(default=0)
+    state = models.CharField(max_length=32, blank=True, help_text="current, past, or upcoming")
+    share_url = models.URLField(max_length=512, blank=True)
+    start_at = models.DateTimeField(null=True, blank=True)
+    end_at = models.DateTimeField(null=True, blank=True)
+    last_synced = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-year", "code"]
+        constraints = [
+            models.UniqueConstraint(fields=["event_slug", "tito_id"], name="unique_discount_code_per_event"),
+        ]
+
+    def __str__(self):
+        return f"{self.code} ({self.year})"
+
+    @property
+    def unlimited(self) -> bool:
+        return self.quantity is None
+
+    @property
+    def remaining(self) -> int | None:
+        """Redemptions still on the table, or None when the code is uncapped.
+
+        Clamped at zero: Ti.to lets an organizer lower the cap under what has
+        already been redeemed, and "-3 left" helps nobody.
+        """
+        if self.quantity is None:
+            return None
+        return max(self.quantity - self.quantity_used, 0)
+
+    @property
+    def used_up(self) -> bool:
+        return self.remaining == 0
+
+    @property
+    def discount_label(self) -> str:
+        if self.discount_type == "MoneyOffDiscountCode":
+            return f"${self.value:,.0f} off"
+        return f"{self.value:g}% off"
+
+
 class TitoWebhookEvent(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     trigger = models.CharField(max_length=256, blank=True)

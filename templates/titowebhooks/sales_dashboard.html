@@ -461,7 +461,9 @@
                                         <tr>
                                             <th class="px-4 py-2 text-left text-xs font-medium tracking-wider uppercase">Code</th>
                                             <th class="px-4 py-2 text-left text-xs font-medium tracking-wider uppercase">Releases</th>
-                                            <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase">Tickets</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase" title="Redemptions Ti.to has counted against the code's cap, out of how many were issued">Used / issued</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase" title="Redemptions still available">Left</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase" title="Tickets in our data carrying this code">Tickets</th>
                                             <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase">Face value</th>
                                             <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase">Paid</th>
                                             <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase">Discount</th>
@@ -472,13 +474,38 @@
                                             <tr class="transition-colors hover:bg-opacity-20 hover:bg-green-700">
                                                 <td class="px-4 py-2 text-sm">
                                                     {% if row.code %}
-                                                        <span class="font-mono text-green-300">{{ row.code }}</span>
+                                                        <span class="font-mono {% if row.unused %}text-gray-400{% else %}text-green-300{% endif %}">{{ row.code }}</span>
+                                                        {% if row.label %}<span class="ml-1 text-xs text-gray-500">{{ row.label }}</span>{% endif %}
+                                                        {% if row.unused %}<span class="ml-1 rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300">unused</span>{% endif %}
+                                                        {% if row.used_up %}<span class="ml-1 rounded bg-yellow-900 px-1.5 py-0.5 text-xs text-yellow-200">all used</span>{% endif %}
+                                                        {% if row.state == "past" %}<span class="ml-1 rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-400">expired</span>{% endif %}
+                                                        {% if not row.known %}<span class="ml-1 rounded bg-red-900 px-1.5 py-0.5 text-xs text-red-200" title="Redeemed on a ticket, but Ti.to has no such code any more">deleted</span>{% endif %}
                                                     {% else %}
                                                         <span class="text-gray-400">No code</span>
                                                     {% endif %}
                                                 </td>
                                                 <td class="px-4 py-2 text-sm text-gray-400">{{ row.releases|join:", "|default:"—" }}</td>
-                                                <td class="px-4 py-2 text-right font-mono text-sm text-green-400">{{ row.count }}</td>
+                                                <td class="px-4 py-2 text-right font-mono text-sm">
+                                                    {% if row.known %}
+                                                        <span class="text-gray-300">{{ row.redeemed }}</span>
+                                                        <span class="text-gray-600">/</span>
+                                                        {% if row.unlimited %}<span class="text-gray-500" title="No cap set in Ti.to">&infin;</span>{% else %}<span class="text-gray-300">{{ row.issued }}</span>{% endif %}
+                                                    {% else %}
+                                                        <span class="text-gray-600">—</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="px-4 py-2 text-right font-mono text-sm">
+                                                    {% if not row.known %}
+                                                        <span class="text-gray-600">—</span>
+                                                    {% elif row.unlimited %}
+                                                        <span class="text-gray-500">&infin;</span>
+                                                    {% elif row.remaining %}
+                                                        <span class="text-green-400">{{ row.remaining }}</span>
+                                                    {% else %}
+                                                        <span class="text-yellow-400">0</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="px-4 py-2 text-right font-mono text-sm {% if row.count %}text-green-400{% else %}text-gray-600{% endif %}">{{ row.count }}</td>
                                                 <td class="px-4 py-2 text-right font-mono text-sm text-gray-300">${{ row.face_value|floatformat:"0g" }}</td>
                                                 <td class="px-4 py-2 text-right font-mono text-sm text-gray-300">${{ row.paid|floatformat:"0g" }}</td>
                                                 <td class="px-4 py-2 text-right font-mono text-sm">
@@ -491,16 +518,37 @@
                                                 {{ discounts.code_count }} code{{ discounts.code_count|pluralize }} &middot;
                                                 {{ discounts.discounted_tickets }} of {{ discounts.total_tickets }} ticket{{ discounts.total_tickets|pluralize }} discounted
                                             </td>
+                                            <td class="px-4 py-2 text-right font-mono text-xs text-gray-300">
+                                                {% if discounts.has_code_data %}{{ discounts.total_redeemed }}<span class="text-gray-600">/</span>{{ discounts.total_issued }}{% endif %}
+                                            </td>
+                                            <td class="px-4 py-2 text-right font-mono text-xs text-green-300">
+                                                {% if discounts.has_code_data %}{{ discounts.total_remaining }}{% endif %}
+                                            </td>
                                             <td class="px-4 py-2 text-right font-mono text-xs text-gray-300">{{ discounts.total_tickets }}</td>
                                             <td class="px-4 py-2 text-right font-mono text-xs text-gray-300">${{ discounts.total_face_value|floatformat:"0g" }}</td>
                                             <td class="px-4 py-2 text-right font-mono text-sm text-green-300">${{ discounts.total_paid|floatformat:"0g" }}</td>
-                                            <td class="px-4 py-2 text-right font-mono text-sm text-yellow-300">&minus;${{ discounts.total_discount|floatformat:"0g" }}</td>
+                                            <td class="px-4 py-2 text-right font-mono text-sm">
+                                                {% if discounts.total_discount %}<span class="text-yellow-300">&minus;${{ discounts.total_discount|floatformat:"0g" }}</span>{% else %}<span class="text-gray-600">—</span>{% endif %}
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                             <p class="mt-2 text-xs text-gray-500">
-                                From ticket webhooks for {{ discounts.total_tickets }} ticket{{ discounts.total_tickets|pluralize }}, so it covers only what Ti.to has sent us &mdash; the sales table above is priced at face value and will read higher.
+                                {% if discounts.has_code_data %}
+                                    <strong class="text-gray-400">Used / issued</strong> and <strong class="text-gray-400">Left</strong> come from Ti.to's discount codes:
+                                    {{ discounts.issued_code_count }} code{{ discounts.issued_code_count|pluralize }} on file,
+                                    {{ discounts.unused_code_count }} never redeemed,
+                                    {{ discounts.total_remaining }} redemption{{ discounts.total_remaining|pluralize }} still available
+                                    {% if discounts.uncapped_code_count %}(plus {{ discounts.uncapped_code_count }} uncapped code{{ discounts.uncapped_code_count|pluralize }}){% endif %}.
+                                {% else %}
+                                    Issued and remaining counts need a Ti.to sync &mdash; run <strong>Sync from Ti.to</strong> to fill them in.
+                                {% endif %}
+                            </p>
+                            <p class="mt-1 text-xs text-gray-500">
+                                <strong class="text-gray-400">Tickets</strong>, face value, paid, and discount come from our own ticket rows, so they cover only what has synced.
+                                Ti.to counts a redemption against the cap, which is not the same thing as a ticket carrying the code &mdash; the two columns can disagree, and neither is wrong.
+                                Comp and sponsor releases have no list price, so their rows show no face value.
                             </p>
                         {% endif %}
 
