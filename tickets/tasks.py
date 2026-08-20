@@ -2,17 +2,11 @@ import logging
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
 
+from tickets.emails import build_ticket_email
 from tickets.models import TicketEmailLog
 
 logger = logging.getLogger(__name__)
-
-SUBJECTS = {
-    TicketEmailLog.KIND_INITIAL: "Your DjangoCon US online conference link",
-    TicketEmailLog.KIND_RESEND: "Your DjangoCon US online conference link (resent)",
-    TicketEmailLog.KIND_REISSUE: "Your new DjangoCon US online conference link",
-}
 
 
 def send_ticket_link_email(log_id: int) -> bool:
@@ -36,31 +30,18 @@ def send_ticket_link_email(log_id: int) -> bool:
         log.mark_failed("Ticket link was removed before the email could be sent.")
         return False
 
-    context = {
-        "attendee": log.attendee,
-        "name": (log.attendee.name if log.attendee else "") or "",
-        "ticket_link": log.ticket_link.link,
-        "kind": log.kind,
-        "is_reissue": log.kind == TicketEmailLog.KIND_REISSUE,
-        "is_resend": log.kind == TicketEmailLog.KIND_RESEND,
-        "year": log.attendee.year if log.attendee else None,
-        "support_email": settings.DEFAULT_FROM_EMAIL,
-    }
-
-    subject = SUBJECTS.get(log.kind, SUBJECTS[TicketEmailLog.KIND_INITIAL])
-    text_body = render_to_string("tickets/email/ticket_link.txt", context)
-    html_body = render_to_string("tickets/email/ticket_link.html", context)
+    email = build_ticket_email(attendee=log.attendee, link_url=log.ticket_link.link, kind=log.kind)
 
     message = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
+        subject=email.subject,
+        body=email.text_body,
         from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
         to=[log.to_email],
     )
-    message.attach_alternative(html_body, "text/html")
+    message.attach_alternative(email.html_body, "text/html")
 
     # Persist before sending; mark_sent/mark_failed only touch their own fields.
-    log.subject = subject
+    log.subject = email.subject
     log.save(update_fields=["subject"])
 
     try:

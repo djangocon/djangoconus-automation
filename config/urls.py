@@ -13,6 +13,7 @@ from thunderdome.views import (
     sync_from_pretalx_view,
 )
 from tickets.views import (
+    attendee_email_preview_view,
     claim_ticket_view,
     create_tickets_view,
     online_attendees_view,
@@ -49,6 +50,7 @@ urlpatterns = [
     path("tickets/list/", tickets_list_view, name="tickets_list"),
     path("tickets/claim/", claim_ticket_view, name="claim_ticket"),
     path("tickets/attendees/", online_attendees_view, name="online_attendees"),
+    path("tickets/attendees/<int:pk>/email/", attendee_email_preview_view, name="attendee_email_preview"),
     path("tickets/emails/", ticket_emails_view, name="ticket_emails"),
     path("sprints/tickets/", sprint_tickets_view, name="sprint_tickets"),
     path("reports/speakers.csv", speakers_report_view, name="report_speakers"),

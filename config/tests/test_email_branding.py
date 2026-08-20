@@ -18,7 +18,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
-from tickets.tasks import SUBJECTS
+from tickets.emails import SUBJECTS
 from volunteers.models import Role, Shift, VolunteerSignup
 from volunteers.tasks import notify_shift_uncovered, send_shift_reminders
 

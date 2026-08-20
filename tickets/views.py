@@ -4,12 +4,14 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.db import models
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from titowebhooks.reports import normalized_csv
 
+from .emails import PLACEHOLDER_LINK, build_ticket_email
 from .forms import AssignByEmailForm, BulkTicketCreationForm, ClaimTicketForm
 from .models import OnlineAttendee, TicketEmailLog, TicketLink
 from .services import NoTicketsAvailable, assign_and_email, assign_link, claim_for_email
@@ -99,15 +101,39 @@ def tickets_list_view(request: HttpRequest) -> HttpResponse:
     """
     Display all tickets with their status.
 
-    Shows a table with all ticket links, creation dates, and access dates.
+    Shows a table with all ticket links, creation dates, and access dates,
+    alongside how many times we emailed the link out and when we last did ---
+    the same counts the attendee dashboard reports, from the link's side of the
+    relationship, so a reissued link carries its own history rather than the
+    attendee's running total.
     """
-    tickets = TicketLink.objects.all().order_by("-date_link_created")
+    sent = models.Q(email_logs__status=TicketEmailLog.STATUS_SENT)
+    tickets = (
+        TicketLink.objects.annotate(
+            emails_sent=models.Count("email_logs", filter=sent),
+            last_emailed_at=models.Max("email_logs__date_sent", filter=sent),
+            emails_failed=models.Count("email_logs", filter=models.Q(email_logs__status=TicketEmailLog.STATUS_FAILED)),
+        )
+        .select_related("attendee")
+        .order_by("-date_link_created")
+    )
+
+    # Links claimed through the public page carry an address but no FK, so the
+    # preview link would vanish for exactly the people staff most often chase.
+    # Resolve those by address, the same way ``active_ticket_link`` does.
+    unlinked_emails = {t.attendee_email for t in tickets if t.attendee_email and t.attendee_id is None}
+    # Ascending year: the same address can appear for several conferences, and
+    # the last write into the dict should be the most recent one.
+    attendees_by_email = {a.email: a for a in OnlineAttendee.objects.filter(email__in=unlinked_emails).order_by("year")}
+    for ticket in tickets:
+        ticket.preview_attendee = ticket.attendee or attendees_by_email.get(ticket.attendee_email)
 
     context = {
         "tickets": tickets,
-        "total_count": tickets.count(),
-        "available_count": tickets.filter(attendee_email__isnull=True).count(),
-        "used_count": tickets.filter(attendee_email__isnull=False).count(),
+        "total_count": len(tickets),
+        "available_count": sum(1 for t in tickets if t.attendee_email is None),
+        "used_count": sum(1 for t in tickets if t.attendee_email is not None),
+        "emailed_count": sum(1 for t in tickets if t.emails_sent),
     }
     return render(request, "tickets/list.html", context)
 
@@ -363,3 +389,53 @@ def ticket_emails_view(request: HttpRequest) -> HttpResponse:
         "failed_count": TicketEmailLog.objects.filter(status=TicketEmailLog.STATUS_FAILED).count(),
     }
     return render(request, "tickets/emails.html", context)
+
+
+@staff_member_required
+def attendee_email_preview_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """The ticket email this attendee would get, rendered with their real link.
+
+    The previews under /staff/emails/ are deliberately fabricated so no
+    attendee's link can leak onto a page. That makes them useless for the
+    question staff actually ask before hitting send --- "what is *this* person
+    about to receive?" --- so this one renders the genuine article, behind the
+    same staff gate as the roster it is reached from.
+    """
+    attendee = get_object_or_404(OnlineAttendee, pk=pk)
+
+    kind = request.GET.get("kind")
+    if kind not in dict(TicketEmailLog.KIND_CHOICES):
+        # Default to whatever sending right now would actually do.
+        kind = TicketEmailLog.KIND_RESEND if attendee.has_ticket else TicketEmailLog.KIND_INITIAL
+
+    link = attendee.active_ticket_link
+    email = build_ticket_email(
+        attendee=attendee,
+        link_url=link.link if link else PLACEHOLDER_LINK,
+        kind=kind,
+    )
+
+    # ?part=html serves the HTML body alone, matching /staff/emails/, so staff
+    # can open it in a tab and forward it to a real client to test.
+    if request.GET.get("part") == "html":
+        return HttpResponse(email.html_body)
+
+    view = request.GET.get("view")
+    if view not in {"rich", "text"}:
+        view = "rich"
+
+    context = {
+        "attendee": attendee,
+        "rendered": email,
+        "kind": kind,
+        "kinds": TicketEmailLog.KIND_CHOICES,
+        "ticket_link": link,
+        # A reissue mints a link from the pool at send time, so the one below is
+        # only their current link standing in. Say so rather than imply we know.
+        "link_is_placeholder": link is None,
+        "is_reissue": kind == TicketEmailLog.KIND_REISSUE,
+        "view": view,
+        "logs": attendee.email_logs.select_related("sent_by").order_by("-date_queued")[:10],
+        "year": attendee.year,
+    }
+    return render(request, "tickets/email_preview.html", context)

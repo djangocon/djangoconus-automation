@@ -218,6 +218,10 @@
                                                 Assign link
                                             </button>
                                         {% endif %}
+                                        <a href="{% url 'attendee_email_preview' attendee.pk %}"
+                                           class="mt-1 block text-xs text-yellow-300 underline hover:text-yellow-200">
+                                            Preview email
+                                        </a>
                                     </td>
                                 </tr>
                             {% endfor %}
