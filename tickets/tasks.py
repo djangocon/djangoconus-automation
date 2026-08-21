@@ -4,7 +4,9 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
 from tickets.emails import build_ticket_email
-from tickets.models import TicketEmailLog
+from tickets.models import OnlineAttendee, TicketEmailLog
+from tickets.services import NoTicketsAvailable, assign_and_email
+from tickets.sync import DEFAULT_YEAR
 
 logger = logging.getLogger(__name__)
 
@@ -54,3 +56,61 @@ def send_ticket_link_email(log_id: int) -> bool:
     log.mark_sent()
     logger.info("Sent %s ticket link email to %s", log.kind, log.to_email)
     return True
+
+
+def send_pending_ticket_emails(year: int = DEFAULT_YEAR, limit: int | None = None) -> dict:
+    """Email every online attendee for ``year`` who has not been emailed yet.
+
+    Built to be run unattended on a schedule, so the guard against sending twice
+    is the whole design. Anyone with an existing log row --- sent, or still
+    queued in the worker --- is skipped, which means a second run (a retry, an
+    accidental double-fire, a rerun after a partial batch) mails only the people
+    the first run never reached. Failed rows are deliberately *not* skipped, so
+    a transient SMTP problem gets another go.
+
+    Links are assigned as needed rather than assumed, since anyone who buys
+    between scheduling this and it firing will have no link yet. Running out of
+    links stops the batch instead of silently mailing a subset --- the people
+    left over are exactly the ones a human needs to know about.
+    """
+    already_emailed = set(
+        TicketEmailLog.objects.filter(
+            status__in=[TicketEmailLog.STATUS_SENT, TicketEmailLog.STATUS_QUEUED],
+        ).values_list("to_email", flat=True)
+    )
+
+    queued = 0
+    skipped = 0
+    failed = 0
+    out_of_links = False
+
+    for attendee in OnlineAttendee.objects.filter(year=year).order_by("pk"):
+        if attendee.email.lower() in already_emailed:
+            skipped += 1
+            continue
+
+        if limit is not None and queued >= limit:
+            break
+
+        try:
+            assign_and_email(attendee)
+        except NoTicketsAvailable:
+            out_of_links = True
+            logger.error("Ran out of ticket links while emailing %s; stopping the batch", attendee.email)
+            break
+        except Exception:
+            failed += 1
+            logger.exception("Failed to queue ticket email for %s", attendee.email)
+        else:
+            queued += 1
+            already_emailed.add(attendee.email.lower())
+
+    summary = {
+        "year": year,
+        "queued": queued,
+        "skipped": skipped,
+        "failed": failed,
+        "out_of_links": out_of_links,
+    }
+    logger.info("Pending ticket email run complete: %s", summary)
+    return summary
