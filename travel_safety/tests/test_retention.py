@@ -103,3 +103,46 @@ def test_an_empty_table_is_a_no_op(settings, today):
     enforce_retention()
 
     assert TravelRegistration.objects.count() == 0
+
+
+@pytest.fixture
+def evening_before(monkeypatch):
+    """Pin the clock to 23:30 in Chicago, when UTC has already rolled over.
+
+    2026-08-21 04:30 UTC is 2026-08-20 23:30 CDT, so ``timezone.now().date()``
+    and ``timezone.localdate()`` disagree by a day. Patching ``now`` covers both,
+    since ``localdate`` is derived from it. Without a fixed instant these cases
+    would only fail during the five-hour window each evening --- which is exactly
+    how the bug reached main unnoticed.
+    """
+    instant = datetime.datetime(2026, 8, 21, 4, 30, tzinfo=datetime.timezone.utc)
+    monkeypatch.setattr(timezone, "now", lambda: instant)
+    return instant
+
+
+@pytest.mark.django_db
+def test_the_cutoff_follows_the_local_date_not_utc(settings, evening_before):
+    """The day before the window closes, nothing goes --- even after UTC midnight.
+
+    Local date is the 20th and the cutoff is the 21st, so this must keep the
+    row. Reading the UTC date instead makes it the 21st and deletes a day early.
+    """
+    assert timezone.now().date() != timezone.localdate()  # guards the fixture itself
+
+    settings.CONFERENCE_END_DATE = timezone.localdate() - datetime.timedelta(days=RETENTION_DAYS - 1)
+    make_registration()
+
+    enforce_retention()
+
+    assert TravelRegistration.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_the_window_still_closes_on_the_local_day_it_should(settings, evening_before):
+    """The other half of the promise: once the local date arrives, data goes."""
+    settings.CONFERENCE_END_DATE = timezone.localdate() - datetime.timedelta(days=RETENTION_DAYS)
+    make_registration(created_days_ago=45)
+
+    enforce_retention()
+
+    assert TravelRegistration.objects.count() == 0
