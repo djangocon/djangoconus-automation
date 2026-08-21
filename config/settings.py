@@ -254,7 +254,7 @@ LOGGING = {
 # beats silently sending nothing.
 
 email = env.dj_email_url("EMAIL_URL", default="console://")
-EMAIL_BACKEND = email["EMAIL_BACKEND"]
+EMAIL_ARCHIVE_INNER_BACKEND = email["EMAIL_BACKEND"]
 EMAIL_HOST = email["EMAIL_HOST"]
 EMAIL_PORT = email["EMAIL_PORT"]
 EMAIL_HOST_USER = email["EMAIL_HOST_USER"]
@@ -268,6 +268,12 @@ EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 # hello@mail.defna.org". Keep these in sync with the EMAIL_URL credentials.
 DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="DjangoCon US <hello@mail.defna.org>")
 SERVER_EMAIL = env.str("SERVER_EMAIL", default="hello@mail.defna.org")
+
+# Every outgoing message is BCCed here so there is one place to check what we
+# actually sent. Set EMAIL_BCC_ARCHIVE to "" to turn the archive off, which
+# also drops the wrapper and talks to the real backend directly.
+EMAIL_BCC_ARCHIVE = env.str("EMAIL_BCC_ARCHIVE", default="infrastructure@defna.org")
+EMAIL_BACKEND = "config.email_backends.BccArchiveBackend" if EMAIL_BCC_ARCHIVE else EMAIL_ARCHIVE_INNER_BACKEND
 
 # Email Octopus API settings
 
