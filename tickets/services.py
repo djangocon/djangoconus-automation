@@ -115,6 +115,25 @@ def queue_ticket_email(
     return log
 
 
+def ensure_ticket_emailed(attendee: OnlineAttendee, *, sent_by=None):
+    """Email ``attendee`` their link unless they have already been emailed one.
+
+    The idempotent entry point, for callers that fire on their own: a purchase
+    webhook, a scheduled sweep. Ti.to retries a webhook it thinks failed, and
+    the sweep runs whether or not the webhook already handled someone, so
+    "have we told this person yet" has to be answered here rather than trusted
+    to the caller. Returns None when there was nothing to do.
+    """
+    already = attendee.email_logs.filter(
+        status__in=[TicketEmailLog.STATUS_SENT, TicketEmailLog.STATUS_QUEUED],
+    ).exists()
+    if already:
+        return None
+
+    _, log = assign_and_email(attendee, sent_by=sent_by)
+    return log
+
+
 def assign_and_email(
     attendee: OnlineAttendee,
     *,

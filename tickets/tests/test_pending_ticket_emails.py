@@ -126,7 +126,7 @@ def test_one_bad_attendee_does_not_sink_the_batch():
     make_attendee("bad@example.com")
     make_attendee("good@example.com")
 
-    with patch("tickets.tasks.assign_and_email", side_effect=[RuntimeError("boom"), None]):
+    with patch("tickets.tasks.ensure_ticket_emailed", side_effect=[RuntimeError("boom"), None]):
         summary = send_pending_ticket_emails()
 
     assert summary["failed"] == 1

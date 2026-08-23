@@ -5,7 +5,7 @@ from django.core.mail import EmailMultiAlternatives
 
 from tickets.emails import build_ticket_email
 from tickets.models import OnlineAttendee, TicketEmailLog
-from tickets.services import NoTicketsAvailable, assign_and_email
+from tickets.services import NoTicketsAvailable, ensure_ticket_emailed
 from tickets.sync import DEFAULT_YEAR
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ def send_pending_ticket_emails(year: int = DEFAULT_YEAR, limit: int | None = Non
             break
 
         try:
-            assign_and_email(attendee)
+            ensure_ticket_emailed(attendee)
         except NoTicketsAvailable:
             out_of_links = True
             logger.error("Ran out of ticket links while emailing %s; stopping the batch", attendee.email)
@@ -114,3 +114,34 @@ def send_pending_ticket_emails(year: int = DEFAULT_YEAR, limit: int | None = Non
     }
     logger.info("Pending ticket email run complete: %s", summary)
     return summary
+
+
+def email_new_online_attendee(attendee_id: int) -> bool:
+    """Send one newly-signed-up attendee their link. Queued from the Ti.to webhook.
+
+    Runs in the worker rather than inline in the webhook so Ti.to gets its 200
+    back regardless of how the send goes --- a slow SMTP server or an empty link
+    pool must not turn into a webhook failure and a retry storm.
+    """
+    if not settings.TICKET_AUTO_EMAIL:
+        logger.info("Auto-email is off; not emailing attendee %s", attendee_id)
+        return False
+
+    attendee = OnlineAttendee.objects.filter(pk=attendee_id).first()
+    if attendee is None:
+        logger.warning("Attendee %s vanished before their link could be emailed", attendee_id)
+        return False
+
+    try:
+        log = ensure_ticket_emailed(attendee)
+    except NoTicketsAvailable:
+        # Loud, because the fix is human: somebody has to add links to the pool.
+        logger.error("No ticket links left; %s signed up and could not be emailed", attendee.email)
+        return False
+
+    if log is None:
+        logger.info("Attendee %s was already emailed; nothing to do", attendee.email)
+        return False
+
+    logger.info("Emailed new online attendee %s", attendee.email)
+    return True

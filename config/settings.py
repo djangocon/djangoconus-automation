@@ -328,7 +328,21 @@ Q_SCHEDULES = {
         "schedule_type": "CRON",
         "cron": VOLUNTEER_DIGEST_CRON,
     },
+    # The safety net under the purchase webhook. Webhooks are instant but only
+    # cover purchases made since the endpoint went live and only arrive if Ti.to
+    # manages to deliver them; this sweeps up anyone the webhook missed, and
+    # anyone who arrived through the API sync instead. Idempotent, so a sweep
+    # that finds nothing to do is the normal case.
+    "ticket-emails-sweep": {
+        "func": "tickets.tasks.send_pending_ticket_emails",
+        "schedule_type": "HOURLY",
+    },
 }
+
+# Emailing an online ticket link the moment somebody buys one. Off switch rather
+# than a feature flag: if a bad Ti.to payload or an empty link pool ever turns
+# this into a problem, it wants to be stoppable from Coolify without a deploy.
+TICKET_AUTO_EMAIL = env.bool("TICKET_AUTO_EMAIL", default=True)
 
 # Volunteer signup settings
 
