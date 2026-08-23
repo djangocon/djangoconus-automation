@@ -96,7 +96,58 @@ def create_tickets_view(request: HttpRequest) -> HttpResponse:
     return render(request, "tickets/create.html", context)
 
 
+def _handle_list_link_action(request: HttpRequest, action: str) -> None:
+    """Resend or reissue one link, straight from the list page.
+
+    Resend mails the link already on the row; reissue supersedes it and mails a
+    fresh one from the pool. They are separate buttons rather than one because
+    reissue is destructive --- the old URL stops working the moment it runs, so
+    it must never be what a mis-aimed "send it again" click does.
+    """
+    # The pk arrives as raw POST text, so a hand-crafted value must not 500.
+    raw_pk = (request.POST.get("ticket") or "").strip()
+    ticket = TicketLink.objects.filter(pk=raw_pk).select_related("attendee").first() if raw_pk.isdigit() else None
+    if ticket is None:
+        messages.error(request, "That ticket link no longer exists.")
+        return
+
+    if ticket.superseded_at is not None:
+        # Resending a dead link mails somebody a URL that no longer works, and
+        # reissuing from it would replace a link they already stopped using.
+        messages.error(request, "That link was superseded by a newer one, so there is nothing to send.")
+        return
+
+    if not ticket.attendee_email:
+        messages.error(request, "That link has not been assigned to anyone yet.")
+        return
+
+    attendee = ticket.attendee or OnlineAttendee.objects.filter(email=ticket.attendee_email).order_by("-year").first()
+    if attendee is None:
+        messages.error(
+            request,
+            f"{ticket.attendee_email} holds this link but is not on the attendee roster, so there is nobody to email.",
+        )
+        return
+
+    reissue = action == "reissue"
+    try:
+        assign_and_email(attendee, reissue=reissue, sent_by=request.user)
+    except NoTicketsAvailable:
+        messages.error(request, "No unassigned ticket links are left. Add more links before reissuing.")
+    except Exception:
+        logger.exception("Failed to %s ticket link %s for %s", action, ticket.pk, attendee.email)
+        messages.error(request, f"Could not queue that email to {attendee.email}.")
+    else:
+        if reissue:
+            messages.success(
+                request, f"Issued {attendee.email} a new link and queued their email. The old one no longer works."
+            )
+        else:
+            messages.success(request, f"Queued a resend of this link to {attendee.email}.")
+
+
 @staff_member_required
+@require_http_methods(["GET", "POST"])
 def tickets_list_view(request: HttpRequest) -> HttpResponse:
     """
     Display all tickets with their status.
@@ -107,6 +158,18 @@ def tickets_list_view(request: HttpRequest) -> HttpResponse:
     relationship, so a reissued link carries its own history rather than the
     attendee's running total.
     """
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action in {"resend", "reissue"}:
+            _handle_list_link_action(request, action)
+        elif action == "assign_by_email":
+            # Same handler the roster uses, so an address issued from either
+            # page lands on the roster identically instead of two ways.
+            _handle_assign_by_email(request, DEFAULT_YEAR)
+        else:
+            messages.error(request, "Unknown action.")
+        return redirect("tickets_list")
+
     sent = models.Q(email_logs__status=TicketEmailLog.STATUS_SENT)
     tickets = (
         TicketLink.objects.annotate(
@@ -130,6 +193,7 @@ def tickets_list_view(request: HttpRequest) -> HttpResponse:
 
     context = {
         "tickets": tickets,
+        "assign_form": AssignByEmailForm(),
         "total_count": len(tickets),
         "available_count": sum(1 for t in tickets if t.attendee_email is None),
         "used_count": sum(1 for t in tickets if t.attendee_email is not None),

@@ -74,9 +74,7 @@ def test_a_still_queued_email_counts_as_already_sent():
     """A slow worker must not become a reason to send a second copy."""
     make_links(3)
     attendee = make_attendee("a@example.com")
-    TicketEmailLog.objects.create(
-        attendee=attendee, to_email=attendee.email, status=TicketEmailLog.STATUS_QUEUED
-    )
+    TicketEmailLog.objects.create(attendee=attendee, to_email=attendee.email, status=TicketEmailLog.STATUS_QUEUED)
 
     summary = send_pending_ticket_emails()
 
@@ -89,9 +87,7 @@ def test_a_previous_failure_is_retried():
     """A transient SMTP problem should not exclude someone forever."""
     make_links(3)
     attendee = make_attendee("a@example.com")
-    TicketEmailLog.objects.create(
-        attendee=attendee, to_email=attendee.email, status=TicketEmailLog.STATUS_FAILED
-    )
+    TicketEmailLog.objects.create(attendee=attendee, to_email=attendee.email, status=TicketEmailLog.STATUS_FAILED)
 
     summary = send_pending_ticket_emails()
 

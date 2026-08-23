@@ -122,12 +122,20 @@ def assign_and_email(
     sent_by=None,
 ) -> tuple[TicketLink, TicketEmailLog]:
     """Ensure the attendee holds a link and email it to them."""
-    had_link = attendee.has_ticket
+    # Whether they have been *emailed* before, not whether they hold a link.
+    # Those came apart the moment links were assigned in one pass and emailed in
+    # another: everyone already had a link, so a first send announced itself as
+    # "here it is again, the same link we sent you before" to people who had
+    # never heard from us. The subject line says "(resent)" too, so getting this
+    # wrong is squarely user-visible.
+    emailed_before = attendee.email_logs.filter(
+        status__in=[TicketEmailLog.STATUS_SENT, TicketEmailLog.STATUS_QUEUED],
+    ).exists()
     link = assign_link(attendee.email, attendee=attendee, reissue=reissue)
 
     if reissue:
         kind = TicketEmailLog.KIND_REISSUE
-    elif had_link:
+    elif emailed_before:
         kind = TicketEmailLog.KIND_RESEND
     else:
         kind = TicketEmailLog.KIND_INITIAL
