@@ -87,9 +87,16 @@ def tito_webhook(request):
     # nightly sync to see a purchase they were just told about.
     if request.headers.get("x-webhook-name") == "ticket.completed":
         try:
-            record_webhook_attendee(payload)
+            attendee = record_webhook_attendee(payload)
         except Exception:
             logger.exception("Failed to record online attendee from webhook payload")
+        else:
+            # Send their link straight away rather than waiting for someone to
+            # run a batch. Handed to the worker so a slow send or an empty pool
+            # cannot fail the webhook and start Ti.to retrying it. Non-online
+            # purchases come back as None and are left alone.
+            if attendee is not None:
+                async_task("tickets.tasks.email_new_online_attendee", attendee.pk)
 
     try:
         if settings.EMAILOCTOPUS_API_KEY:

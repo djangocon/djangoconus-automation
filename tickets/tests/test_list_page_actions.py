@@ -71,8 +71,9 @@ def test_a_first_send_is_not_labelled_a_resend(client, staff):
 def test_a_second_send_is_labelled_a_resend(client, staff):
     attendee = make_attendee()
     link = make_link(email=attendee.email, attendee=attendee)
-    TicketEmailLog.objects.create(attendee=attendee, ticket_link=link, to_email=attendee.email,
-                                  status=TicketEmailLog.STATUS_SENT)
+    TicketEmailLog.objects.create(
+        attendee=attendee, ticket_link=link, to_email=attendee.email, status=TicketEmailLog.STATUS_SENT
+    )
 
     client.post(URL, {"action": "resend", "ticket": link.pk})
 
@@ -150,8 +151,9 @@ def test_issuing_to_a_new_address_adds_them_to_the_roster_and_mails_them(client,
     """The bulk-buyer case: the person attending is not who paid."""
     TicketLink.objects.create(link="https://ti.to/example/spare")
 
-    client.post(URL, {"action": "assign_by_email", "email": "Colleague@Example.com",
-                      "name": "Grace Hopper", "send_email": "on"})
+    client.post(
+        URL, {"action": "assign_by_email", "email": "Colleague@Example.com", "name": "Grace Hopper", "send_email": "on"}
+    )
 
     attendee = OnlineAttendee.objects.get()
     assert attendee.email == "colleague@example.com"  # normalized
