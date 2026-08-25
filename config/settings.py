@@ -328,16 +328,20 @@ Q_SCHEDULES = {
         "schedule_type": "CRON",
         "cron": VOLUNTEER_DIGEST_CRON,
     },
-    # The safety net under the purchase webhook. Webhooks are instant but only
-    # cover purchases made since the endpoint went live and only arrive if Ti.to
-    # manages to deliver them; this sweeps up anyone the webhook missed, and
-    # anyone who arrived through the API sync instead. Idempotent, so a sweep
-    # that finds nothing to do is the normal case.
-    "ticket-emails-sweep": {
-        "func": "tickets.tasks.send_pending_ticket_emails",
-        "schedule_type": "HOURLY",
-    },
 }
+
+# Deliberately not a Q_SCHEDULES entry: tickets.tasks.send_pending_ticket_emails
+# mails every eligible attendee who has not been emailed yet, and an entry here
+# is one `sync_schedules` run away from becoming a live hourly job -- which, for
+# a non-CRON schedule, django-q starts by firing immediately. That is too much
+# reach for something that gets registered as a side effect of an unrelated
+# command. Run it by hand when a sweep is actually wanted:
+#
+#     manage.py shell -c "from tickets.tasks import send_pending_ticket_emails; \
+#         print(send_pending_ticket_emails())"
+#
+# The purchase webhook covers new signups on its own; this is only the net under
+# it, for webhooks Ti.to never delivered.
 
 # Emailing an online ticket link the moment somebody buys one. Off switch rather
 # than a feature flag: if a bad Ti.to payload or an empty link pool ever turns
