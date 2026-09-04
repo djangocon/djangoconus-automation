@@ -17,6 +17,10 @@
                     shift next to an already-merged block. This shows the differences
                     and links each into the admin instead.
                 {% endcomment %}
+                <a href="{% url 'volunteers:export_volunteers' %}"
+                   class="rounded-md border border-yellow-300 px-3 py-2 text-sm font-semibold text-yellow-200 hover:bg-green-700">
+                    Download volunteer emails (CSV)
+                </a>
                 <a href="{% url 'volunteers:schedule_changes' %}"
                    class="rounded-md bg-yellow-300 px-3 py-2 text-sm font-semibold text-green-900 hover:bg-yellow-200">
                     Schedule changes

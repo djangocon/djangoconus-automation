@@ -13,6 +13,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
 
+from titowebhooks.reports import normalized_csv
+
 from .ical import build_calendar
 from .management.commands.import_schedule import fetch_events
 from .models import (
@@ -346,13 +348,17 @@ def split_shift_view(request, pk):
 VOLUNTEER_SORTS = {"name", "hours", "shifts"}
 
 
-@dashboard_required
-def volunteers_list_view(request):
-    """Roster of everyone signed up, with how many shifts/hours each has taken."""
-    sort = request.GET.get("sort", "name")
-    if sort not in VOLUNTEER_SORTS:
-        sort = "name"
+def _volunteer_name(person):
+    user = person["user"]
+    return (user.get_full_name() or user.get_username() or getattr(user, "email", "") or "").lower()
 
+
+def volunteer_roster():
+    """Everyone with an active sign-up, with their shift count, hours and roles.
+
+    One entry per person, name-sorted — the shape both the roster page and the
+    email export read from.
+    """
     people = {}
     for signup in (
         VolunteerSignup.objects.filter(cancelled=False)
@@ -367,17 +373,22 @@ def volunteers_list_view(request):
     volunteers = list(people.values())
     for person in volunteers:
         person["roles"] = ", ".join(sorted(person["roles"]))
+    volunteers.sort(key=_volunteer_name)
+    return volunteers
 
-    def _name(person):
-        user = person["user"]
-        return (user.get_full_name() or user.get_username() or getattr(user, "email", "") or "").lower()
 
+@dashboard_required
+def volunteers_list_view(request):
+    """Roster of everyone signed up, with how many shifts/hours each has taken."""
+    sort = request.GET.get("sort", "name")
+    if sort not in VOLUNTEER_SORTS:
+        sort = "name"
+
+    volunteers = volunteer_roster()
     if sort == "hours":
-        volunteers.sort(key=lambda p: (-p["hours"], _name(p)))
+        volunteers.sort(key=lambda p: (-p["hours"], _volunteer_name(p)))
     elif sort == "shifts":
-        volunteers.sort(key=lambda p: (-p["shifts"], _name(p)))
-    else:
-        volunteers.sort(key=_name)
+        volunteers.sort(key=lambda p: (-p["shifts"], _volunteer_name(p)))
 
     context = {
         "page_title": "Volunteers",
@@ -388,6 +399,37 @@ def volunteers_list_view(request):
         "total_hours": sum(p["hours"] for p in volunteers),
     }
     return render(request, "volunteers/volunteers_list.html", context)
+
+
+@dashboard_required
+def export_volunteers_view(request):
+    """CSV of every volunteer's email, for surveys and follow-up.
+
+    One row per person, not per sign-up: a volunteer who took six shifts is one
+    row, so the file can be pasted straight into a mail tool without sending
+    them six copies. Anyone whose account has no email is skipped — there's
+    nothing to follow up to.
+    """
+    rows = []
+    seen = set()
+    for person in volunteer_roster():
+        user = person["user"]
+        email = (getattr(user, "email", "") or "").strip()
+        if not email or email.lower() in seen:
+            continue
+        seen.add(email.lower())
+        rows.append(
+            {
+                "Name": user.get_full_name() or user.get_username(),
+                "Email": email,
+                "Shifts": person["shifts"],
+                "Hours": round(person["hours"], 2),
+                "Roles": person["roles"],
+            }
+        )
+
+    filename = f"volunteer_emails_{timezone.localdate():%Y-%m-%d}.csv"
+    return normalized_csv(filename, ["Shifts", "Hours", "Roles"], rows)
 
 
 @dashboard_required
