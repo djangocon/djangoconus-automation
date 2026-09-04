@@ -1,10 +1,11 @@
-Heads up,
+{% autoescape off %}Heads up,
 
 This upcoming volunteer shift just lost its only volunteer and is now uncovered:
 
   {{ shift.title }} ({{ shift.role.name }})
   {{ shift.starts_at|date:"l, F j" }} from {{ shift.starts_at|date:"g:i A" }} to {{ shift.ends_at|date:"g:i A" }}
 {% if shift.location %}  Location: {{ shift.location }}
+{% endif %}{% if shift.where_to_report %}  Report to: {{ shift.where_to_report }}
 {% endif %}
 {{ user.get_full_name|default:user.email }} cancelled their signup.
 
@@ -18,3 +19,4 @@ You may want to find a replacement or cover it from the dashboard:
 {% if contact_email %}Questions? Email {{ contact_email }} and we'll help you out.
 {% else %}Questions? Reply to this email and we'll help you out.
 {% endif %}DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
+{% endautoescape %}

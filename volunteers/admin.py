@@ -39,7 +39,7 @@ class TalkAdmin(admin.ModelAdmin):
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ["name", "description", "documentation_url"]
+    list_display = ["name", "reporting_location", "description", "documentation_url"]
     search_fields = ["name"]
 
 
@@ -47,7 +47,7 @@ class RoleAdmin(admin.ModelAdmin):
 class ShiftAdmin(admin.ModelAdmin):
     list_display = ["title", "role", "starts_at", "ends_at", "capacity", "filled", "spots_left", "signups_open"]
     list_filter = ["signups_open", "role", "starts_at"]
-    search_fields = ["title", "location"]
+    search_fields = ["title", "location", "reporting_location"]
     date_hierarchy = "starts_at"
     inlines = [TalkInline, VolunteerSignupInline]
 

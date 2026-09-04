@@ -56,6 +56,9 @@
                             {% if signup.shift.display_title %}{{ signup.shift.role.name }} · {% endif %}
                             <time datetime="{{ signup.shift.starts_at|date:'c' }}">{{ signup.shift.starts_at|date:"l, F j," }} <span class="whitespace-nowrap">{{ signup.shift.starts_at|date:"g:i A" }}</span></time>–<time datetime="{{ signup.shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ signup.shift.ends_at|date:"g:i A" }}</time>
                             {% if signup.shift.location %} · {{ signup.shift.location }}{% endif %}
+                            {% if signup.shift.where_to_report %}
+                                <span class="block text-yellow-200">📍 Report to: {{ signup.shift.where_to_report }}</span>
+                            {% endif %}
                         </p>
                         {% if signup.shift.role.description %}
                             <details class="mt-1 text-xs">

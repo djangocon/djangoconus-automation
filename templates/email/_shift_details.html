@@ -16,6 +16,11 @@
                 {{ shift.starts_at|date:"g:i A" }} &ndash; {{ shift.ends_at|date:"g:i A" }}
                 {% if shift.location %}<br>{{ shift.location }}{% endif %}
             </p>
+            {% if shift.where_to_report %}
+                <p style="margin:12px 0 0; font-size:15px; line-height:1.6; font-weight:700; color:#20303c;">
+                    &#128205; Report to: {{ shift.where_to_report }}
+                </p>
+            {% endif %}
         </td>
     </tr>
 </table>

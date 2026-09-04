@@ -1,9 +1,10 @@
-Good morning,
+{% autoescape off %}Good morning,
 
 {% if shifts|length == 1 %}Here's the volunteer shift you're on today, {{ today|date:"l, F j" }}:{% else %}Here are the {{ shifts|length }} volunteer shifts you're on today, {{ today|date:"l, F j" }}:{% endif %}
 {% for shift in shifts %}
   {{ shift.starts_at|date:"g:i A" }}–{{ shift.ends_at|date:"g:i A" }} · {{ shift.title }} ({{ shift.role.name }})
-{% if shift.location %}    {{ shift.location }}
+{% if shift.where_to_report %}    Report to: {{ shift.where_to_report }}
+{% endif %}{% if shift.location %}    {{ shift.location }}
 {% endif %}{% if shift.role.documentation_url %}    Role guide: {{ shift.role.documentation_url }}
 {% endif %}{% endfor %}
 Thank you — have a good one.
@@ -23,3 +24,4 @@ pick up another. Absolutely no pressure — you're already helping.
 {% if contact_email %}Questions? Email {{ contact_email }} and we'll help you out.
 {% else %}Questions? Reply to this email and we'll help you out.
 {% endif %}DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
+{% endautoescape %}

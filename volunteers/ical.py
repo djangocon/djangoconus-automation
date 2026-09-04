@@ -41,6 +41,8 @@ def build_calendar(signups, host="djangocon.us"):
             description += f"\nCovers {len(talks)} slots:\n{lines_out}"
         elif shift.description:
             description += f"\n{shift.description}"
+        if shift.where_to_report:
+            description += f"\nReport to: {shift.where_to_report}"
         lines += [
             "BEGIN:VEVENT",
             f"UID:volunteer-signup-{signup.pk}@{host}",
