@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.shift_list_view, name="shifts"),
     path("mine/", views.my_shifts_view, name="my_shifts"),
     path("mine/contact/", views.update_contact_view, name="update_contact"),
+    path("mine/name/", views.update_name_view, name="update_name"),
     path("dashboard/", views.dashboard_view, name="dashboard"),
     path("dashboard/schedule-changes/", views.schedule_changes_view, name="schedule_changes"),
     path("dashboard/emails.csv", views.export_volunteers_view, name="export_volunteers"),

@@ -28,6 +28,7 @@ from .models import (
     split_shift,
     total_volunteer_hours,
 )
+from .names import display_name, fill_missing_name
 from .permissions import dashboard_required, volunteer_chairs
 from .schedule_plan import build_diff
 
@@ -122,6 +123,7 @@ def my_shifts_view(request):
     context = {
         "page_title": "My Volunteer Shifts",
         "signups": signups,
+        "my_name": request.user.get_full_name().strip(),
         "my_hours": total_volunteer_hours(request.user),
         "max_hours": max_volunteer_hours(),
         "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
@@ -131,6 +133,25 @@ def my_shifts_view(request):
         "volunteer_contact_email": volunteer_contact_email(),
     }
     return render(request, "volunteers/my_shifts.html", context)
+
+
+@login_required
+@require_POST
+def update_name_view(request):
+    """Let a volunteer set the name the coordinators see.
+
+    Ti.to covers most people, but someone who volunteered without buying a
+    ticket has no ticket to read a name off — this is how they say who they are.
+    """
+    name = " ".join(request.POST.get("name", "").split())
+    first, _, last = name.partition(" ")
+    request.user.first_name, request.user.last_name = first, last
+    request.user.save(update_fields=["first_name", "last_name"])
+    if name:
+        messages.success(request, f"Thanks — the coordinators will see you as “{name}.”")
+    else:
+        messages.info(request, "Your name was cleared.")
+    return redirect("volunteers:my_shifts")
 
 
 @dashboard_required
@@ -192,6 +213,11 @@ def signup_view(request, pk):
         # quick-change-of-mind buffer measures from now, not the original signup.
         signup.created_at = timezone.now()
         signup.save(update_fields=["cancelled", "reminded", "created_at"])
+
+    # Accounts made from a magic link carry no name, so the roster could only
+    # show an email address (#168). Their ticket already knows what they're
+    # called — fill it in here rather than asking them again.
+    fill_missing_name(request.user)
 
     # First-signup welcome, on the worker: a mail server having a bad day must
     # not break a signup (#133). The task decides whether this is their first.
@@ -264,13 +290,17 @@ def dashboard_view(request):
     if open_only:
         shifts = shifts.filter(filled_count__lt=1)
 
+    # Names, not addresses: most accounts are made from a magic link and carry
+    # no name, so this cell used to read as a list of raw emails and chairs
+    # couldn't tell who had signed up (#168). display_name falls back to the
+    # email for anyone still unnamed.
     rosters = defaultdict(list)
     for signup in (
         VolunteerSignup.objects.filter(cancelled=False)
         .select_related("user", "shift")
         .order_by("shift__starts_at", "created_at")
     ):
-        rosters[signup.shift_id].append(signup.user)
+        rosters[signup.shift_id].append(display_name(signup.user))
 
     shifts = list(shifts)
     for shift in shifts:
