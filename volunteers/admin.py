@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CalendarToken, Role, Shift, SiteContactInfo, Talk, VolunteerSignup
+from .models import CalendarToken, Role, Shift, SiteContactInfo, StandbyOffer, Talk, VolunteerSignup
 
 
 @admin.register(SiteContactInfo)
@@ -50,6 +50,14 @@ class ShiftAdmin(admin.ModelAdmin):
     search_fields = ["title", "location", "reporting_location"]
     date_hierarchy = "starts_at"
     inlines = [TalkInline, VolunteerSignupInline]
+
+
+@admin.register(StandbyOffer)
+class StandbyOfferAdmin(admin.ModelAdmin):
+    list_display = ["user", "starts_at", "ends_at", "note"]
+    list_filter = ["starts_at"]
+    search_fields = ["user__email", "note"]
+    autocomplete_fields = ["user"]
 
 
 @admin.register(VolunteerSignup)

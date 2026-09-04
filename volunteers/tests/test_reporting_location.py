@@ -3,14 +3,13 @@
 import datetime
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core import mail
 from django.utils import timezone
 
 from volunteers.ical import build_calendar
 from volunteers.models import Role, Shift, VolunteerSignup
 from volunteers.tasks import send_volunteer_welcome
-
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 

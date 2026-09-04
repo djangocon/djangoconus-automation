@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django_q.tasks import async_task
@@ -23,15 +23,24 @@ from .models import (
     Role,
     Shift,
     SiteContactInfo,
+    StandbyOffer,
     VolunteerSignup,
     conflicting_shifts,
     merge_shifts,
     split_shift,
+    standby_for,
     total_volunteer_hours,
 )
 from .names import display_name, fill_missing_name
 from .permissions import dashboard_required, volunteer_chairs
 from .schedule_plan import build_diff
+
+
+def make_aware_if_naive(value):
+    """datetime-local inputs carry no offset, so read them as conference time."""
+    if timezone.is_naive(value):
+        return timezone.make_aware(value)
+    return value
 
 
 def max_volunteer_hours():
@@ -125,6 +134,7 @@ def my_shifts_view(request):
         "page_title": "My Volunteer Shifts",
         "signups": signups,
         "my_name": request.user.get_full_name().strip(),
+        "standby_offers": StandbyOffer.objects.filter(user=request.user, ends_at__gte=timezone.now()),
         "my_hours": total_volunteer_hours(request.user),
         "max_hours": max_volunteer_hours(),
         "calendar_url": request.build_absolute_uri(reverse("volunteers:calendar", args=[token.token])),
@@ -152,6 +162,41 @@ def update_name_view(request):
         messages.success(request, f"Thanks — the coordinators will see you as “{name}.”")
     else:
         messages.info(request, "Your name was cleared.")
+    return redirect("volunteers:my_shifts")
+
+
+@login_required
+@require_POST
+def add_standby_view(request):
+    """Record a window this volunteer could be called in for.
+
+    Not a sign-up: it fills no shift and counts toward no hours (#172).
+    """
+    starts_at = parse_datetime(request.POST.get("starts_at", ""))
+    ends_at = parse_datetime(request.POST.get("ends_at", ""))
+
+    if not starts_at or not ends_at:
+        messages.error(request, "Please give both a start and an end time.")
+    elif ends_at <= starts_at:
+        messages.error(request, "The end time has to come after the start time.")
+    else:
+        StandbyOffer.objects.create(
+            user=request.user,
+            starts_at=make_aware_if_naive(starts_at),
+            ends_at=make_aware_if_naive(ends_at),
+            note=request.POST.get("note", "").strip()[:200],
+        )
+        messages.success(request, "Thanks — the coordinators can now see when you're available.")
+    return redirect("volunteers:my_shifts")
+
+
+@login_required
+@require_POST
+def delete_standby_view(request, pk):
+    """Withdraw one of your own availability windows."""
+    offer = get_object_or_404(StandbyOffer, pk=pk, user=request.user)
+    offer.delete()
+    messages.success(request, "That availability was removed.")
     return redirect("volunteers:my_shifts")
 
 
@@ -306,6 +351,9 @@ def dashboard_view(request):
     shifts = list(shifts)
     for shift in shifts:
         shift.roster = rosters.get(shift.id, [])
+        # Only where it's actually needed: a covered shift doesn't need a
+        # list of people to call.
+        shift.standby = standby_for(shift) if not shift.roster else []
 
     days = defaultdict(list)
     for shift in shifts:
