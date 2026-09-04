@@ -1,0 +1,5 @@
+{% comment %}
+    Every volunteer page is reached from the homepage menu, so each one carries
+    the way back. print-hide: a printed roster shouldn't show navigation.
+{% endcomment %}
+<a href="{% url 'home' %}" class="print-hide text-sm text-green-300 hover:text-yellow-200">&larr; Main menu</a>
