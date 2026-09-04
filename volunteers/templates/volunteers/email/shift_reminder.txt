@@ -1,10 +1,11 @@
-Hi,
+{% autoescape off %}Hi,
 
 This is a friendly reminder about your upcoming DjangoCon US volunteer shift:
 
   {{ shift.title }} ({{ shift.role.name }})
   {{ shift.starts_at|date:"l, F j" }} from {{ shift.starts_at|date:"g:i A" }} to {{ shift.ends_at|date:"g:i A" }}
 {% if shift.location %}  Location: {{ shift.location }}
+{% endif %}{% if shift.where_to_report %}  Report to: {{ shift.where_to_report }}
 {% endif %}
 {% if role_documentation_url %}What this role involves:
 
@@ -26,3 +27,4 @@ signup so someone else can fill the spot.
 {% if contact_email %}Questions? Email {{ contact_email }} and we'll help you out.
 {% else %}Questions? Reply to this email and we'll help you out.
 {% endif %}DjangoCon US is organized by DEFNA, the Django Events Foundation North America.
+{% endautoescape %}

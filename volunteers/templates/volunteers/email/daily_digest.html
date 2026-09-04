@@ -30,7 +30,7 @@
                         {{ shift.title }}
                     </p>
                     <p style="margin:2px 0 0; font-size:14px; color:#5c6b73;">
-                        {{ shift.role.name }}{% if shift.location %} &middot; {{ shift.location }}{% endif %}
+                        {{ shift.role.name }}{% if shift.location %} &middot; {{ shift.location }}{% endif %}{% if shift.where_to_report %}<br>&#128205; Report to: {{ shift.where_to_report }}{% endif %}
                     </p>
                     {% if shift.role.documentation_url %}
                         <p style="margin:10px 0 0; font-size:14px;">

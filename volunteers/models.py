@@ -18,6 +18,12 @@ class Role(models.Model):
     documentation_url = models.URLField(
         blank=True, help_text="Link to this role's volunteer documentation, shown to volunteers."
     )
+    reporting_location = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Where volunteers in this role go to start a shift — e.g. the registration desk. "
+        "Individual shifts can override this.",
+    )
 
     class Meta:
         ordering = ["name"]
@@ -38,6 +44,15 @@ class Shift(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     location = models.CharField(max_length=200, blank=True)
+    # Kept apart from `location`: recompute_span() overwrites that from the
+    # schedule feed's room names, which would wipe anything a coordinator typed
+    # here. Where the work happens and where you go to start it aren't always
+    # the same place anyway — session chairs report to the organizers' room (#170).
+    reporting_location = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Where to go to start this shift. Leave blank to use the role's reporting location.",
+    )
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
     capacity = models.PositiveIntegerField(default=1, help_text="How many volunteers are needed.")
@@ -50,6 +65,15 @@ class Shift(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.starts_at:%a %b %d %H:%M})"
+
+    @property
+    def where_to_report(self):
+        """Where to turn up to start this shift, or "" if nobody has said.
+
+        Falls back to the role's default so coordinators set "the organizers'
+        room" once for session chairs rather than on every shift (#170).
+        """
+        return (self.reporting_location or self.role.reporting_location or "").strip()
 
     @property
     def display_title(self):

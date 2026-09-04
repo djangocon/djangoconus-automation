@@ -121,6 +121,9 @@
                                                 {% if shift.display_title %}{{ shift.role.name }} · {% endif %}
                                                 <time datetime="{{ shift.starts_at|date:'c' }}" class="whitespace-nowrap">{{ shift.starts_at|date:"g:i A" }}</time>–<time datetime="{{ shift.ends_at|date:'c' }}" class="whitespace-nowrap">{{ shift.ends_at|date:"g:i A" }}</time>
                                                 {% if shift.location %} · {{ shift.location }}{% endif %}
+                                                {% if shift.where_to_report %}
+                                                    <span class="block text-yellow-200">📍 Report to: {{ shift.where_to_report }}</span>
+                                                {% endif %}
                                             </p>
                                             {% if shift.description and not shift.covers_talks %}
                                                 <p class="mt-1 text-sm text-green-200">{{ shift.description }}</p>
