@@ -62,8 +62,7 @@ def test_somebody_already_emailed_is_left_alone():
 def test_a_queued_send_also_counts_as_done():
     make_links(2)
     attendee = make_attendee()
-    TicketEmailLog.objects.create(attendee=attendee, to_email=attendee.email,
-                                  status=TicketEmailLog.STATUS_QUEUED)
+    TicketEmailLog.objects.create(attendee=attendee, to_email=attendee.email, status=TicketEmailLog.STATUS_QUEUED)
 
     assert ensure_ticket_emailed(attendee) is None
 
