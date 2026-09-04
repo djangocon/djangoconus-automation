@@ -15,6 +15,7 @@ from django_q.tasks import async_task
 
 from titowebhooks.reports import normalized_csv
 
+from .attendance import ticket_index, ticket_status
 from .ical import build_calendar
 from .management.commands.import_schedule import fetch_events
 from .models import (
@@ -387,7 +388,8 @@ def volunteer_roster():
     """Everyone with an active sign-up, with their shift count, hours and roles.
 
     One entry per person, name-sorted — the shape both the roster page and the
-    email export read from.
+    email export read from. Each entry also carries their Ti.to ticket status,
+    so a volunteer with no ticket can be spotted before they turn up (#169).
     """
     people = {}
     for signup in (
@@ -401,8 +403,10 @@ def volunteer_roster():
         person["roles"].add(signup.shift.role.name)
 
     volunteers = list(people.values())
+    index = ticket_index()
     for person in volunteers:
         person["roles"] = ", ".join(sorted(person["roles"]))
+        person["ticket"] = ticket_status(person["user"], index)
     volunteers.sort(key=_volunteer_name)
     return volunteers
 
@@ -427,6 +431,7 @@ def volunteers_list_view(request):
         "sorts": [("name", "Name"), ("hours", "Hours"), ("shifts", "Shifts")],
         "total_volunteers": len(volunteers),
         "total_hours": sum(p["hours"] for p in volunteers),
+        "without_ticket": [p for p in volunteers if not p["ticket"]["has_ticket"]],
     }
     return render(request, "volunteers/volunteers_list.html", context)
 
@@ -452,14 +457,20 @@ def export_volunteers_view(request):
             {
                 "Name": user.get_full_name() or user.get_username(),
                 "Email": email,
+                "Ticket Type": person["ticket"]["ticket_type"],
                 "Shifts": person["shifts"],
                 "Hours": round(person["hours"], 2),
                 "Roles": person["roles"],
+                # Blank, not "In person", when there's no ticket to say either way.
+                "Attending": ("Online" if person["ticket"]["online"] else "In person")
+                if person["ticket"]["has_ticket"]
+                else "",
+                "Has Ticket": person["ticket"]["has_ticket"],
             }
         )
 
     filename = f"volunteer_emails_{timezone.localdate():%Y-%m-%d}.csv"
-    return normalized_csv(filename, ["Shifts", "Hours", "Roles"], rows)
+    return normalized_csv(filename, ["Shifts", "Hours", "Roles", "Attending", "Has Ticket"], rows)
 
 
 @dashboard_required
