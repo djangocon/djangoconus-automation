@@ -192,6 +192,14 @@
                                             {{ name }}{% if not forloop.last %}, {% endif %}
                                         {% empty %}
                                             <span class="text-green-500">— open —</span>
+                                            {% if shift.standby %}
+                                                <span class="block text-yellow-200">
+                                                    🙋 Could cover:
+                                                    {% for offer in shift.standby %}
+                                                        {{ offer.user.get_full_name|default:offer.user.email }}{% if offer.note %} ({{ offer.note }}){% endif %}{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </span>
+                                            {% endif %}
                                         {% endfor %}
                                     </td>
                                     <td class="print-hide p-3">

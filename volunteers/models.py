@@ -228,6 +228,45 @@ class VolunteerSignup(models.Model):
         return f"{self.user} → {self.shift}"
 
 
+class StandbyOffer(models.Model):
+    """A window a volunteer is willing to be called in for, without claiming a shift.
+
+    Shifts nobody signs up for used to leave the coordinators with no one to
+    ask (#172). This is deliberately not a VolunteerSignup: it commits the
+    volunteer to nothing, it doesn't count toward their hours, and it doesn't
+    fill a shift's capacity — it only answers "who could I call for this slot?".
+    """
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="standby_offers")
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    note = models.CharField(max_length=200, blank=True, help_text="Anything the coordinators should know.")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["starts_at"]
+
+    def __str__(self):
+        return f"{self.user} available {self.starts_at:%a %H:%M}–{self.ends_at:%H:%M}"
+
+    def covers(self, shift):
+        """True when this window spans the whole shift.
+
+        Whole, not merely overlapping: someone free for the first ten minutes of
+        a two-hour shift is not who you want to call.
+        """
+        return self.starts_at <= shift.starts_at and self.ends_at >= shift.ends_at
+
+
+def standby_for(shift):
+    """Volunteers offering to cover ``shift``, minus anyone already on it."""
+    taken = set(shift.signups.filter(cancelled=False).values_list("user_id", flat=True))
+    offers = StandbyOffer.objects.filter(starts_at__lte=shift.starts_at, ends_at__gte=shift.ends_at).select_related(
+        "user"
+    )
+    return [offer for offer in offers if offer.user_id not in taken]
+
+
 class SiteContactInfo(models.Model):
     """Site-wide 'who to contact' note for volunteers (a singleton).
 
