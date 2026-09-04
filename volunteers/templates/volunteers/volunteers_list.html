@@ -24,6 +24,23 @@
             </div>
         </div>
 
+        {% if without_ticket %}
+            <div class="rounded-lg border border-red-600 bg-red-900 p-4 text-red-100">
+                <p class="font-semibold text-red-200">
+                    ⚠️ {{ without_ticket|length }} volunteer{{ without_ticket|pluralize }} with no ticket
+                </p>
+                <p class="mt-1 text-sm">
+                    No live Ti.to ticket matches their email address, so they may need one before their shift.
+                    An address that differs from the one they registered with looks the same from here.
+                </p>
+                <ul class="mt-2 text-sm">
+                    {% for person in without_ticket %}
+                        <li>{{ person.user.get_full_name|default:person.user.email }} — {{ person.user.email }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         <div class="print-hide flex flex-wrap items-center gap-2 text-sm">
             <span class="text-green-300">Sort by:</span>
             {% for key, label in sorts %}
@@ -40,6 +57,7 @@
                     <tr class="border-b border-green-700 text-yellow-300">
                         <th class="p-3">Volunteer</th>
                         <th class="p-3">Email</th>
+                        <th class="p-3">Ticket</th>
                         <th class="p-3">Roles</th>
                         <th class="p-3">Shifts</th>
                         <th class="p-3">Hours</th>
@@ -50,12 +68,19 @@
                         <tr class="border-b border-green-800">
                             <td class="p-3 font-medium text-yellow-100">{{ person.user.get_full_name|default:person.user.get_username }}</td>
                             <td class="p-3 text-sm text-green-200">{{ person.user.email }}</td>
+                            <td class="p-3 text-sm">
+                                {% if person.ticket.has_ticket %}
+                                    <span class="text-green-300">{% if person.ticket.online %}💻 Online{% else %}📍 In person{% endif %}</span>
+                                {% else %}
+                                    <span class="font-semibold text-red-300">⚠️ No ticket</span>
+                                {% endif %}
+                            </td>
                             <td class="p-3 text-sm text-green-300">{{ person.roles }}</td>
                             <td class="p-3 text-green-200">{{ person.shifts }}</td>
                             <td class="p-3 text-green-200">{{ person.hours|floatformat:1 }}</td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="5" class="p-3 text-green-300">No one has signed up for a shift yet.</td></tr>
+                        <tr><td colspan="6" class="p-3 text-green-300">No one has signed up for a shift yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
