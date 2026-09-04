@@ -121,9 +121,7 @@ def test_dashboard_stays_quiet_for_a_covered_shift(client, shift):
     chair.groups.add(grant_chair_group())
     volunteer = User.objects.create_user(username="ada", email="ada@example.com")
     offer(volunteer, shift)
-    VolunteerSignup.objects.create(
-        shift=shift, user=User.objects.create_user(username="bob", email="bob@example.com")
-    )
+    VolunteerSignup.objects.create(shift=shift, user=User.objects.create_user(username="bob", email="bob@example.com"))
     client.force_login(chair)
 
     body = client.get(reverse("volunteers:dashboard")).content.decode()
