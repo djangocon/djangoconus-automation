@@ -188,8 +188,8 @@
                                         {{ shift.filled_count }}/{{ shift.capacity }}
                                     </td>
                                     <td class="p-3 text-sm text-green-200">
-                                        {% for user in shift.roster %}
-                                            {{ user.email }}{% if not forloop.last %}, {% endif %}
+                                        {% for name in shift.roster %}
+                                            {{ name }}{% if not forloop.last %}, {% endif %}
                                         {% empty %}
                                             <span class="text-green-500">— open —</span>
                                         {% endfor %}
